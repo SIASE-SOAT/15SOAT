@@ -20,6 +20,17 @@
     <properties>
         <java.version>17</java.version>
         <springdoc.version>2.4.0</springdoc.version>
+        <sonar.projectKey>br.com.fiap:siase</sonar.projectKey>
+        <sonar.projectName>siase</sonar.projectName>
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.coverage.exclusions>
+            **/SiaseApplication.java,
+            **/exception/BusinessException.java,
+            **/exception/ResourceNotFoundException.java,
+            **/config/OpenApiConfig.java,
+            **/model/enums/StatusOS.java,
+            **/model/enums/TipoPessoa.java
+        </sonar.coverage.exclusions>
     </properties>
 
     <dependencies>
@@ -97,6 +108,20 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.11</version>
+                <configuration>
+                    <excludes>
+                        <!-- Entry point do Spring Boot -->
+                        <exclude>br/com/fiap/siase/SiaseApplication.class</exclude>
+                        <!-- Exceções sem lógica: apenas delegam para RuntimeException -->
+                        <exclude>br/com/fiap/siase/exception/BusinessException.class</exclude>
+                        <exclude>br/com/fiap/siase/exception/ResourceNotFoundException.class</exclude>
+                        <!-- Configuração de infraestrutura sem lógica de negócio -->
+                        <exclude>br/com/fiap/siase/config/OpenApiConfig.class</exclude>
+                        <!-- Enums: apenas constantes, sem lógica -->
+                        <exclude>br/com/fiap/siase/model/enums/StatusOS.class</exclude>
+                        <exclude>br/com/fiap/siase/model/enums/TipoPessoa.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
