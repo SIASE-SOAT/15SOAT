@@ -4,6 +4,7 @@ import br.com.fiap.siase.model.enums.StatusOS;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "ordens_de_servico")
 public class OrdemDeServico extends BaseEntity {
