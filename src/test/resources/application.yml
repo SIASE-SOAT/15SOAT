@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: create
     show-sql: false
     properties:
       hibernate:
@@ -15,6 +15,10 @@ spring:
 
   flyway:
     enabled: false
+
+jwt:
+  secret: dGVzdFNlY3JldEtleUZvckpXVFRlc3RpbmdQdXJwb3NlczEyMzQ1Njc4OTA=
+  expiration-ms: 3600000
 
 logging:
   level:

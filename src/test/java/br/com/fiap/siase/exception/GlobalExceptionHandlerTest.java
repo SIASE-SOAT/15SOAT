@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -39,6 +40,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/conflict")
         public void conflict() {
             throw new DataIntegrityViolationException("duplicate key value");
+        }
+
+        @GetMapping("/bad-credentials")
+        public void badCredentials() {
+            throw new BadCredentialsException("Bad credentials");
         }
 
         @GetMapping("/error")
@@ -90,6 +96,15 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.message").value("Resource already exists or violates a constraint"));
+    }
+
+    @Test
+    @DisplayName("BadCredentialsException → 401 com mensagem Invalid credentials")
+    void deveRetornar401ParaBadCredentials() throws Exception {
+        mockMvc.perform(get("/test/bad-credentials"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.message").value("Invalid credentials"));
     }
 
     @Test
