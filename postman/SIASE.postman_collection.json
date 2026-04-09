@@ -1,0 +1,622 @@
+{
+  "info": {
+    "name": "SIASE - Sistema Integrado de Atendimento e Execução de Serviços",
+    "description": "Coleção completa dos endpoints da API SIASE. Fluxo sugerido: 1) Criar Cliente → 2) Criar Veículo → 3) Criar Peça → 4) Criar Serviço → 5) Vincular Insumo ao Serviço.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "clienteId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente ao criar um cliente"
+    },
+    {
+      "key": "veiculoId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente ao criar um veículo"
+    },
+    {
+      "key": "pecaId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente ao criar uma peça"
+    },
+    {
+      "key": "servicoId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente ao criar um serviço"
+    }
+  ],
+  "item": [
+    {
+      "name": "Clientes",
+      "description": "Gestão de clientes (Pessoa Física e Jurídica)",
+      "item": [
+        {
+          "name": "Criar cliente (PF)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('clienteId', body.id);",
+                  "    console.log('clienteId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João da Silva\",\n  \"tipoPessoa\": \"PF\",\n  \"documento\": \"529.982.247-25\",\n  \"email\": \"joao.silva@email.com\",\n  \"telefone\": \"(11) 99999-1234\",\n  \"endereco\": \"Rua das Flores, 123 - São Paulo/SP\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes"]
+            },
+            "description": "Cadastra um cliente Pessoa Física. O ID é salvo automaticamente em {{clienteId}}."
+          }
+        },
+        {
+          "name": "Criar cliente (PJ)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Transportes Silva LTDA\",\n  \"tipoPessoa\": \"PJ\",\n  \"documento\": \"11.222.333/0001-81\",\n  \"email\": \"contato@transportes-silva.com.br\",\n  \"telefone\": \"(11) 3333-4444\",\n  \"endereco\": \"Av. Industrial, 500 - Guarulhos/SP\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes"]
+            }
+          }
+        },
+        {
+          "name": "Listar clientes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes"]
+            }
+          }
+        },
+        {
+          "name": "Buscar cliente por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes", "{{clienteId}}"]
+            }
+          }
+        },
+        {
+          "name": "Buscar cliente por documento",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/clientes/documento/52998224725",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes", "documento", "52998224725"]
+            },
+            "description": "Aceita documento com ou sem pontuação."
+          }
+        },
+        {
+          "name": "Atualizar cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João da Silva Atualizado\",\n  \"tipoPessoa\": \"PF\",\n  \"documento\": \"529.982.247-25\",\n  \"email\": \"joao.novo@email.com\",\n  \"telefone\": \"(11) 98888-5678\",\n  \"endereco\": \"Rua Nova, 456 - São Paulo/SP\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes", "{{clienteId}}"]
+            }
+          }
+        },
+        {
+          "name": "Desativar cliente",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes", "{{clienteId}}"]
+            },
+            "description": "Soft delete — o registro permanece no banco com ativo=false."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Veículos",
+      "description": "Gestão de veículos (requer clienteId válido)",
+      "item": [
+        {
+          "name": "Criar veículo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('veiculoId', body.id);",
+                  "    console.log('veiculoId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placa\": \"ABC1234\",\n  \"marca\": \"Toyota\",\n  \"modelo\": \"Corolla\",\n  \"ano\": 2022,\n  \"cor\": \"Prata\",\n  \"clienteId\": \"{{clienteId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/veiculos",
+              "host": ["{{baseUrl}}"],
+              "path": ["veiculos"]
+            },
+            "description": "Placa no formato antigo (ABC1234) ou Mercosul (ABC1D23). Requer {{clienteId}} preenchido."
+          }
+        },
+        {
+          "name": "Criar veículo (placa Mercosul)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placa\": \"BRA2E19\",\n  \"marca\": \"Honda\",\n  \"modelo\": \"Civic\",\n  \"ano\": 2023,\n  \"cor\": \"Preto\",\n  \"clienteId\": \"{{clienteId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/veiculos",
+              "host": ["{{baseUrl}}"],
+              "path": ["veiculos"]
+            }
+          }
+        },
+        {
+          "name": "Listar veículos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/veiculos",
+              "host": ["{{baseUrl}}"],
+              "path": ["veiculos"]
+            }
+          }
+        },
+        {
+          "name": "Buscar veículo por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["veiculos", "{{veiculoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Buscar veículo por placa",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/veiculos/placa/ABC1234",
+              "host": ["{{baseUrl}}"],
+              "path": ["veiculos", "placa", "ABC1234"]
+            }
+          }
+        },
+        {
+          "name": "Listar veículos por cliente",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/veiculos/cliente/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["veiculos", "cliente", "{{clienteId}}"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar veículo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placa\": \"ABC1234\",\n  \"marca\": \"Toyota\",\n  \"modelo\": \"Corolla XEi\",\n  \"ano\": 2022,\n  \"cor\": \"Branco\",\n  \"clienteId\": \"{{clienteId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["veiculos", "{{veiculoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Desativar veículo",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["veiculos", "{{veiculoId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Peças e Insumos",
+      "description": "Catálogo de peças com controle de estoque",
+      "item": [
+        {
+          "name": "Criar peça",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('pecaId', body.id);",
+                  "    console.log('pecaId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"FILTRO-OLEO-001\",\n  \"nome\": \"Filtro de Óleo Motor\",\n  \"descricao\": \"Filtro de óleo para motores 1.0 a 2.0, compatível com Toyota e Honda\",\n  \"preco\": 45.90,\n  \"quantidadeEstoque\": 50,\n  \"estoqueMinimo\": 10,\n  \"unidadeMedida\": \"UN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pecas",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas"]
+            },
+            "description": "O código é normalizado para MAIÚSCULAS automaticamente. O ID é salvo em {{pecaId}}."
+          }
+        },
+        {
+          "name": "Criar peça (fluido)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"OLEO-5W30-SYN\",\n  \"nome\": \"Óleo Motor Sintético 5W30\",\n  \"descricao\": \"Óleo motor sintético API SN/SP, ideal para motores flex\",\n  \"preco\": 38.50,\n  \"quantidadeEstoque\": 100,\n  \"estoqueMinimo\": 20,\n  \"unidadeMedida\": \"LT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pecas",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas"]
+            }
+          }
+        },
+        {
+          "name": "Listar peças ativas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pecas",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas"]
+            }
+          }
+        },
+        {
+          "name": "Listar todas as peças",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pecas/todas",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas", "todas"]
+            },
+            "description": "Inclui peças com ativo=false."
+          }
+        },
+        {
+          "name": "Buscar peça por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pecas/{{pecaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas", "{{pecaId}}"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar peça",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"FILTRO-OLEO-001\",\n  \"nome\": \"Filtro de Óleo Motor Premium\",\n  \"descricao\": \"Filtro de óleo premium para motores 1.0 a 2.0\",\n  \"preco\": 52.90,\n  \"estoqueMinimo\": 15,\n  \"unidadeMedida\": \"UN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pecas/{{pecaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas", "{{pecaId}}"]
+            },
+            "description": "O campo quantidadeEstoque não é atualizado por aqui — use o endpoint de movimentação de estoque."
+          }
+        },
+        {
+          "name": "Entrada de estoque",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operacao\": \"ENTRADA\",\n  \"quantidade\": 30\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pecas/{{pecaId}}/estoque",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas", "{{pecaId}}", "estoque"]
+            },
+            "description": "Registra recebimento de mercadoria — adiciona ao estoque atual."
+          }
+        },
+        {
+          "name": "Saída de estoque",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operacao\": \"SAIDA\",\n  \"quantidade\": 5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pecas/{{pecaId}}/estoque",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas", "{{pecaId}}", "estoque"]
+            },
+            "description": "Registra consumo — subtrai do estoque atual. Retorna 422 se estoque insuficiente."
+          }
+        },
+        {
+          "name": "Desativar peça",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/pecas/{{pecaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas", "{{pecaId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Serviços",
+      "description": "Catálogo de serviços da oficina com seus insumos",
+      "item": [
+        {
+          "name": "Criar serviço",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('servicoId', body.id);",
+                  "    console.log('servicoId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Troca de Óleo e Filtro\",\n  \"descricao\": \"Troca completa do óleo motor com substituição do filtro de óleo\",\n  \"preco\": 120.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/servicos",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos"]
+            },
+            "description": "O ID é salvo automaticamente em {{servicoId}}."
+          }
+        },
+        {
+          "name": "Criar serviço (alinhamento)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Alinhamento e Balanceamento\",\n  \"descricao\": \"Alinhamento da direção e balanceamento dos quatro pneus\",\n  \"preco\": 180.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/servicos",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos"]
+            }
+          }
+        },
+        {
+          "name": "Listar serviços ativos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/servicos",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos"]
+            }
+          }
+        },
+        {
+          "name": "Listar todos os serviços",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/servicos/todos",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "todos"]
+            },
+            "description": "Inclui serviços com ativo=false."
+          }
+        },
+        {
+          "name": "Buscar serviço por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{servicoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "{{servicoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar serviço",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Troca de Óleo e Filtro Completo\",\n  \"descricao\": \"Troca completa do óleo motor e filtro, com inspeção do sistema de arrefecimento\",\n  \"preco\": 145.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{servicoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "{{servicoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Vincular insumo ao serviço",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidade\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "{{servicoId}}", "insumos"]
+            },
+            "description": "Vincula uma peça ao serviço com quantidade necessária. Requer {{servicoId}} e {{pecaId}} preenchidos."
+          }
+        },
+        {
+          "name": "Atualizar quantidade do insumo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidade\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos/{{pecaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "{{servicoId}}", "insumos", "{{pecaId}}"]
+            }
+          }
+        },
+        {
+          "name": "Remover insumo do serviço",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos/{{pecaId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "{{servicoId}}", "insumos", "{{pecaId}}"]
+            }
+          }
+        },
+        {
+          "name": "Desativar serviço",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/servicos/{{servicoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos", "{{servicoId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
