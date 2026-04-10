@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -34,4 +36,7 @@ public class Servico extends BaseEntity {
 
     @Column(nullable = false)
     private Boolean ativo = true;
+
+    @OneToMany(mappedBy = "servico", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ServicoInsumo> insumos = new ArrayList<>();
 }
