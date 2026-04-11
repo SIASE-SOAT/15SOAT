@@ -2,8 +2,11 @@ package br.com.fiap.siase.controller;
 
 import br.com.fiap.siase.dto.response.PecaResponse;
 import br.com.fiap.siase.exception.BusinessException;
+import br.com.fiap.siase.config.SecurityConfig;
 import br.com.fiap.siase.exception.GlobalExceptionHandler;
 import br.com.fiap.siase.exception.ResourceNotFoundException;
+import br.com.fiap.siase.security.JwtService;
+import br.com.fiap.siase.security.UserDetailsServiceImpl;
 import br.com.fiap.siase.service.PecaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -29,15 +33,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PecaController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
+@WithMockUser
 @DisplayName("PecaController - Endpoints REST")
 class PecaControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private PecaService service;
+    @MockBean private PecaService service;
+    @MockBean private JwtService jwtService;
+    @MockBean private UserDetailsServiceImpl userDetailsService;
 
     private PecaResponse pecaResponse;
     private UUID pecaId;

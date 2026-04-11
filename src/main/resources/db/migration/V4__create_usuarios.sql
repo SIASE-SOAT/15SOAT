@@ -8,7 +8,3 @@ CREATE TABLE IF NOT EXISTS usuarios (
     CONSTRAINT uq_usuarios_username UNIQUE (username)
 );
 
-INSERT INTO usuarios (id, username, senha_hash, ativo, criado_em) VALUES
-    (gen_random_uuid(), 'atendente1', '$2a$10$p3TuBbxCMzJmBYqo7A2MbuDN0nqNBkKhGQHh294XxgyN0TWyD5qDK', true, NOW()),
-    (gen_random_uuid(), 'atendente2', '$2a$10$kX0DgQP7zkxcI9FOsAbmuuhj1f30Cn0wNPuExLQEznY0DwrWMofgm', true, NOW())
-ON CONFLICT (username) DO NOTHING;
