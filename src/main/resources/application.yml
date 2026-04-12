@@ -14,7 +14,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
@@ -43,6 +43,10 @@ springdoc:
     title: SIASE - Sistema Integrado de Atendimento e Execução de Serviços
     description: API REST para gerenciamento de atendimentos e execução de serviços
     version: 1.0.0
+
+jwt:
+  secret: ${JWT_SECRET:bXlTdXBlclNlY3JldEtleUZvckpXVEF1dGhlbnRpY2F0aW9uMjAyNA==}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}
 
 logging:
   level:

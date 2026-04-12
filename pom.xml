@@ -28,8 +28,10 @@
             **/exception/BusinessException.java,
             **/exception/ResourceNotFoundException.java,
             **/config/OpenApiConfig.java,
+            **/config/SecurityConfig.java,
             **/model/enums/StatusOS.java,
-            **/model/enums/TipoPessoa.java
+            **/model/enums/TipoPessoa.java,
+            **/dto/**
         </sonar.coverage.exclusions>
     </properties>
 
@@ -84,10 +86,40 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
 
+        <!-- Security -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- JWT -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -127,6 +159,10 @@
                         <!-- Enums: apenas constantes, sem lógica -->
                         <exclude>br/com/fiap/siase/model/enums/StatusOS.class</exclude>
                         <exclude>br/com/fiap/siase/model/enums/TipoPessoa.class</exclude>
+                        <!-- Security/config: infraestrutura -->
+                        <exclude>br/com/fiap/siase/config/SecurityConfig.class</exclude>
+                        <!-- DTOs: sem lógica -->
+                        <exclude>br/com/fiap/siase/dto/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>

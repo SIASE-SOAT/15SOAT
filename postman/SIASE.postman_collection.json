@@ -1,14 +1,30 @@
 {
   "info": {
     "name": "SIASE - Sistema Integrado de Atendimento e Execução de Serviços",
-    "description": "Coleção completa dos endpoints da API SIASE. Fluxo sugerido: 1) Criar Cliente → 2) Criar Veículo → 3) Criar Peça → 4) Criar Serviço → 5) Vincular Insumo ao Serviço.",
+    "description": "Coleção completa dos endpoints da API SIASE.\n\nFluxo inicial: 1) POST /auth/registrar → 2) POST /auth/login (salva {{jwtToken}}) → 3) todos os demais endpoints usam o token automaticamente.\n\nFluxo de negócio: Cliente → Veículo → Peça → Serviço → Insumo.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwtToken}}",
+        "type": "string"
+      }
+    ]
   },
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:8080/api",
       "type": "string"
+    },
+    {
+      "key": "jwtToken",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente ao fazer login"
     },
     {
       "key": "clienteId",
@@ -36,6 +52,67 @@
     }
   ],
   "item": [
+    {
+      "name": "Autenticação",
+      "description": "Registro e login de usuários",
+      "item": [
+        {
+          "name": "Registrar usuário",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"atendente1\",\n  \"password\": \"Atend@2024\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/registrar",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "registrar"]
+            },
+            "description": "Cadastra um novo usuário. Senha mínima de 8 caracteres. Retorna 201 com id, username e criadoEm."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('jwtToken', body.token);",
+                  "    console.log('JWT salvo:', body.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"atendente1\",\n  \"password\": \"Atend@2024\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Autentica e salva o token em {{jwtToken}} automaticamente."
+          }
+        }
+      ]
+    },
     {
       "name": "Clientes",
       "description": "Gestão de clientes (Pessoa Física e Jurídica)",
