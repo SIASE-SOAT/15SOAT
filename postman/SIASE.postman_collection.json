@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIASE - Sistema Integrado de Atendimento e Execução de Serviços",
-    "description": "Coleção completa dos endpoints da API SIASE.\n\nFluxo inicial: 1) POST /auth/registrar → 2) POST /auth/login (salva {{jwtToken}}) → 3) todos os demais endpoints usam o token automaticamente.\n\nFluxo de negócio: Cliente → Veículo → Peça → Serviço → Insumo.",
+    "description": "Coleção completa dos endpoints da API SIASE.\n\nFluxo completo de teste:\n1) Registrar usuário\n2) Login (salva {{jwtToken}})\n3) Criar Peça → salva {{pecaId}}\n4) Criar Serviço → salva {{servicoId}}\n5) Criar Cliente → salva {{clienteId}}\n6) Criar Veículo → salva {{veiculoId}}\n7) Criar OS → salva {{osId}} e {{osNumero}}\n8) Avançar status até ENTREGUE\n9) Acompanhar OS (sem token) pelo {{osNumero}}",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -49,6 +49,18 @@
       "value": "",
       "type": "string",
       "description": "Preenchido automaticamente ao criar um serviço"
+    },
+    {
+      "key": "osId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente ao criar uma OS"
+    },
+    {
+      "key": "osNumero",
+      "value": "",
+      "type": "string",
+      "description": "Número da OS (ex: OS-20260412-A3F7C2) — preenchido automaticamente ao criar uma OS"
     }
   ],
   "item": [
@@ -691,6 +703,181 @@
               "host": ["{{baseUrl}}"],
               "path": ["servicos", "{{servicoId}}"]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ordens de Serviço",
+      "description": "Fluxo completo de OS: criação → diagnóstico → aprovação → execução → finalização → entrega.\n\nO endpoint GET /ordens/acompanhar/{numero} é público (sem token).",
+      "item": [
+        {
+          "name": "Criar OS (com serviço e peça)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('osId', body.id);",
+                  "    pm.collectionVariables.set('osNumero', body.numero);",
+                  "    console.log('osId salvo:', body.id);",
+                  "    console.log('osNumero salvo:', body.numero);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"observacoes\": \"Cliente relata barulho ao frear e óleo baixo no painel\",\n  \"itensServico\": [\n    {\n      \"servicoId\": \"{{servicoId}}\",\n      \"observacoes\": \"Usar óleo sintético 5W30\"\n    }\n  ],\n  \"itensPeca\": [\n    {\n      \"pecaId\": \"{{pecaId}}\",\n      \"quantidade\": 2\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ordens",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens"]
+            },
+            "description": "Cria uma OS vinculando cliente, veículo, serviços e peças. O preço é snapshot do catálogo no momento da criação. O estoque das peças é deduzido automaticamente. Salva {{osId}} e {{osNumero}}."
+          }
+        },
+        {
+          "name": "Criar OS (somente serviço, sem peça)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"observacoes\": \"Alinhamento solicitado pelo cliente\",\n  \"itensServico\": [\n    {\n      \"servicoId\": \"{{servicoId}}\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ordens",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens"]
+            },
+            "description": "Cria OS sem peças — itensPeca é opcional."
+          }
+        },
+        {
+          "name": "Listar todas as OS",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ordens",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens"]
+            }
+          }
+        },
+        {
+          "name": "Listar OS por status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ordens?status=RECEBIDA",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "RECEBIDA",
+                  "description": "Valores: RECEBIDA | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | EM_EXECUCAO | FINALIZADA | ENTREGUE"
+                }
+              ]
+            },
+            "description": "Filtra OS pelo status. Troque o valor do parâmetro para filtrar por outros status."
+          }
+        },
+        {
+          "name": "Buscar OS por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}"]
+            }
+          }
+        },
+        {
+          "name": "Avancar status → EM_DIAGNOSTICO",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "avancar"]
+            },
+            "description": "RECEBIDA → EM_DIAGNOSTICO. Chame este endpoint 5 vezes para percorrer todos os status até ENTREGUE."
+          }
+        },
+        {
+          "name": "Avancar status → AGUARDANDO_APROVACAO",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "avancar"]
+            },
+            "description": "EM_DIAGNOSTICO → AGUARDANDO_APROVACAO. Neste ponto o orçamento seria enviado ao cliente."
+          }
+        },
+        {
+          "name": "Avancar status → EM_EXECUCAO (aprovação)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "avancar"]
+            },
+            "description": "AGUARDANDO_APROVACAO → EM_EXECUCAO. Simula a aprovação do orçamento pelo cliente."
+          }
+        },
+        {
+          "name": "Avancar status → FINALIZADA",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "avancar"]
+            },
+            "description": "EM_EXECUCAO → FINALIZADA. Serviço concluído, aguardando retirada."
+          }
+        },
+        {
+          "name": "Avancar status → ENTREGUE",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "avancar"]
+            },
+            "description": "FINALIZADA → ENTREGUE. Define dataFechamento automaticamente. OS encerrada."
+          }
+        },
+        {
+          "name": "Acompanhar OS pelo número (público, sem token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/acompanhar/{{osNumero}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "acompanhar", "{{osNumero}}"]
+            },
+            "description": "Endpoint público — não exige JWT. O cliente consulta o andamento da OS pelo número (ex: OS-20260412-A3F7C2)."
           }
         }
       ]
