@@ -7,7 +7,8 @@ public enum StatusOS {
     AGUARDANDO_APROVACAO("Aguardando Aprovação"),
     EM_EXECUCAO("Em Execução"),
     FINALIZADA("Finalizada"),
-    ENTREGUE("Entregue");
+    ENTREGUE("Entregue"),
+    CANCELADA("Cancelada");
 
     private final String descricao;
 

@@ -33,6 +33,7 @@ public class OrdemDeServicoService {
     private final VeiculoRepository veiculoRepository;
     private final ServicoRepository servicoRepository;
     private final PecaRepository pecaRepository;
+    private final EmailService emailService;
 
     @Transactional
     public OrdemDeServicoResponse criar(OrdemDeServicoRequest request) {
@@ -117,15 +118,63 @@ public class OrdemDeServicoService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public double calcularTempoMedioExecucaoMinutos() {
+        Double resultado = repository.calcularTempoMedioExecucaoMinutos();
+        return resultado != null ? resultado : 0.0;
+    }
+
     @Transactional
     public OrdemDeServicoResponse avancarStatus(UUID id) {
         var os = findOrThrow(id);
+        StatusOS statusAnterior = os.getStatus();
+
         try {
             os.avancarStatus();
         } catch (IllegalStateException e) {
             throw new BusinessException(e.getMessage());
         }
-        return OrdemDeServicoResponse.from(repository.save(os));
+
+        var salvo = repository.save(os);
+
+        // Dispara email quando orçamento é enviado para aprovação
+        if (os.getStatus() == StatusOS.AGUARDANDO_APROVACAO) {
+            String email = os.getCliente().getEmail() != null
+                    ? os.getCliente().getEmail() : "sem-email@siase.com";
+            emailService.enviarOrcamentoParaAprovacao(
+                    email,
+                    os.getCliente().getNome(),
+                    os.getNumero(),
+                    os.getTotal().toPlainString()
+            );
+        }
+
+        // Dispara email quando orçamento é aprovado e execução inicia
+        if (statusAnterior == StatusOS.AGUARDANDO_APROVACAO && os.getStatus() == StatusOS.EM_EXECUCAO) {
+            String email = os.getCliente().getEmail() != null
+                    ? os.getCliente().getEmail() : "sem-email@siase.com";
+            emailService.enviarOrcamentoAprovado(email, os.getCliente().getNome(), os.getNumero());
+        }
+
+        return OrdemDeServicoResponse.from(salvo);
+    }
+
+    @Transactional
+    public OrdemDeServicoResponse cancelar(UUID id) {
+        var os = findOrThrow(id);
+        try {
+            os.cancelar();
+        } catch (IllegalStateException e) {
+            throw new BusinessException(e.getMessage());
+        }
+
+        var salvo = repository.save(os);
+
+        String email = os.getCliente().getEmail() != null
+                ? os.getCliente().getEmail() : "sem-email@siase.com";
+        emailService.enviarOrcamentoCancelado(email, os.getCliente().getNome(), os.getNumero());
+
+        return OrdemDeServicoResponse.from(salvo);
     }
 
     private OrdemDeServico findOrThrow(UUID id) {

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIASE - Sistema Integrado de Atendimento e Execução de Serviços",
-    "description": "Coleção completa dos endpoints da API SIASE.\n\nFluxo completo de teste:\n1) Registrar usuário\n2) Login (salva {{jwtToken}})\n3) Criar Peça → salva {{pecaId}}\n4) Criar Serviço → salva {{servicoId}}\n5) Criar Cliente → salva {{clienteId}}\n6) Criar Veículo → salva {{veiculoId}}\n7) Criar OS → salva {{osId}} e {{osNumero}}\n8) Avançar status até ENTREGUE\n9) Acompanhar OS (sem token) pelo {{osNumero}}",
+    "description": "Coleção completa dos endpoints da API SIASE.\n\nFluxo completo de teste:\n1)  Registrar usuário → Login (salva {{jwtToken}})\n2)  Criar Peça → salva {{pecaId}}\n3)  Criar Serviço → salva {{servicoId}}\n4)  Criar Cliente → salva {{clienteId}}\n5)  Criar Veículo → salva {{veiculoId}}\n6)  [Opcional] Criar Agendamento → salva {{agendamentoId}} → Confirmar\n7)  Criar OS → salva {{osId}} e {{osNumero}}\n8)  Avançar status: RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → EM_EXECUCAO → FINALIZADA\n9)  Registrar Pagamento → salva {{pagamentoId}} → Confirmar (avança OS para ENTREGUE)\n10) Acompanhar OS (sem token) pelo {{osNumero}}\n11) [Opcional] Criar Pedido de Compra → salva {{pedidoCompraId}} → Aprovar → Receber",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -61,6 +61,24 @@
       "value": "",
       "type": "string",
       "description": "Número da OS (ex: OS-20260412-A3F7C2) — preenchido automaticamente ao criar uma OS"
+    },
+    {
+      "key": "agendamentoId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente ao criar um agendamento"
+    },
+    {
+      "key": "pagamentoId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente ao registrar um pagamento"
+    },
+    {
+      "key": "pedidoCompraId",
+      "value": "",
+      "type": "string",
+      "description": "Preenchido automaticamente ao criar um pedido de compra"
     }
   ],
   "item": [
@@ -205,6 +223,21 @@
         },
         {
           "name": "Buscar cliente por documento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('clienteId', body.id);",
+                  "    console.log('clienteId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": {
@@ -212,7 +245,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["clientes", "documento", "52998224725"]
             },
-            "description": "Aceita documento com ou sem pontuação."
+            "description": "Aceita documento com ou sem pontuação. Salva {{clienteId}} automaticamente."
           }
         },
         {
@@ -327,13 +360,29 @@
         },
         {
           "name": "Buscar veículo por placa",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('veiculoId', body.id);",
+                  "    console.log('veiculoId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/veiculos/placa/ABC1234",
               "host": ["{{baseUrl}}"],
               "path": ["veiculos", "placa", "ABC1234"]
-            }
+            },
+            "description": "Salva {{veiculoId}} automaticamente."
           }
         },
         {
@@ -708,8 +757,123 @@
       ]
     },
     {
+      "name": "Agendamentos",
+      "description": "Agendamento de visitas antes da abertura da OS.\n\nFluxo: Criar → Confirmar → (cliente chega) → OS é aberta",
+      "item": [
+        {
+          "name": "Criar agendamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('agendamentoId', body.id);",
+                  "    console.log('agendamentoId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"dataHora\": \"2026-05-10T10:00:00\",\n  \"descricaoServicos\": \"Troca de óleo e revisão geral\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos"]
+            },
+            "description": "Cria um agendamento para data futura. O status inicia como AGENDADO. O ID é salvo em {{agendamentoId}}.\n\nAltera a data para um momento futuro antes de enviar."
+          }
+        },
+        {
+          "name": "Listar agendamentos",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos"]
+            }
+          }
+        },
+        {
+          "name": "Listar agendamentos por status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos?status=AGENDADO",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "AGENDADO",
+                  "description": "Valores: AGENDADO | CONFIRMADO | CANCELADO | REALIZADO"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar agendamento por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{agendamentoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos", "{{agendamentoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Listar agendamentos por cliente",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/cliente/{{clienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos", "cliente", "{{clienteId}}"]
+            }
+          }
+        },
+        {
+          "name": "Confirmar agendamento",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{agendamentoId}}/confirmar",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos", "{{agendamentoId}}", "confirmar"]
+            },
+            "description": "AGENDADO → CONFIRMADO. Oficina confirma a presença do cliente."
+          }
+        },
+        {
+          "name": "Cancelar agendamento",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/agendamentos/{{agendamentoId}}/cancelar",
+              "host": ["{{baseUrl}}"],
+              "path": ["agendamentos", "{{agendamentoId}}", "cancelar"]
+            },
+            "description": "AGENDADO ou CONFIRMADO → CANCELADO. Retorna 422 se já REALIZADO."
+          }
+        }
+      ]
+    },
+    {
       "name": "Ordens de Serviço",
-      "description": "Fluxo completo de OS: criação → diagnóstico → aprovação → execução → finalização → entrega.\n\nO endpoint GET /ordens/acompanhar/{numero} é público (sem token).",
+      "description": "Fluxo completo de OS: criação → diagnóstico → aprovação → execução → finalização → pagamento → entrega.\n\nStatus possíveis: RECEBIDA | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | EM_EXECUCAO | FINALIZADA | ENTREGUE | CANCELADA\n\nO endpoint GET /ordens/acompanhar/{numero} é público (sem token).",
       "item": [
         {
           "name": "Criar OS (com serviço e peça)",
@@ -789,7 +953,7 @@
                 {
                   "key": "status",
                   "value": "RECEBIDA",
-                  "description": "Valores: RECEBIDA | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | EM_EXECUCAO | FINALIZADA | ENTREGUE"
+                  "description": "Valores: RECEBIDA | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | EM_EXECUCAO | FINALIZADA | ENTREGUE | CANCELADA"
                 }
               ]
             },
@@ -816,7 +980,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["ordens", "{{osId}}", "avancar"]
             },
-            "description": "RECEBIDA → EM_DIAGNOSTICO. Chame este endpoint 5 vezes para percorrer todos os status até ENTREGUE."
+            "description": "RECEBIDA → EM_DIAGNOSTICO."
           }
         },
         {
@@ -828,7 +992,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["ordens", "{{osId}}", "avancar"]
             },
-            "description": "EM_DIAGNOSTICO → AGUARDANDO_APROVACAO. Neste ponto o orçamento seria enviado ao cliente."
+            "description": "EM_DIAGNOSTICO → AGUARDANDO_APROVACAO. Email de orçamento é disparado (log)."
           }
         },
         {
@@ -840,7 +1004,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["ordens", "{{osId}}", "avancar"]
             },
-            "description": "AGUARDANDO_APROVACAO → EM_EXECUCAO. Simula a aprovação do orçamento pelo cliente."
+            "description": "AGUARDANDO_APROVACAO → EM_EXECUCAO. Simula a aprovação do orçamento pelo cliente. Email de aprovação é disparado (log)."
           }
         },
         {
@@ -852,19 +1016,31 @@
               "host": ["{{baseUrl}}"],
               "path": ["ordens", "{{osId}}", "avancar"]
             },
-            "description": "EM_EXECUCAO → FINALIZADA. Serviço concluído, aguardando retirada."
+            "description": "EM_EXECUCAO → FINALIZADA. Serviço concluído, aguardando pagamento."
           }
         },
         {
-          "name": "Avancar status → ENTREGUE",
+          "name": "Monitoramento — tempo médio de execução",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/monitoramento/tempo-medio",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "monitoramento", "tempo-medio"]
+            },
+            "description": "Retorna o tempo médio (em minutos e horas) entre abertura e fechamento de todas as OS finalizadas. Retorna 0.0 se ainda não houver OS encerradas."
+          }
+        },
+        {
+          "name": "Cancelar OS",
           "request": {
             "method": "PATCH",
             "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "raw": "{{baseUrl}}/ordens/{{osId}}/cancelar",
               "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "avancar"]
+              "path": ["ordens", "{{osId}}", "cancelar"]
             },
-            "description": "FINALIZADA → ENTREGUE. Define dataFechamento automaticamente. OS encerrada."
+            "description": "Cancela a OS. Permitido nos status RECEBIDA, EM_DIAGNOSTICO e AGUARDANDO_APROVACAO.\nRetorna 422 se EM_EXECUCAO, FINALIZADA ou ENTREGUE. Email de cancelamento é disparado (log)."
           }
         },
         {
@@ -878,6 +1054,204 @@
               "path": ["ordens", "acompanhar", "{{osNumero}}"]
             },
             "description": "Endpoint público — não exige JWT. O cliente consulta o andamento da OS pelo número (ex: OS-20260412-A3F7C2)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagamentos",
+      "description": "Registro e confirmação de pagamentos.\n\nFluxo: OS deve estar FINALIZADA → Registrar Pagamento → Confirmar (OS avança para ENTREGUE automaticamente).\n\nFormas de pagamento: DINHEIRO | CARTAO_DEBITO | CARTAO_CREDITO | PIX | TRANSFERENCIA",
+      "item": [
+        {
+          "name": "Registrar pagamento da OS",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('pagamentoId', body.id);",
+                  "    console.log('pagamentoId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formaPagamento\": \"PIX\",\n  \"valor\": 165.80\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/pagamento",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "pagamento"]
+            },
+            "description": "A OS deve estar com status FINALIZADA. Retorna 422 se status diferente ou se já houver pagamento registrado. O ID é salvo em {{pagamentoId}}.\n\nFormas: DINHEIRO | CARTAO_DEBITO | CARTAO_CREDITO | PIX | TRANSFERENCIA"
+          }
+        },
+        {
+          "name": "Consultar pagamento da OS",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/pagamento",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "pagamento"]
+            }
+          }
+        },
+        {
+          "name": "Confirmar pagamento",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos/{{pagamentoId}}/confirmar",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos", "{{pagamentoId}}", "confirmar"]
+            },
+            "description": "PENDENTE → PAGO. Após confirmar: envia email de confirmação (log) e avança OS automaticamente para ENTREGUE."
+          }
+        },
+        {
+          "name": "Cancelar pagamento",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos/{{pagamentoId}}/cancelar",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos", "{{pagamentoId}}", "cancelar"]
+            },
+            "description": "PENDENTE → CANCELADO. Retorna 422 se já PAGO."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pedidos de Compra",
+      "description": "Gestão de reposição de estoque.\n\nFluxo: Criar → Aprovar → Receber (estoque é atualizado automaticamente)\n\nStatus: PENDENTE | APROVADO | RECEBIDO | CANCELADO",
+      "item": [
+        {
+          "name": "Criar pedido de compra",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('pedidoCompraId', body.id);",
+                  "    console.log('pedidoCompraId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidadeSolicitada\": 20,\n  \"observacoes\": \"Estoque crítico — repor urgente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-compra",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-compra"]
+            },
+            "description": "Cria um pedido de reposição para a peça. O ID é salvo em {{pedidoCompraId}}."
+          }
+        },
+        {
+          "name": "Listar pedidos de compra",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-compra",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-compra"]
+            }
+          }
+        },
+        {
+          "name": "Listar pedidos por status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-compra?status=PENDENTE",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-compra"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "PENDENTE",
+                  "description": "Valores: PENDENTE | APROVADO | RECEBIDO | CANCELADO"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buscar pedido por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-compra", "{{pedidoCompraId}}"]
+            }
+          }
+        },
+        {
+          "name": "Aprovar pedido de compra",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}/aprovar",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-compra", "{{pedidoCompraId}}", "aprovar"]
+            },
+            "description": "PENDENTE → APROVADO. Retorna 422 se status diferente."
+          }
+        },
+        {
+          "name": "Receber pedido de compra",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}/receber?quantidade=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-compra", "{{pedidoCompraId}}", "receber"],
+              "query": [
+                {
+                  "key": "quantidade",
+                  "value": "20",
+                  "description": "Quantidade efetivamente recebida (pode ser diferente da solicitada)"
+                }
+              ]
+            },
+            "description": "APROVADO → RECEBIDO. O estoque da peça é incrementado automaticamente pela quantidade recebida. Retorna 422 se não estiver APROVADO."
+          }
+        },
+        {
+          "name": "Cancelar pedido de compra",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}/cancelar",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-compra", "{{pedidoCompraId}}", "cancelar"]
+            },
+            "description": "PENDENTE ou APROVADO → CANCELADO. Retorna 422 se já RECEBIDO."
           }
         }
       ]
