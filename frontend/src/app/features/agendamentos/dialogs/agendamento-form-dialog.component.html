@@ -1,0 +1,54 @@
+<h2 mat-dialog-title>Novo Agendamento</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[440px] pt-2">
+
+    <mat-form-field>
+      <mat-label>Cliente</mat-label>
+      <mat-select formControlName="clienteId">
+        @for (c of clientes(); track c.id) {
+          <mat-option [value]="c.id">{{ c.nome }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.clienteId.hasError('required') && form.controls.clienteId.touched) {
+        <mat-error>Cliente obrigatório</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Veículo</mat-label>
+      <mat-select formControlName="veiculoId">
+        @for (v of veiculos(); track v.id) {
+          <mat-option [value]="v.id">{{ v.placa }} — {{ v.modelo }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.veiculoId.hasError('required') && form.controls.veiculoId.touched) {
+        <mat-error>Veículo obrigatório</mat-error>
+      }
+      @if (!form.controls.clienteId.value) {
+        <mat-hint>Selecione um cliente primeiro</mat-hint>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Data e hora</mat-label>
+      <input matInput type="datetime-local" formControlName="dataHora" />
+      @if (form.controls.dataHora.hasError('required') && form.controls.dataHora.touched) {
+        <mat-error>Data obrigatória</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Descrição dos serviços</mat-label>
+      <textarea matInput formControlName="descricaoServicos" rows="3"
+                placeholder="Descreva os serviços a serem realizados..."></textarea>
+      <mat-hint>Opcional</mat-hint>
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close()">Cancelar</button>
+  <button mat-flat-button (click)="submit()">Agendar</button>
+</mat-dialog-actions>

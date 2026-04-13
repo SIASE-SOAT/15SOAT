@@ -1,0 +1,62 @@
+<h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+
+@if (loading()) {
+  <div class="flex justify-center py-12">
+    <mat-spinner diameter="48" aria-label="Carregando dados" />
+  </div>
+} @else {
+
+  <!-- Tempo médio -->
+  <mat-card class="mb-6 bg-blue-50 border border-blue-200">
+    <mat-card-content class="flex items-center gap-4 py-4">
+      <mat-icon class="text-blue-600 !text-4xl">timer</mat-icon>
+      <div>
+        <p class="text-sm text-gray-500">Tempo médio de execução</p>
+        <p class="text-2xl font-bold text-blue-700">
+          {{ tempoMedioHoras() }}h {{ tempoMedioMinutosRestantes() }}min
+        </p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Cards de OS por status -->
+  <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-7 gap-4 mb-8">
+    @for (card of statusCards(); track card.status) {
+      <a [routerLink]="['/ordens']" [queryParams]="{ status: card.status }" class="no-underline">
+        <mat-card class="hover:shadow-md transition-shadow cursor-pointer h-full">
+          <mat-card-content class="flex flex-col items-center py-5 gap-2">
+            <mat-icon [class]="card.color">{{ card.icon }}</mat-icon>
+            <span class="text-3xl font-bold">{{ card.count }}</span>
+            <span class="text-xs text-center text-gray-500">{{ card.label }}</span>
+          </mat-card-content>
+        </mat-card>
+      </a>
+    }
+  </div>
+
+  <!-- Peças com estoque crítico -->
+  @if (pecasCriticas().length > 0) {
+    <mat-card class="border border-orange-300">
+      <mat-card-header>
+        <mat-icon matCardAvatar class="text-orange-500">warning</mat-icon>
+        <mat-card-title>Peças com estoque abaixo do mínimo</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="divide-y">
+          @for (peca of pecasCriticas(); track peca.id) {
+            <div class="flex justify-between items-center py-2">
+              <span class="font-medium">{{ peca.nome }}</span>
+              <span class="text-sm text-orange-600 font-semibold">
+                {{ peca.quantidadeEstoque }} / {{ peca.estoqueMinimo }} {{ peca.unidadeMedida }}
+              </span>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+      <mat-card-actions>
+        <a mat-button routerLink="/pedidos-compra">Ver pedidos de compra</a>
+        <a mat-button routerLink="/pecas">Gerenciar peças</a>
+      </mat-card-actions>
+    </mat-card>
+  }
+}

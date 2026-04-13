@@ -1,0 +1,65 @@
+<div class="min-h-screen bg-gray-50 flex items-start justify-center py-12 px-4">
+  <div class="w-full max-w-2xl">
+
+    <div class="flex items-center gap-2 mb-8">
+      <mat-icon class="text-blue-600 !text-4xl">build_circle</mat-icon>
+      <div>
+        <h1 class="text-2xl font-bold leading-none">SIASE</h1>
+        <p class="text-sm text-gray-500">Acompanhamento de Ordem de Serviço</p>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="flex justify-center py-12">
+        <mat-spinner aria-label="Buscando OS..." />
+      </div>
+    } @else if (error()) {
+      <mat-card class="border border-red-200">
+        <mat-card-content class="flex items-center gap-3 py-6">
+          <mat-icon class="text-red-500">error_outline</mat-icon>
+          <span>{{ error() }}</span>
+        </mat-card-content>
+      </mat-card>
+    } @else if (os()) {
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>OS {{ os()!.numero }}</mat-card-title>
+          <mat-card-subtitle>
+            {{ os()!.clienteNome }} — {{ os()!.veiculoModelo }} ({{ os()!.veiculoPlaca }})
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content class="pt-4">
+          @if (os()!.status !== 'CANCELADA') {
+            <mat-stepper [selectedIndex]="stepIndex()" linear="false" class="mb-6">
+              @for (step of STATUS_STEPS; track step) {
+                <mat-step [label]="labelFor(step)" [completed]="isCompleted(step)" />
+              }
+            </mat-stepper>
+          } @else {
+            <div class="flex items-center gap-2 text-red-600 mb-4 p-3 bg-red-50 rounded">
+              <mat-icon>cancel</mat-icon>
+              <span class="font-medium">Ordem de Serviço Cancelada</span>
+            </div>
+          }
+
+          <div class="grid grid-cols-3 gap-4 text-center border-t pt-4">
+            <div>
+              <p class="text-xs text-gray-500">Serviços</p>
+              <p class="font-semibold">R$ {{ os()!.totalServicos | number:'1.2-2' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Peças</p>
+              <p class="font-semibold">R$ {{ os()!.totalPecas | number:'1.2-2' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Total</p>
+              <p class="text-lg font-bold text-blue-700">R$ {{ os()!.total | number:'1.2-2' }}</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+
+  </div>
+</div>

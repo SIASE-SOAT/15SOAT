@@ -1,0 +1,65 @@
+<h2 mat-dialog-title>{{ data.peca ? 'Editar Peça' : 'Nova Peça' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[440px] pt-2">
+
+    <div class="grid grid-cols-2 gap-3">
+      <mat-form-field>
+        <mat-label>Código</mat-label>
+        <input matInput formControlName="codigo" />
+        @if (form.controls.codigo.hasError('required') && form.controls.codigo.touched) {
+          <mat-error>Obrigatório</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Unidade de medida</mat-label>
+        <input matInput formControlName="unidadeMedida" placeholder="un, kg, L..." />
+        @if (form.controls.unidadeMedida.hasError('required') && form.controls.unidadeMedida.touched) {
+          <mat-error>Obrigatório</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <mat-form-field>
+      <mat-label>Nome da peça</mat-label>
+      <input matInput formControlName="nome" />
+      @if (form.controls.nome.hasError('required') && form.controls.nome.touched) {
+        <mat-error>Nome obrigatório</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Descrição</mat-label>
+      <textarea matInput formControlName="descricao" rows="2"></textarea>
+      <mat-hint>Opcional</mat-hint>
+    </mat-form-field>
+
+    <div class="grid grid-cols-3 gap-3">
+      <mat-form-field>
+        <mat-label>Preço (R$)</mat-label>
+        <input matInput type="number" step="0.01" formControlName="preco" />
+        @if (form.controls.preco.invalid && form.controls.preco.touched) {
+          <mat-error>Preço inválido</mat-error>
+        }
+      </mat-form-field>
+
+      @if (!isEdit) {
+        <mat-form-field>
+          <mat-label>Qtd. inicial</mat-label>
+          <input matInput type="number" formControlName="quantidadeEstoque" />
+        </mat-form-field>
+      }
+
+      <mat-form-field>
+        <mat-label>Estoque mínimo</mat-label>
+        <input matInput type="number" formControlName="estoqueMinimo" />
+      </mat-form-field>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close()">Cancelar</button>
+  <button mat-flat-button (click)="submit()">Salvar</button>
+</mat-dialog-actions>

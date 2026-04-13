@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>{{ data.servico ? 'Editar Serviço' : 'Novo Serviço' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[420px] pt-2">
+
+    <mat-form-field>
+      <mat-label>Nome do serviço</mat-label>
+      <input matInput formControlName="nome" />
+      @if (form.controls.nome.hasError('required') && form.controls.nome.touched) {
+        <mat-error>Nome obrigatório</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Descrição</mat-label>
+      <textarea matInput formControlName="descricao" rows="2"></textarea>
+      <mat-hint>Opcional</mat-hint>
+    </mat-form-field>
+
+    <div class="grid grid-cols-2 gap-3">
+      <mat-form-field>
+        <mat-label>Preço (R$)</mat-label>
+        <input matInput type="number" step="0.01" formControlName="preco" />
+        @if (form.controls.preco.invalid && form.controls.preco.touched) {
+          <mat-error>Preço inválido</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Tempo estimado (min)</mat-label>
+        <input matInput type="number" formControlName="tempoEstimadoMinutos" />
+        <mat-hint>Opcional</mat-hint>
+      </mat-form-field>
+    </div>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close()">Cancelar</button>
+  <button mat-flat-button (click)="submit()">Salvar</button>
+</mat-dialog-actions>

@@ -1,0 +1,23 @@
+<h2 mat-dialog-title>Receber Pedido</h2>
+
+<mat-dialog-content>
+  <p class="text-sm text-gray-500 pb-3">
+    <strong>{{ data.pedido.pecaNome }}</strong> —
+    Solicitado: <span class="font-semibold">{{ data.pedido.quantidadeSolicitada }}</span>
+  </p>
+
+  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[320px]">
+    <mat-form-field>
+      <mat-label>Quantidade recebida</mat-label>
+      <input matInput type="number" formControlName="quantidade" />
+      @if (form.controls.quantidade.invalid && form.controls.quantidade.touched) {
+        <mat-error>Deve ser entre 1 e {{ data.pedido.quantidadeSolicitada }}</mat-error>
+      }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close()">Cancelar</button>
+  <button mat-flat-button (click)="submit()">Confirmar Recebimento</button>
+</mat-dialog-actions>

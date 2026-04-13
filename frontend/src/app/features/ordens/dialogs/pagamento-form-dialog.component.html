@@ -1,0 +1,35 @@
+<h2 mat-dialog-title>Registrar Pagamento</h2>
+
+<mat-dialog-content>
+  <p class="text-sm text-gray-500 pb-3">OS <strong>{{ data.osNumero }}</strong></p>
+
+  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[380px]">
+
+    <mat-form-field>
+      <mat-label>Forma de pagamento</mat-label>
+      <mat-select formControlName="formaPagamento">
+        @for (f of formas; track f.value) {
+          <mat-option [value]="f.value">{{ f.label }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.formaPagamento.hasError('required') && form.controls.formaPagamento.touched) {
+        <mat-error>Obrigatório</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Valor (R$)</mat-label>
+      <input matInput type="number" step="0.01" formControlName="valor" />
+      <mat-hint>Valor total da OS</mat-hint>
+      @if (form.controls.valor.invalid && form.controls.valor.touched) {
+        <mat-error>Valor inválido</mat-error>
+      }
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close()">Cancelar</button>
+  <button mat-flat-button (click)="submit()">Registrar</button>
+</mat-dialog-actions>
