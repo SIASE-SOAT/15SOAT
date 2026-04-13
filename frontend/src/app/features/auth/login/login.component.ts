@@ -22,6 +22,7 @@ import { AuthService } from '../../../core/services/auth.service';
     MatProgressSpinnerModule,
   ],
   templateUrl: './login.component.html',
+  styleUrl: './login.component.scss',
 })
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
