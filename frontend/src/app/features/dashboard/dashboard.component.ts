@@ -22,6 +22,7 @@ interface CardInfo {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, MatCardModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule],
   templateUrl: './dashboard.component.html',
+  styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   private readonly osService = inject(OrdemDeServicoService);
@@ -32,6 +33,34 @@ export class DashboardComponent implements OnInit {
   protected readonly pecasCriticas = signal<PecaResponse[]>([]);
   protected readonly tempoMedioHoras = signal(0);
   protected readonly tempoMedioMinutosRestantes = signal(0);
+
+  private readonly iconColorMap: Record<StatusOS, string> = {
+    RECEBIDA:             '#6b7280',
+    EM_DIAGNOSTICO:       '#7c3aed',
+    AGUARDANDO_APROVACAO: '#d97706',
+    EM_EXECUCAO:          '#2563eb',
+    FINALIZADA:           '#16a34a',
+    ENTREGUE:             '#0d9488',
+    CANCELADA:            '#dc2626',
+  };
+
+  private readonly iconBgColorMap: Record<StatusOS, string> = {
+    RECEBIDA:             '#f3f4f6',
+    EM_DIAGNOSTICO:       '#ede9fe',
+    AGUARDANDO_APROVACAO: '#fef3c7',
+    EM_EXECUCAO:          '#dbeafe',
+    FINALIZADA:           '#dcfce7',
+    ENTREGUE:             '#ccfbf1',
+    CANCELADA:            '#fee2e2',
+  };
+
+  protected iconColor(status: StatusOS): string {
+    return this.iconColorMap[status];
+  }
+
+  protected iconBg(status: StatusOS): string {
+    return this.iconBgColorMap[status] ?? '#f3f4f6';
+  }
 
   private readonly statusConfig: Record<StatusOS, { label: string; icon: string; color: string }> = {
     RECEBIDA:             { label: 'Recebidas',           icon: 'inbox',             color: 'text-gray-500' },
