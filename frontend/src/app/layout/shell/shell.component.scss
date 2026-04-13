@@ -9,6 +9,7 @@
   height: 100vh;
   overflow: hidden;
   background-color: #f1f5f9;
+  
 }
 
 /* ── Sidebar ────────────────────────────────────── */
@@ -28,7 +29,7 @@
 }
 
 .sidebar-header {
-  display: flex;
+  display: table-footer-group;
   align-items: center;
   justify-content: space-between;
   height: 3.5rem;
@@ -296,7 +297,7 @@
   overflow: auto;
 
   .content-inner {
-    padding: 1.5rem;
+    padding: 2rem;
     max-width: 96rem;
     margin: 0 auto;
   }
