@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ClienteResponse } from '../../../core/models/cliente.model';
@@ -13,8 +14,9 @@ import { ClienteFormDialogComponent } from '../dialogs/cliente-form-dialog.compo
 @Component({
   selector: 'app-clientes-lista',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatTableModule, MatButtonModule, MatIconModule, MatChipsModule, MatProgressSpinnerModule],
+  imports: [MatTableModule, MatButtonModule, MatIconModule, MatChipsModule, MatProgressSpinnerModule, MatTooltipModule],
   templateUrl: './clientes-lista.component.html',
+  styleUrl: './clientes-lista.component.scss',
 })
 export class ClientesListaComponent implements OnInit {
   private readonly service = inject(ClienteService);
@@ -26,6 +28,10 @@ export class ClientesListaComponent implements OnInit {
   protected readonly colunas = ['nome', 'documento', 'tipo', 'email', 'telefone', 'acoes'];
 
   ngOnInit() { this.carregar(); }
+
+  protected countTipo(tipo: string): number {
+    return this.clientes().filter(c => c.tipoPessoa === tipo).length;
+  }
 
   private carregar() {
     this.loading.set(true);

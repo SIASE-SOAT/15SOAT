@@ -23,6 +23,7 @@ import { ServicoFormDialogComponent } from '../dialogs/servico-form-dialog.compo
     MatChipsModule, MatTooltipModule, MatCardModule, MatDividerModule,
   ],
   templateUrl: './servicos-lista.component.html',
+  styleUrl: './servicos-lista.component.scss',
 })
 export class ServicosListaComponent implements OnInit {
   private readonly service = inject(ServicoService);

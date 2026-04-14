@@ -1,75 +1,118 @@
-<div class="flex justify-between items-center mb-6">
-  <h1 class="text-2xl font-bold">Ordens de Serviço</h1>
-  <button mat-flat-button (click)="abrirNovaOS()"><mat-icon>add</mat-icon> Nova OS</button>
+<!-- Header -->
+<div class="page-header">
+  <div class="header-text">
+    <h1>Ordens de Serviço</h1>
+    <p>Gestão e acompanhamento das ordens em andamento</p>
+  </div>
+  <button mat-flat-button (click)="abrirNovaOS()">
+    <mat-icon>add</mat-icon> Nova OS
+  </button>
 </div>
 
-<mat-form-field class="mb-4 w-56">
-  <mat-label>Filtrar por status</mat-label>
-  <mat-select [(ngModel)]="filtroStatus" (ngModelChange)="filtrar()">
-    <mat-option [value]="null">Todos</mat-option>
-    @for (s of statusList; track s.value) {
-      <mat-option [value]="s.value">{{ s.label }}</mat-option>
-    }
-  </mat-select>
-</mat-form-field>
+<!-- Filtro -->
+<div class="filter-bar">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Filtrar por status</mat-label>
+    <mat-select [(ngModel)]="filtroStatus" (ngModelChange)="filtrar()">
+      <mat-option [value]="null">Todos</mat-option>
+      @for (s of statusList; track s.value) {
+        <mat-option [value]="s.value">{{ s.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</div>
 
 @if (loading()) {
-  <div class="flex justify-center py-12"><mat-spinner /></div>
+  <div class="loader"><mat-spinner /></div>
+
+} @else if (ordens().length === 0) {
+
+  <div class="table-card">
+    <div class="empty-state">
+      <mat-icon>assignment</mat-icon>
+      <p>Nenhuma ordem de serviço encontrada.</p>
+   
+    </div>
+  </div>
+
 } @else {
-  <div class="overflow-auto rounded-lg border border-gray-200">
-    <table mat-table [dataSource]="ordens()" class="w-full">
 
-      <ng-container matColumnDef="numero">
-        <th mat-header-cell *matHeaderCellDef>Número</th>
-        <td mat-cell *matCellDef="let o">
-          <a [routerLink]="['/ordens', o.id]" class="font-mono text-blue-600 hover:underline">
-            {{ o.numero }}
-          </a>
-        </td>
-      </ng-container>
+  <!-- Stats -->
+  <div class="stats-strip">
+    <div class="stat-card">
+      <mat-icon>assignment</mat-icon>
+      <div>
+        <p class="stat-label">Total</p>
+        <p class="stat-value">{{ ordens().length }}</p>
+      </div>
+    </div>
+  </div>
 
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
-        <td mat-cell *matCellDef="let o">
-          <span class="px-2 py-1 rounded-full text-xs font-medium" [class]="statusColor(o.status)">
-            {{ o.statusDescricao }}
-          </span>
-        </td>
-      </ng-container>
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-wrap">
+      <table mat-table [dataSource]="ordens()">
 
-      <ng-container matColumnDef="cliente">
-        <th mat-header-cell *matHeaderCellDef>Cliente</th>
-        <td mat-cell *matCellDef="let o">{{ o.clienteNome }}</td>
-      </ng-container>
+        <!-- Número -->
+        <ng-container matColumnDef="numero">
+          <th mat-header-cell *matHeaderCellDef>Número</th>
+          <td mat-cell *matCellDef="let o">
+            <a class="cell-numero" [routerLink]="['/ordens', o.id]">{{ o.numero }}</a>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="veiculo">
-        <th mat-header-cell *matHeaderCellDef>Veículo</th>
-        <td mat-cell *matCellDef="let o">{{ o.veiculoModelo }} ({{ o.veiculoPlaca }})</td>
-      </ng-container>
+        <!-- Status -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let o">
+            <span [class]="'status-badge status-' + o.status">{{ o.statusDescricao }}</span>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="total">
-        <th mat-header-cell *matHeaderCellDef>Total</th>
-        <td mat-cell *matCellDef="let o" class="font-semibold">
-          R$ {{ o.total | number:'1.2-2' }}
-        </td>
-      </ng-container>
+        <!-- Cliente -->
+        <ng-container matColumnDef="cliente">
+          <th mat-header-cell *matHeaderCellDef>Cliente</th>
+          <td mat-cell *matCellDef="let o">
+            <span class="cell-bold">{{ o.clienteNome }}</span>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="data">
-        <th mat-header-cell *matHeaderCellDef>Abertura</th>
-        <td mat-cell *matCellDef="let o">{{ o.dataAbertura | date:'dd/MM/yyyy' }}</td>
-      </ng-container>
+        <!-- Veículo -->
+        <ng-container matColumnDef="veiculo">
+          <th mat-header-cell *matHeaderCellDef>Veículo</th>
+          <td mat-cell *matCellDef="let o">
+            {{ o.veiculoModelo }}
+            <span style="color:#9ca3af;font-size:0.8rem"> · {{ o.veiculoPlaca }}</span>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="acoes">
-        <th mat-header-cell *matHeaderCellDef>Ações</th>
-        <td mat-cell *matCellDef="let o">
-          <a mat-icon-button [routerLink]="['/ordens', o.id]" aria-label="Ver detalhes">
-            <mat-icon>open_in_new</mat-icon>
-          </a>
-        </td>
-      </ng-container>
+        <!-- Total -->
+        <ng-container matColumnDef="total">
+          <th mat-header-cell *matHeaderCellDef>Total</th>
+          <td mat-cell *matCellDef="let o">
+            <span class="cell-price">R$ {{ o.total | number:'1.2-2' }}</span>
+          </td>
+        </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="colunas"></tr>
-      <tr mat-row *matRowDef="let row; columns: colunas;" class="hover:bg-gray-50"></tr>
-    </table>
+        <!-- Abertura -->
+        <ng-container matColumnDef="data">
+          <th mat-header-cell *matHeaderCellDef>Abertura</th>
+          <td mat-cell *matCellDef="let o">{{ o.dataAbertura | date:'dd/MM/yyyy' }}</td>
+        </ng-container>
+
+        <!-- Ações -->
+        <ng-container matColumnDef="acoes">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let o" class="actions-cell">
+            <a mat-icon-button [routerLink]="['/ordens', o.id]" matTooltip="Ver detalhes">
+              <mat-icon>open_in_new</mat-icon>
+            </a>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="colunas"></tr>
+        <tr mat-row *matRowDef="let row; columns: colunas;"></tr>
+      </table>
+    </div>
   </div>
 }

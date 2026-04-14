@@ -1,8 +1,8 @@
 <!-- Header -->
-<div class="flex justify-between items-start mb-6">
-  <div>
-    <h1 class="text-2xl font-bold leading-none">Serviços</h1>
-    <p class="text-sm text-gray-500 mt-1">Catálogo de serviços oferecidos pela oficina</p>
+<div class="page-header">
+  <div class="header-text">
+    <h1>Serviços</h1>
+    <p>Catálogo de serviços oferecidos pela oficina</p>
   </div>
   <button mat-flat-button (click)="abrirNovoServico()">
     <mat-icon>add</mat-icon> Novo Serviço
@@ -10,81 +10,80 @@
 </div>
 
 @if (loading()) {
-  <div class="flex justify-center py-16"><mat-spinner /></div>
+  <div class="loader"><mat-spinner /></div>
+
 } @else if (servicos().length === 0) {
 
-  <!-- Empty state -->
-  <mat-card class="text-center py-16">
-    <mat-icon class="text-gray-300 mb-3" style="font-size:56px;width:56px;height:56px;">construction</mat-icon>
-    <p class="text-gray-500 text-base">Nenhum serviço cadastrado ainda.</p>
-    <button mat-flat-button class="mt-4" (click)="abrirNovoServico()">
-      <mat-icon>add</mat-icon> Cadastrar primeiro serviço
-    </button>
-  </mat-card>
+  <div class="table-card">
+    <div class="empty-state">
+      <mat-icon>construction</mat-icon>
+      <p>Nenhum serviço cadastrado ainda.</p>
+    </div>
+  </div>
 
 } @else {
 
-  <!-- Summary strip -->
-  <div class="flex gap-4 mb-5">
-    <div class="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 flex items-center gap-3 min-w-[140px]">
-      <mat-icon class="text-blue-500">build_circle</mat-icon>
+  <!-- Stats -->
+  <div class="stats-strip">
+    <div class="stat-card">
+      <mat-icon>build_circle</mat-icon>
       <div>
-        <p class="text-xs text-blue-600 font-medium uppercase tracking-wide">Total</p>
-        <p class="text-2xl font-bold text-blue-800 leading-none">{{ servicos().length }}</p>
+        <p class="stat-label">Total</p>
+        <p class="stat-value">{{ servicos().length }}</p>
       </div>
     </div>
   </div>
 
-  <!-- Table card -->
-  <mat-card class="overflow-hidden p-0">
-    <div class="overflow-auto">
-      <table mat-table [dataSource]="servicos()" class="w-full">
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-wrap">
+      <table mat-table [dataSource]="servicos()">
 
         <!-- Nome -->
         <ng-container matColumnDef="nome">
-          <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-600">Nome</th>
+          <th mat-header-cell *matHeaderCellDef>Nome</th>
           <td mat-cell *matCellDef="let s">
-            <span class="font-medium text-gray-900">{{ s.nome }}</span>
+            <span class="cell-nome">{{ s.nome }}</span>
             @if (s.descricao) {
-              <p class="text-xs text-gray-400 mt-0.5 max-w-xs truncate">{{ s.descricao }}</p>
+              <p class="cell-desc">{{ s.descricao }}</p>
             }
           </td>
         </ng-container>
 
         <!-- Preço -->
         <ng-container matColumnDef="preco">
-          <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-600">Preço</th>
+          <th mat-header-cell *matHeaderCellDef>Preço</th>
           <td mat-cell *matCellDef="let s">
-            <span class="font-semibold text-green-700">R$ {{ s.preco | number:'1.2-2' }}</span>
+            <span class="cell-price">R$ {{ s.preco | number:'1.2-2' }}</span>
           </td>
         </ng-container>
 
-        <!-- Tempo estimado -->
+        <!-- Duração -->
         <ng-container matColumnDef="tempo">
-          <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-600">Duração</th>
+          <th mat-header-cell *matHeaderCellDef>Duração</th>
           <td mat-cell *matCellDef="let s">
             @if (s.tempoEstimadoMinutos) {
-              <span class="inline-flex items-center gap-1 text-sm text-gray-700">
-                <mat-icon class="text-gray-400" style="font-size:16px;width:16px;height:16px;">schedule</mat-icon>
+              <span class="duration-cell">
+                <mat-icon>schedule</mat-icon>
                 {{ s.tempoEstimadoMinutos }} min
               </span>
             } @else {
-              <span class="text-gray-300 text-sm">—</span>
+              <span class="cell-muted">—</span>
             }
           </td>
         </ng-container>
 
         <!-- Insumos -->
         <ng-container matColumnDef="insumos">
-          <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-600">Insumos</th>
+          <th mat-header-cell *matHeaderCellDef>Insumos</th>
           <td mat-cell *matCellDef="let s">
             @if (s.insumos.length > 0) {
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                <mat-icon style="font-size:12px;width:12px;height:12px;">inventory_2</mat-icon>
+              <span class="insumos-badge">
+                <mat-icon>inventory_2</mat-icon>
                 {{ s.insumos.length }} {{ s.insumos.length === 1 ? 'peça' : 'peças' }}
               </span>
             } @else {
-              <span class="text-gray-300 text-sm">Nenhum</span>
+              <span class="cell-muted">Nenhum</span>
             }
           </td>
         </ng-container>
@@ -92,16 +91,16 @@
         <!-- Ações -->
         <ng-container matColumnDef="acoes">
           <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let s" class="text-right">
+          <td mat-cell *matCellDef="let s" class="actions-cell">
             <button mat-icon-button matTooltip="Editar serviço" (click)="editarServico(s)">
-              <mat-icon class="text-gray-500">edit</mat-icon>
+              <mat-icon>edit</mat-icon>
             </button>
           </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="colunas" class="bg-gray-50"></tr>
-        <tr mat-row *matRowDef="let row; columns: colunas;" class="hover:bg-blue-50 transition-colors"></tr>
+        <tr mat-header-row *matHeaderRowDef="colunas"></tr>
+        <tr mat-row *matRowDef="let row; columns: colunas;"></tr>
       </table>
     </div>
-  </mat-card>
+  </div>
 }

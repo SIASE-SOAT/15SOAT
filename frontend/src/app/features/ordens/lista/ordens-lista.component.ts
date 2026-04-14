@@ -8,6 +8,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -31,9 +32,10 @@ const STATUS_COLOR: Record<StatusOS, string> = {
   imports: [
     DecimalPipe, DatePipe, RouterLink, FormsModule,
     MatTableModule, MatButtonModule, MatIconModule,
-    MatChipsModule, MatProgressSpinnerModule, MatSelectModule, MatFormFieldModule,
+    MatChipsModule, MatProgressSpinnerModule, MatSelectModule, MatFormFieldModule, MatTooltipModule,
   ],
   templateUrl: './ordens-lista.component.html',
+  styleUrl: './ordens-lista.component.scss',
 })
 export class OrdensListaComponent implements OnInit {
   private readonly service = inject(OrdemDeServicoService);

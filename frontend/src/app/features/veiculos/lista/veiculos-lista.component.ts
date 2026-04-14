@@ -3,6 +3,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { VeiculoResponse } from '../../../core/models/veiculo.model';
@@ -12,8 +13,9 @@ import { VeiculoFormDialogComponent } from '../dialogs/veiculo-form-dialog.compo
 @Component({
   selector: 'app-veiculos-lista',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatTableModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule],
+  imports: [MatTableModule, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatTooltipModule],
   templateUrl: './veiculos-lista.component.html',
+  styleUrl: './veiculos-lista.component.scss',
 })
 export class VeiculosListaComponent implements OnInit {
   private readonly service = inject(VeiculoService);

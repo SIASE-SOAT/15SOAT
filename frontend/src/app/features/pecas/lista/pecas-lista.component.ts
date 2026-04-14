@@ -18,6 +18,7 @@ import { EstoqueDialogComponent } from '../dialogs/estoque-dialog.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DecimalPipe, MatTableModule, MatButtonModule, MatIconModule, MatChipsModule, MatProgressSpinnerModule, MatTooltipModule],
   templateUrl: './pecas-lista.component.html',
+  styleUrl: './pecas-lista.component.scss',
 })
 export class PecasListaComponent implements OnInit {
   private readonly service = inject(PecaService);
@@ -29,6 +30,10 @@ export class PecasListaComponent implements OnInit {
   protected readonly colunas = ['codigo', 'nome', 'preco', 'estoque', 'acoes'];
 
   ngOnInit() { this.carregar(); }
+
+  protected countCritico(): number {
+    return this.pecas().filter(p => p.estoqueAbaixoMinimo).length;
+  }
 
   private carregar() {
     this.loading.set(true);
