@@ -1,170 +1,201 @@
 @if (loading()) {
-  <div class="flex justify-center py-12"><mat-spinner /></div>
+  <div class="loader"><mat-spinner /></div>
+
 } @else if (os()) {
 
-  <div class="flex items-center gap-2 mb-6">
-    <a mat-icon-button routerLink="/ordens" aria-label="Voltar para lista">
+  <!-- ── Header ─────────────────────────────────────── -->
+  <div class="os-header">
+    <a class="back-btn" mat-icon-button routerLink="/ordens" matTooltip="Voltar para lista">
       <mat-icon>arrow_back</mat-icon>
     </a>
-    <div>
-      <h1 class="text-2xl font-bold leading-none">{{ os()!.numero }}</h1>
-      <p class="text-sm text-gray-500">
-        {{ os()!.clienteNome }} — {{ os()!.veiculoModelo }} ({{ os()!.veiculoPlaca }})
-      </p>
+    <div class="header-info">
+      <h1>{{ os()!.numero }}</h1>
+      <p class="subtitle">{{ os()!.clienteNome }} &mdash; {{ os()!.veiculoModelo }} ({{ os()!.veiculoPlaca }})</p>
     </div>
-    <span class="ml-auto px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+    <span [class]="'status-badge status-' + os()!.status">
       {{ os()!.statusDescricao }}
     </span>
   </div>
 
-  <div class="grid md:grid-cols-3 gap-6">
+  <!-- ── Grid ───────────────────────────────────────── -->
+  <div class="os-grid">
 
     <!-- Coluna principal -->
-    <div class="md:col-span-2 flex flex-col gap-6">
+    <div class="col-main">
 
-      <mat-card>
-        <mat-card-header><mat-card-title>Serviços</mat-card-title></mat-card-header>
-        <mat-card-content>
-          @for (item of os()!.itensServico; track item.servicoId) {
-            <div class="flex justify-between py-2">
-              <div>
-                <p class="font-medium">{{ item.servicoNome }}</p>
-                @if (item.observacoes) {
-                  <p class="text-xs text-gray-500">{{ item.observacoes }}</p>
-                }
-              </div>
-              <span>R$ {{ item.precoUnitario | number:'1.2-2' }}</span>
+      <!-- Serviços -->
+      <div class="section-card">
+        <div class="section-header">
+          <mat-icon>handyman</mat-icon>
+          <h2>Serviços</h2>
+          <span class="count-badge">{{ os()!.itensServico.length }}</span>
+        </div>
+        @for (item of os()!.itensServico; track item.servicoId) {
+          <div class="item-row">
+            <div class="item-info">
+              <p class="item-name">{{ item.servicoNome }}</p>
+              @if (item.observacoes) {
+                <p class="item-meta">{{ item.observacoes }}</p>
+              }
             </div>
-            <mat-divider />
-          }
-        </mat-card-content>
-      </mat-card>
+            <span class="item-price">R$ {{ item.precoUnitario | number:'1.2-2' }}</span>
+          </div>
+        }
+      </div>
 
+      <!-- Peças -->
       @if (os()!.itensPeca.length > 0) {
-        <mat-card>
-          <mat-card-header><mat-card-title>Peças e Insumos</mat-card-title></mat-card-header>
-          <mat-card-content>
-            @for (item of os()!.itensPeca; track item.pecaId) {
-              <div class="flex justify-between py-2">
-                <div>
-                  <p class="font-medium">{{ item.pecaNome }}</p>
-                  <p class="text-xs text-gray-500">{{ item.pecaCodigo }} × {{ item.quantidade }}</p>
-                </div>
-                <span>R$ {{ item.precoUnitario * item.quantidade | number:'1.2-2' }}</span>
+        <div class="section-card">
+          <div class="section-header">
+            <mat-icon>inventory_2</mat-icon>
+            <h2>Peças e Insumos</h2>
+            <span class="count-badge">{{ os()!.itensPeca.length }}</span>
+          </div>
+          @for (item of os()!.itensPeca; track item.pecaId) {
+            <div class="item-row">
+              <div class="item-info">
+                <p class="item-name">{{ item.pecaNome }}</p>
+                <p class="item-meta">{{ item.pecaCodigo }} &times; {{ item.quantidade }}</p>
               </div>
-              <mat-divider />
-            }
-          </mat-card-content>
-        </mat-card>
+              <span class="item-price">R$ {{ item.precoUnitario * item.quantidade | number:'1.2-2' }}</span>
+            </div>
+          }
+        </div>
       }
 
     </div>
 
     <!-- Coluna lateral -->
-    <div class="flex flex-col gap-6">
+    <div class="col-side">
 
-      <mat-card>
-        <mat-card-header><mat-card-title>Resumo financeiro</mat-card-title></mat-card-header>
-        <mat-card-content>
-          <div class="flex justify-between py-1">
-            <span class="text-gray-500">Serviços</span>
-            <span>R$ {{ os()!.totalServicos | number:'1.2-2' }}</span>
-          </div>
-          <div class="flex justify-between py-1">
-            <span class="text-gray-500">Peças</span>
-            <span>R$ {{ os()!.totalPecas | number:'1.2-2' }}</span>
-          </div>
-          <mat-divider class="my-2" />
-          <div class="flex justify-between py-1 font-bold text-lg">
-            <span>Total</span>
-            <span class="text-blue-700">R$ {{ os()!.total | number:'1.2-2' }}</span>
-          </div>
-        </mat-card-content>
-      </mat-card>
+      <!-- Resumo financeiro -->
+      <div class="section-card">
+        <div class="section-header">
+          <mat-icon>receipt_long</mat-icon>
+          <h2>Resumo financeiro</h2>
+        </div>
+        <div class="resumo-row">
+          <span class="resumo-label">Serviços</span>
+          <span class="resumo-value">R$ {{ os()!.totalServicos | number:'1.2-2' }}</span>
+        </div>
+        <div class="resumo-row">
+          <span class="resumo-label">Peças</span>
+          <span class="resumo-value">R$ {{ os()!.totalPecas | number:'1.2-2' }}</span>
+        </div>
+        <div class="resumo-row total-row">
+          <span class="resumo-label">Total</span>
+          <span class="resumo-value">R$ {{ os()!.total | number:'1.2-2' }}</span>
+        </div>
+      </div>
 
-      <mat-card>
-        <mat-card-header><mat-card-title>Ações</mat-card-title></mat-card-header>
-        <mat-card-content class="flex flex-col gap-2 pt-2">
-          @if (podeAvancar()) {
-            <button mat-flat-button (click)="avancar()" [disabled]="actionLoading()">
-              <mat-icon>arrow_forward</mat-icon> Avançar status
-            </button>
-          }
-          @if (podeCancelar()) {
-            <button mat-stroked-button color="warn" (click)="cancelar()" [disabled]="actionLoading()">
-              <mat-icon>cancel</mat-icon> Cancelar OS
-            </button>
-          }
-        </mat-card-content>
-      </mat-card>
+      <!-- Ações -->
+      @if (podeAvancar() || podeCancelar()) {
+        <div class="section-card">
+          <div class="section-header">
+            <mat-icon>settings</mat-icon>
+            <h2>Ações</h2>
+          </div>
+          <div class="acoes-body">
+            @if (podeAvancar()) {
+              <button mat-flat-button class="btn-avancar" (click)="avancar()" [disabled]="actionLoading()">
+                <mat-icon>arrow_forward</mat-icon> Avançar status
+              </button>
+            }
+            @if (podeCancelar()) {
+              <button mat-stroked-button color="warn" (click)="cancelar()" [disabled]="actionLoading()">
+                <mat-icon>cancel</mat-icon> Cancelar OS
+              </button>
+            }
+          </div>
+        </div>
+      }
 
       <!-- Pagamento -->
-      <mat-card>
-        <mat-card-header>
-          <mat-icon matCardAvatar class="text-green-600">payments</mat-icon>
-          <mat-card-title>Pagamento</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="flex flex-col gap-2 pt-2">
-          @if (pagamento(); as p) {
-            <div class="flex justify-between text-sm py-1">
-              <span class="text-gray-500">Forma</span>
-              <span class="font-medium">{{ p.formaPagamentoDescricao }}</span>
+      <div class="section-card">
+        <div class="section-header">
+          <mat-icon>payments</mat-icon>
+          <h2>Pagamento</h2>
+        </div>
+
+        @if (pagamento(); as p) {
+          <div class="pagamento-body">
+            <div class="pagamento-row">
+              <span class="pag-label">Forma</span>
+              <span class="pag-value">{{ p.formaPagamentoDescricao }}</span>
             </div>
-            <div class="flex justify-between text-sm py-1">
-              <span class="text-gray-500">Valor</span>
-              <span class="font-medium">R$ {{ p.valor | number:'1.2-2' }}</span>
+            <div class="pagamento-row">
+              <span class="pag-label">Valor</span>
+              <span class="pag-value">R$ {{ p.valor | number:'1.2-2' }}</span>
             </div>
-            <div class="flex justify-between text-sm py-1">
-              <span class="text-gray-500">Status</span>
-              <span class="font-semibold"
-                [class.text-yellow-600]="p.status === 'PENDENTE'"
-                [class.text-green-600]="p.status === 'PAGO'"
-                [class.text-red-600]="p.status === 'CANCELADO'">
-                {{ p.statusDescricao }}
-              </span>
+            <div class="pagamento-row">
+              <span class="pag-label">Status</span>
+              @if (p.status === 'PAGO') {
+                <span class="pag-status-pago">{{ p.statusDescricao }}</span>
+              } @else if (p.status === 'PENDENTE') {
+                <span class="pag-status-pendente">{{ p.statusDescricao }}</span>
+              } @else {
+                <span class="pag-status-cancelado">{{ p.statusDescricao }}</span>
+              }
             </div>
             @if (p.dataPagamento) {
-              <div class="flex justify-between text-sm py-1">
-                <span class="text-gray-500">Data</span>
-                <span>{{ p.dataPagamento | date:'dd/MM/yyyy HH:mm' }}</span>
+              <div class="pagamento-row">
+                <span class="pag-label">Data</span>
+                <span class="pag-value">{{ p.dataPagamento | date:'dd/MM/yyyy HH:mm' }}</span>
               </div>
             }
-            <mat-divider class="my-1" />
-            @if (podeConfirmarPagamento()) {
-              <button mat-flat-button (click)="confirmarPagamento()" [disabled]="actionLoading()">
-                <mat-icon>check_circle</mat-icon> Confirmar pagamento
-              </button>
+            @if (podeConfirmarPagamento() || podeCancelarPagamento()) {
+              <div class="pagamento-actions">
+                @if (podeConfirmarPagamento()) {
+                  <button mat-flat-button (click)="confirmarPagamento()" [disabled]="actionLoading()">
+                    <mat-icon>check_circle</mat-icon> Confirmar pagamento
+                  </button>
+                }
+                @if (podeCancelarPagamento()) {
+                  <button mat-stroked-button color="warn" (click)="cancelarPagamento()" [disabled]="actionLoading()">
+                    <mat-icon>cancel</mat-icon> Cancelar pagamento
+                  </button>
+                }
+              </div>
             }
-            @if (podeCancelarPagamento()) {
-              <button mat-stroked-button color="warn" (click)="cancelarPagamento()" [disabled]="actionLoading()">
-                <mat-icon>cancel</mat-icon> Cancelar pagamento
-              </button>
-            }
-          } @else if (podeRegistrarPagamento()) {
-            <p class="text-sm text-gray-500 pb-1">Nenhum pagamento registrado.</p>
-            <button mat-flat-button (click)="registrarPagamento()" [disabled]="actionLoading()">
-              <mat-icon>add_card</mat-icon> Registrar pagamento
-            </button>
-          } @else {
-            <p class="text-sm text-gray-400 italic">
-              Disponível quando a OS estiver finalizada.
-            </p>
-          }
-        </mat-card-content>
-      </mat-card>
+          </div>
 
-      <mat-card>
-        <mat-card-content>
-          <p class="text-sm text-gray-500">
-            Abertura: <span class="text-gray-900">{{ os()!.dataAbertura | date:'dd/MM/yyyy HH:mm' }}</span>
-          </p>
+        } @else if (podeRegistrarPagamento()) {
+          <div class="pagamento-body">
+            <div class="sem-pagamento">
+              <mat-icon>add_card</mat-icon>
+              <p>Nenhum pagamento registrado.</p>
+              <button mat-flat-button (click)="registrarPagamento()" [disabled]="actionLoading()">
+                <mat-icon>add_card</mat-icon> Registrar pagamento
+              </button>
+            </div>
+          </div>
+
+        } @else {
+          <div class="pagamento-body">
+            <p class="pag-indisponivel">Disponível quando a OS estiver finalizada.</p>
+          </div>
+        }
+      </div>
+
+      <!-- Datas -->
+      <div class="section-card">
+        <div class="section-header">
+          <mat-icon>calendar_today</mat-icon>
+          <h2>Datas</h2>
+        </div>
+        <div class="datas-body">
+          <div class="data-row">
+            <span class="data-label">Abertura</span>
+            <span class="data-value">{{ os()!.dataAbertura | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
           @if (os()!.dataFechamento) {
-            <p class="text-sm text-gray-500 mt-1">
-              Fechamento: <span class="text-gray-900">{{ os()!.dataFechamento | date:'dd/MM/yyyy HH:mm' }}</span>
-            </p>
+            <div class="data-row">
+              <span class="data-label">Fechamento</span>
+              <span class="data-value">{{ os()!.dataFechamento | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
           }
-        </mat-card-content>
-      </mat-card>
+        </div>
+      </div>
 
     </div>
   </div>
