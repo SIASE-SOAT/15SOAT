@@ -20,18 +20,21 @@ public class PecaService {
 
     private final PecaRepository repository;
 
+    @Transactional(readOnly = true)
     public List<PecaResponse> listarAtivas() {
         return repository.findByAtivoTrue().stream()
                 .map(PecaResponse::from)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<PecaResponse> listarTodas() {
         return repository.findAll().stream()
                 .map(PecaResponse::from)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public PecaResponse buscarPorId(UUID id) {
         return PecaResponse.from(findOrThrow(id));
     }

@@ -16,7 +16,7 @@ public record PecaResponse(
         Integer estoqueMinimo,
         String unidadeMedida,
         Boolean ativo,
-        Boolean estoqueAbaixoDoMinimo,
+        Boolean estoqueAbaixoMinimo,
         LocalDateTime criadoEm,
         LocalDateTime atualizadoEm
 ) {

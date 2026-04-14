@@ -68,7 +68,7 @@ public class OrdemDeServicoService {
 
         if (request.itensPeca() != null) {
             for (ItemPecaRequest req : request.itensPeca()) {
-                var peca = pecaRepository.findById(req.pecaId())
+                var peca = pecaRepository.findByIdParaAtualizacao(req.pecaId())
                         .orElseThrow(() -> new ResourceNotFoundException("Peça não encontrada: " + req.pecaId()));
 
                 try {
@@ -76,7 +76,6 @@ public class OrdemDeServicoService {
                 } catch (IllegalStateException e) {
                     throw new BusinessException(e.getMessage());
                 }
-                pecaRepository.save(peca);
 
                 var item = new ItemPeca();
                 item.setOrdemDeServico(os);
@@ -166,6 +165,12 @@ public class OrdemDeServicoService {
             os.cancelar();
         } catch (IllegalStateException e) {
             throw new BusinessException(e.getMessage());
+        }
+
+        // Devolve o estoque de todas as peças da OS
+        for (var itemPeca : os.getItensPeca()) {
+            pecaRepository.findByIdParaAtualizacao(itemPeca.getPeca().getId())
+                    .ifPresent(p -> p.devolverEstoque(itemPeca.getQuantidade()));
         }
 
         var salvo = repository.save(os);
