@@ -313,6 +313,220 @@ class OrdemDeServicoControllerTest {
     }
 
     @Nested
+    @DisplayName("POST /ordens/{id}/items-peca")
+    class AdicionarPecaAOrdem {
+
+        private UUID pecaId;
+
+        @BeforeEach
+        void setUp() {
+            pecaId = UUID.randomUUID();
+        }
+
+        @Test
+        @DisplayName("Deve retornar 200 ao adicionar peça com sucesso")
+        void deveRetornar200AoAdicionarPeca() throws Exception {
+            OrdemDeServicoResponse osComPeca = new OrdemDeServicoResponse(
+                    osId, "OS-20260412-ABCDEF",
+                    UUID.randomUUID(), "João",
+                    UUID.randomUUID(), "ABC1234", "Corolla",
+                    StatusOS.RECEBIDA.name(), StatusOS.RECEBIDA.getDescricao(),
+                    null, List.of(),
+                    List.of(new OrdemDeServicoResponse.ItemPecaResponse(
+                            UUID.randomUUID(), pecaId, "OL001", "Filtro de Óleo",
+                            2, new BigDecimal("50.00"), new BigDecimal("100.00")
+                    )),
+                    new BigDecimal("120.00"), new BigDecimal("100.00"), new BigDecimal("220.00"),
+                    LocalDateTime.now(), null, LocalDateTime.now(), LocalDateTime.now()
+            );
+            when(service.adicionarPecaAOrdem(eq(osId), any())).thenReturn(osComPeca);
+
+            String body = """
+                    {
+                      "pecaId": "%s",
+                      "quantidade": 2
+                    }
+                    """.formatted(pecaId);
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.itensPeca", hasSize(1)))
+                    .andExpect(jsonPath("$.itensPeca[0].pecaNome", is("Filtro de Óleo")))
+                    .andExpect(jsonPath("$.totalPecas", is(100.00)))
+                    .andExpect(jsonPath("$.total", is(220.00)));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 400 quando pecaId está ausente")
+        void deveRetornar400QuandoPecaIdAusente() throws Exception {
+            String body = """
+                    {
+                      "quantidade": 2
+                    }
+                    """;
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.pecaId", notNullValue()));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 400 quando quantidade está ausente")
+        void deveRetornar400QuandoQuantidadeAusente() throws Exception {
+            String body = """
+                    {
+                      "pecaId": "%s"
+                    }
+                    """.formatted(pecaId);
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.quantidade", notNullValue()));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 400 quando quantidade é menor que 1")
+        void deveRetornar400QuandoQuantidadeMenorQue1() throws Exception {
+            String body = """
+                    {
+                      "pecaId": "%s",
+                      "quantidade": 0
+                    }
+                    """.formatted(pecaId);
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.quantidade", notNullValue()));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 quando OS não existe")
+        void deveRetornar404QuandoOSNaoExiste() throws Exception {
+            when(service.adicionarPecaAOrdem(any(), any()))
+                    .thenThrow(new ResourceNotFoundException("OS não encontrada"));
+
+            String body = """
+                    {
+                      "pecaId": "%s",
+                      "quantidade": 2
+                    }
+                    """.formatted(pecaId);
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", UUID.randomUUID())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 quando peça não existe")
+        void deveRetornar404QuandoPecaNaoExiste() throws Exception {
+            when(service.adicionarPecaAOrdem(any(), any()))
+                    .thenThrow(new ResourceNotFoundException("Peça não encontrada"));
+
+            String body = """
+                    {
+                      "pecaId": "%s",
+                      "quantidade": 2
+                    }
+                    """.formatted(pecaId);
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 quando estoque insuficiente")
+        void deveRetornar422QuandoEstoqueInsuficiente() throws Exception {
+            when(service.adicionarPecaAOrdem(any(), any()))
+                    .thenThrow(new BusinessException("Estoque insuficiente para a peça: Filtro de Óleo. Disponível: 1"));
+
+            String body = """
+                    {
+                      "pecaId": "%s",
+                      "quantidade": 5
+                    }
+                    """.formatted(pecaId);
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.message", containsString("Estoque insuficiente")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 quando peça já foi adicionada")
+        void deveRetornar422QuandoPecaJaAdicionada() throws Exception {
+            when(service.adicionarPecaAOrdem(any(), any()))
+                    .thenThrow(new BusinessException("Esta peça já foi adicionada a esta ordem de serviço."));
+
+            String body = """
+                    {
+                      "pecaId": "%s",
+                      "quantidade": 2
+                    }
+                    """.formatted(pecaId);
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.message", containsString("já foi adicionada")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 quando status não permite adicionar peça")
+        void deveRetornar422QuandoStatusNaoPermite() throws Exception {
+            when(service.adicionarPecaAOrdem(any(), any()))
+                    .thenThrow(new BusinessException("Não é possível adicionar peças em uma ordem com status Entregue"));
+
+            String body = """
+                    {
+                      "pecaId": "%s",
+                      "quantidade": 2
+                    }
+                    """.formatted(pecaId);
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.message", containsString("status")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 quando peça está desativada")
+        void deveRetornar422QuandoPecaDesativada() throws Exception {
+            when(service.adicionarPecaAOrdem(any(), any()))
+                    .thenThrow(new BusinessException("Peça desativada não pode ser adicionada"));
+
+            String body = """
+                    {
+                      "pecaId": "%s",
+                      "quantidade": 2
+                    }
+                    """.formatted(pecaId);
+
+            mockMvc.perform(post("/ordens/{id}/items-peca", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.message", containsString("desativada")));
+        }
+    }
+
+    @Nested
     @DisplayName("PATCH /ordens/{id}/avancar")
     class AvancarStatus {
 

@@ -40,6 +40,7 @@ class OrdemDeServicoServiceTest {
     @Mock private VeiculoRepository veiculoRepository;
     @Mock private ServicoRepository servicoRepository;
     @Mock private PecaRepository pecaRepository;
+    @Mock private EmailService emailService;
 
     @InjectMocks
     private OrdemDeServicoService service;
@@ -191,7 +192,7 @@ class OrdemDeServicoServiceTest {
             service.criar(requestComPeca(3));
 
             assertThat(peca.getQuantidadeEstoque()).isEqualTo(7);
-            verify(pecaRepository).save(peca);
+            verify(repository).save(any());
         }
 
         @Test
@@ -296,7 +297,7 @@ class OrdemDeServicoServiceTest {
             when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
             when(veiculoRepository.findById(veiculoId)).thenReturn(Optional.of(veiculo));
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
-            when(pecaRepository.findById(pecaId)).thenReturn(Optional.empty());
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.criar(requestComPeca(1)))
                     .isInstanceOf(ResourceNotFoundException.class)
@@ -313,7 +314,7 @@ class OrdemDeServicoServiceTest {
             when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
             when(veiculoRepository.findById(veiculoId)).thenReturn(Optional.of(veiculo));
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
-            when(pecaRepository.findById(pecaId)).thenReturn(Optional.of(peca));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
 
             assertThatThrownBy(() -> service.criar(requestComPeca(5)))
                     .isInstanceOf(BusinessException.class)
@@ -330,7 +331,7 @@ class OrdemDeServicoServiceTest {
             when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
             when(veiculoRepository.findById(veiculoId)).thenReturn(Optional.of(veiculo));
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
-            when(pecaRepository.findById(pecaId)).thenReturn(Optional.of(peca));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
 
             assertThatThrownBy(() -> service.criar(requestComPeca(10)))
                     .isInstanceOf(BusinessException.class);
@@ -495,6 +496,239 @@ class OrdemDeServicoServiceTest {
     }
 
     // ------------------------------------------------------------------ //
+    //  Adicionar Peça à Ordem                                             //
+    // ------------------------------------------------------------------ //
+
+    @Nested
+    @DisplayName("Adicionar peça à ordem")
+    class AdicionarPecaAOrdem {
+
+        @BeforeEach
+        void setUpPeca() {
+            peca.setAtivo(true);
+            peca.setQuantidadeEstoque(100);
+        }
+
+        @Test
+        @DisplayName("Deve adicionar peça com sucesso e recalcular totais")
+        void deveAdicionarPecaComSucesso() {
+            os.setStatus(StatusOS.RECEBIDA);
+            os.setTotalPecas(BigDecimal.ZERO);
+            os.setTotal(BigDecimal.ZERO);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 2));
+
+            assertThat(os.getItensPeca()).hasSize(1);
+            assertThat(os.getItensPeca().get(0).getQuantidade()).isEqualTo(2);
+            assertThat(os.getItensPeca().get(0).getPrecoUnitario()).isEqualByComparingTo("45.90");
+            assertThat(os.getTotalPecas()).isEqualByComparingTo("91.80");
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve fazer snapshot do preço da peça no momento da adição")
+        void deveFazerSnapshotDoPrecoDaPeca() {
+            os.setStatus(StatusOS.RECEBIDA);
+            peca.setPreco(new BigDecimal("50.00"));
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1));
+
+            ItemPeca itemAdicionado = os.getItensPeca().get(0);
+            assertThat(itemAdicionado.getPrecoUnitario()).isEqualByComparingTo("50.00");
+        }
+
+        @Test
+        @DisplayName("Deve reservar estoque ao adicionar peça")
+        void deveReservarEstoque() {
+            os.setStatus(StatusOS.RECEBIDA);
+            peca.setQuantidadeEstoque(100);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 10));
+
+            assertThat(peca.getQuantidadeEstoque()).isEqualTo(90);
+        }
+
+        @Test
+        @DisplayName("Deve permitir adicionar peça com status RECEBIDA")
+        void devePermitirAdicionarEmStatusRecebida() {
+            os.setStatus(StatusOS.RECEBIDA);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1));
+
+            assertThat(os.getItensPeca()).hasSize(1);
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve permitir adicionar peça com status EM_DIAGNOSTICO")
+        void devePermitirAdicionarEmStatusEmDiagnostico() {
+            os.setStatus(StatusOS.EM_DIAGNOSTICO);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1));
+
+            assertThat(os.getItensPeca()).hasSize(1);
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve permitir adicionar peça com status AGUARDANDO_APROVACAO")
+        void devePermitirAdicionarEmStatusAguardandoAprovacao() {
+            os.setStatus(StatusOS.AGUARDANDO_APROVACAO);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1));
+
+            assertThat(os.getItensPeca()).hasSize(1);
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve permitir adicionar peça com status EM_EXECUCAO")
+        void devePermitirAdicionarEmStatusEmExecucao() {
+            os.setStatus(StatusOS.EM_EXECUCAO);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1));
+
+            assertThat(os.getItensPeca()).hasSize(1);
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar adicionar em status FINALIZADA")
+        void deveRejeitarAdicionarEmStatusFinalizada() {
+            os.setStatus(StatusOS.FINALIZADA);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("status");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar adicionar em status ENTREGUE")
+        void deveRejeitarAdicionarEmStatusEntregue() {
+            os.setStatus(StatusOS.ENTREGUE);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("status");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar adicionar em status CANCELADA")
+        void deveRejeitarAdicionarEmStatusCancelada() {
+            os.setStatus(StatusOS.CANCELADA);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("status");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar ResourceNotFoundException quando OS não existe")
+        void deveLancarExcecaoQuandoOSNaoExiste() {
+            when(repository.findById(any())).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(UUID.randomUUID(), new ItemPecaRequest(pecaId, 1)))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("OS não encontrada");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar ResourceNotFoundException quando peça não existe")
+        void deveLancarExcecaoQuandoPecaNaoExiste() {
+            os.setStatus(StatusOS.RECEBIDA);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Peça não encontrada");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar BusinessException quando peça está desativada")
+        void deveLancarExcecaoQuandoPecaDesativada() {
+            os.setStatus(StatusOS.RECEBIDA);
+            peca.setAtivo(false);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
+
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("desativada");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar BusinessException quando estoque insuficiente")
+        void deveLancarExcecaoQuandoEstoqueInsuficiente() {
+            os.setStatus(StatusOS.RECEBIDA);
+            peca.setQuantidadeEstoque(2);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
+
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 5)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("Estoque insuficiente");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar BusinessException quando tenta adicionar peça duplicada")
+        void deveLancarExcecaoQuandoPecaDuplicada() {
+            os.setStatus(StatusOS.RECEBIDA);
+            ItemPeca itemExistente = new ItemPeca();
+            itemExistente.setPeca(peca);
+            itemExistente.setQuantidade(1);
+            itemExistente.setPrecoUnitario(peca.getPreco());
+            os.getItensPeca().add(itemExistente);
+
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("já foi adicionada");
+
+            verify(repository, never()).save(any());
+        }
+    }
+
+    // ------------------------------------------------------------------ //
     //  Helpers                                                             //
     // ------------------------------------------------------------------ //
 
@@ -507,8 +741,7 @@ class OrdemDeServicoServiceTest {
 
     private void stubCriarComPeca() {
         stubCriarBasico();
-        when(pecaRepository.findById(pecaId)).thenReturn(Optional.of(peca));
-        when(pecaRepository.save(any())).thenReturn(peca);
+        when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
     }
 
     private OrdemDeServicoRequest requestSomenteServico() {

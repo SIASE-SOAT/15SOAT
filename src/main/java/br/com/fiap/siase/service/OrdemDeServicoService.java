@@ -159,6 +159,44 @@ public class OrdemDeServicoService {
     }
 
     @Transactional
+    public OrdemDeServicoResponse adicionarPecaAOrdem(UUID orderId, ItemPecaRequest request) {
+        var os = findOrThrow(orderId);
+
+        if (!isStatusPermitidoParaAdicionarPeca(os.getStatus())) {
+            throw new BusinessException("Não é possível adicionar peças em uma ordem com status " + os.getStatus().getDescricao());
+        }
+
+        if (jaTemPeca(os, request.pecaId())) {
+            throw new BusinessException("Esta peça já foi adicionada a esta ordem de serviço.");
+        }
+
+        var peca = pecaRepository.findByIdParaAtualizacao(request.pecaId())
+                .orElseThrow(() -> new ResourceNotFoundException("Peça não encontrada: " + request.pecaId()));
+
+        if (!Boolean.TRUE.equals(peca.getAtivo())) {
+            throw new BusinessException("Peça desativada não pode ser adicionada: " + request.pecaId());
+        }
+
+        try {
+            peca.reservarEstoque(request.quantidade());
+        } catch (IllegalStateException e) {
+            throw new BusinessException(e.getMessage());
+        }
+
+
+        var item = new ItemPeca();
+        item.setOrdemDeServico(os);
+        item.setPeca(peca);
+        item.setQuantidade(request.quantidade());
+        item.setPrecoUnitario(peca.getPreco());
+        os.getItensPeca().add(item);
+
+        os.recalcularTotais();
+
+        return OrdemDeServicoResponse.from(repository.save(os));
+    }
+
+    @Transactional
     public OrdemDeServicoResponse cancelar(UUID id) {
         var os = findOrThrow(id);
         try {
@@ -185,6 +223,18 @@ public class OrdemDeServicoService {
     private OrdemDeServico findOrThrow(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + id));
+    }
+
+    private boolean jaTemPeca(OrdemDeServico os, UUID pecaId) {
+        return os.getItensPeca().stream()
+                .anyMatch(item -> item.getPeca().getId().equals(pecaId));
+    }
+
+    private boolean isStatusPermitidoParaAdicionarPeca(StatusOS status) {
+        return status == StatusOS.RECEBIDA
+                || status == StatusOS.EM_DIAGNOSTICO
+                || status == StatusOS.AGUARDANDO_APROVACAO
+                || status == StatusOS.EM_EXECUCAO;
     }
 
     private String gerarNumero() {

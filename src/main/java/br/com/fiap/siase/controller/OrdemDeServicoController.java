@@ -1,5 +1,6 @@
 package br.com.fiap.siase.controller;
 
+import br.com.fiap.siase.dto.request.ItemPecaRequest;
 import br.com.fiap.siase.dto.request.OrdemDeServicoRequest;
 import br.com.fiap.siase.dto.response.OrdemDeServicoResponse;
 import br.com.fiap.siase.model.enums.StatusOS;
@@ -43,6 +44,14 @@ public class OrdemDeServicoController {
     @GetMapping("/{id}")
     public ResponseEntity<OrdemDeServicoResponse> buscarPorId(@PathVariable UUID id) {
         return ResponseEntity.ok(service.buscarPorId(id));
+    }
+
+    @PostMapping("/{id}/items-peca")
+    public ResponseEntity<OrdemDeServicoResponse> adicionarPeca(
+            @PathVariable UUID id,
+            @Valid @RequestBody ItemPecaRequest request) {
+        OrdemDeServicoResponse response = service.adicionarPecaAOrdem(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}/avancar")

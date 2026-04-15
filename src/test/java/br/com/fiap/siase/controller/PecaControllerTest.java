@@ -72,7 +72,7 @@ class PecaControllerTest {
                     .andExpect(jsonPath("$", hasSize(1)))
                     .andExpect(jsonPath("$[0].codigo", is("FILTRO-001")))
                     .andExpect(jsonPath("$[0].quantidadeEstoque", is(50)))
-                    .andExpect(jsonPath("$[0].estoqueAbaixoDoMinimo", is(false)));
+                    .andExpect(jsonPath("$[0].estoqueAbaixoMinimo", is(false)));
         }
     }
 
