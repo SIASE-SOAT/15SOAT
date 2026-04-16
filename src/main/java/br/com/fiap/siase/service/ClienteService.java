@@ -3,6 +3,7 @@ package br.com.fiap.siase.service;
 import br.com.fiap.siase.dto.request.ClienteRequest;
 import br.com.fiap.siase.dto.response.ClienteResponse;
 import br.com.fiap.siase.exception.BusinessException;
+import br.com.fiap.siase.exception.DuplicateResourceException;
 import br.com.fiap.siase.exception.ResourceNotFoundException;
 import br.com.fiap.siase.model.Cliente;
 import br.com.fiap.siase.repository.ClienteRepository;
@@ -24,7 +25,7 @@ public class ClienteService {
     String docLimpo = limparDocumento(request.documento());
 
     if (clienteRepository.existsByDocumento(docLimpo)) {
-      throw new BusinessException("Já existe um cliente com o documento: " + request.documento());
+      throw new DuplicateResourceException("Já existe um cliente com o documento: " + request.documento());
     }
 
     Cliente cliente = new Cliente();

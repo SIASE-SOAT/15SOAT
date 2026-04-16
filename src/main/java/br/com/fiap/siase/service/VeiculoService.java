@@ -3,6 +3,7 @@ package br.com.fiap.siase.service;
 import br.com.fiap.siase.dto.request.VeiculoRequest;
 import br.com.fiap.siase.dto.response.VeiculoResponse;
 import br.com.fiap.siase.exception.BusinessException;
+import br.com.fiap.siase.exception.DuplicateResourceException;
 import br.com.fiap.siase.exception.ResourceNotFoundException;
 import br.com.fiap.siase.model.Cliente;
 import br.com.fiap.siase.model.Veiculo;
@@ -26,7 +27,7 @@ public class VeiculoService {
     String placaUpper = request.placa().toUpperCase().trim();
 
     if (veiculoRepository.existsByPlaca(placaUpper)) {
-      throw new BusinessException("Já existe um veículo com a placa: " + placaUpper);
+      throw new DuplicateResourceException("Já existe um veículo com a placa: " + placaUpper);
     }
 
     Cliente cliente = clienteService.findById(request.clienteId());
