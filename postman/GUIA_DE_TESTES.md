@@ -282,7 +282,86 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 
 ---
 
-## Cenário 2 — Cancelamento de OS
+## Cenário 2 — Adicionar peças a uma OS durante a execução
+
+Este cenário testa a adição de peças a uma OS já criada, cenário comum quando diagnósticos adicionais revelam a necessidade de mais insumos.
+
+> Repita os Passos 1 a 11 do Cenário 1 (ou crie uma nova OS até o status `EM_EXECUCAO`).
+
+### Passo 1 — Verificar OS atual
+
+**Requisição:** `Ordens de Serviço > Buscar OS por ID`
+
+`GET /api/ordens/{{osId}}`
+
+Anote o `total` atual e a quantidade de peças em `itensPeca`.
+
+### Passo 2 — Criar uma nova peça (se necessário)
+
+Se quiser testar com uma peça diferente, execute `Peças e Insumos > Criar peça` e salve o novo `{{pecaId}}`.
+
+Caso contrário, use um `{{pecaId}}` já existente com estoque disponível.
+
+### Passo 3 — Adicionar peça à OS
+
+**Requisição:** `Ordens de Serviço > Adicionar peça a OS existente`
+
+```json
+{
+  "pecaId": "{{pecaId}}",
+  "quantidade": 1
+}
+```
+
+`POST /api/ordens/{{osId}}/items-peca`
+
+**Resposta esperada:** `200 OK` com a OS atualizada.
+
+**Validações na resposta:**
+- `itensPeca` contém a nova peça
+- `totalPecas` foi recalculado e aumentou
+- `total` foi recalculado (totalServicos + totalPecas)
+- Novo `totalPecas = totalPecas_anterior + (precoUnitario × quantidade)`
+
+### Passo 4 — Verificar que o estoque foi deduzido
+
+`GET /api/pecas/{{pecaId}}`
+
+O campo `quantidadeEstoque` deve ter diminuído de acordo com a quantidade adicionada.
+
+### Passo 5 — Verificar impossibilidade de adicionar duplicada
+
+Tente adicionar a **mesma peça** novamente:
+
+`POST /api/ordens/{{osId}}/items-peca`
+
+```json
+{
+  "pecaId": "{{pecaId}}",
+  "quantidade": 1
+}
+```
+
+**Resposta esperada:** `422 Unprocessable Entity`
+
+```json
+{
+  "message": "Esta peça já foi adicionada a esta OS."
+}
+```
+
+### Passo 6 — Testar validações
+
+| Cenário | Body | Resposta esperada |
+|---|---|---|
+| Peça não existe | `{"pecaId": "id-invalido", "quantidade": 1}` | `404 Not Found` — "Peça não encontrada" |
+| Peça inativa | `{"pecaId": "id-inativo", "quantidade": 1}` | `422` — "Peça não está ativa" |
+| Estoque insuficiente | `{"pecaId": "{{pecaId}}", "quantidade": 999}` | `422` — "Estoque insuficiente para a peça" |
+| Status não permitido | Criar OS → avançar para `FINALIZADA` → adicionar peça | `422` — "Status não permite adição de peças" |
+
+---
+
+## Cenário 3 — Cancelamento de OS
 
 Este cenário testa o cancelamento e a **devolução automática do estoque**.
 
@@ -329,7 +408,7 @@ O campo `quantidadeEstoque` deve ter **voltado ao valor anterior** à criação 
 
 ---
 
-## Cenário 3 — Alerta de estoque crítico
+## Cenário 4 — Alerta de estoque crítico
 
 Este cenário demonstra o alerta de estoque abaixo do mínimo.
 
