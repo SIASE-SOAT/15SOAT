@@ -43,21 +43,44 @@ src/main/java/br/com/fiap/siase/
 - Java 17+ (para rodar sem Docker)
 - Maven 3.9+ (para rodar sem Docker)
 
-### Com Docker Compose (recomendado)
+---
+
+### 🚀 Opção 1 — Back-end + Banco (avaliação da API)
+
+Sobe apenas o banco de dados e a aplicação Spring Boot. Ideal para avaliar os endpoints via Swagger ou Postman.
 
 ```bash
-# Subir toda a stack (banco + aplicação)
 docker compose up --build
-
-# Somente o banco (para desenvolvimento local)
-docker compose up postgres
 ```
 
-A API estará disponível em: `http://localhost:8080/api`
+| Serviço | URL |
+|---------|-----|
+| API REST | `http://localhost:8080/api` |
+| Swagger UI | `http://localhost:8080/api/swagger-ui.html` |
 
-### Sem Docker (desenvolvimento)
+---
 
-1. Suba o PostgreSQL localmente ou via Docker:
+### ⭐ Opção 2 — Stack completa: Back-end + Front-end + Banco
+
+Sobe a stack inteira incluindo a interface web Angular. Permite visualizar e operar o sistema completo.
+
+```bash
+docker compose -f docker-compose.full.yml up --build
+```
+
+| Serviço | URL |
+|---------|-----|
+| Interface Web | `http://localhost:4200` |
+| API REST | `http://localhost:8080/api` |
+| Swagger UI | `http://localhost:8080/api/swagger-ui.html` |
+
+---
+
+### 🔧 Opção 3 — Desenvolvimento local (sem Docker para a aplicação)
+
+Útil para desenvolvimento com hot-reload. Sobe somente o banco via Docker e roda a aplicação localmente.
+
+1. Suba o PostgreSQL:
 ```bash
 docker compose up postgres
 ```
@@ -74,14 +97,49 @@ cp .env.example .env
 
 ### Variáveis de Ambiente
 
-| Variável      | Padrão       | Descrição                  |
-|---------------|--------------|----------------------------|
-| `DB_HOST`     | `localhost`  | Host do banco de dados      |
-| `DB_PORT`     | `5432`       | Porta do PostgreSQL         |
-| `DB_NAME`     | `siase_db`   | Nome do banco               |
-| `DB_USER`     | `siase_user` | Usuário do banco            |
-| `DB_PASSWORD` | `siase_pass` | Senha do banco              |
-| `SERVER_PORT` | `8080`       | Porta da aplicação          |
+| Variável            | Padrão         | Descrição                        |
+|---------------------|----------------|----------------------------------|
+| `DB_HOST`           | `localhost`    | Host do banco de dados           |
+| `DB_PORT`           | `5432`         | Porta do PostgreSQL              |
+| `DB_NAME`           | `siase_db`     | Nome do banco                    |
+| `DB_USER`           | `siase_user`   | Usuário do banco                 |
+| `DB_PASSWORD`       | `siase_pass`   | Senha do banco                   |
+| `SERVER_PORT`       | `8080`         | Porta da aplicação               |
+| `JWT_SECRET`        | *(ver .env.example)* | Chave HMAC para assinar tokens |
+| `JWT_EXPIRATION_MS` | `3600000`      | Expiração do token (ms) — 1h    |
+
+## Primeiros passos (autenticação)
+
+Todos os endpoints administrativos exigem JWT. Após subir a aplicação:
+
+```bash
+# 1. Registrar usuário (sem autenticação)
+POST http://localhost:8080/api/auth/registrar
+{"username": "admin", "password": "Admin@123"}
+
+# 2. Fazer login e obter o token
+POST http://localhost:8080/api/auth/login
+{"username": "admin", "password": "Admin@123"}
+# → retorna {"token": "eyJ..."}
+
+# 3. Usar o token nas chamadas seguintes
+Authorization: Bearer eyJ...
+```
+
+## Explorando a API
+
+A forma recomendada para explorar e testar os endpoints é via **Swagger UI**, disponível assim que a aplicação estiver no ar:
+
+```
+http://localhost:8080/api/swagger-ui.html
+```
+
+O Swagger documenta todos os endpoints, exibe os schemas de request/response e permite executar chamadas diretamente pelo navegador — basta clicar em **Authorize**, informar o Bearer token obtido no login e chamar qualquer endpoint.
+
+A pasta `postman/` também disponibiliza:
+
+- `SIASE.postman_collection.json` — coleção com todos os endpoints pré-configurados
+- `GUIA_DE_TESTES.md` — roteiro com cenários de teste (ciclo completo de OS, cancelamento, controle de estoque, CRUD administrativo)
 
 ## Documentação da API
 
