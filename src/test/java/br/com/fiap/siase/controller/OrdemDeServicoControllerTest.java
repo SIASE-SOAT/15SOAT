@@ -527,6 +527,158 @@ class OrdemDeServicoControllerTest {
     }
 
     @Nested
+    @DisplayName("POST /ordens/{id}/items-servico")
+    class AdicionarServicoAOrdem {
+
+        private UUID servicoId;
+
+        @BeforeEach
+        void setUp() {
+            servicoId = UUID.randomUUID();
+        }
+
+        @Test
+        @DisplayName("Deve retornar 200 ao adicionar serviço com sucesso")
+        void deveRetornar200AoAdicionarServico() throws Exception {
+            OrdemDeServicoResponse osComServico = new OrdemDeServicoResponse(
+                    osId, "OS-20260412-ABCDEF",
+                    UUID.randomUUID(), "João",
+                    UUID.randomUUID(), "ABC1234", "Corolla",
+                    StatusOS.RECEBIDA.name(), StatusOS.RECEBIDA.getDescricao(),
+                    null,
+                    List.of(new OrdemDeServicoResponse.ItemServicoResponse(
+                            UUID.randomUUID(), servicoId, "Revisão Completa",
+                            new BigDecimal("150.00"), 120, null
+                    )),
+                    List.of(),
+                    new BigDecimal("150.00"), BigDecimal.ZERO, new BigDecimal("150.00"),
+                    LocalDateTime.now(), null, LocalDateTime.now(), LocalDateTime.now()
+            );
+            when(service.adicionarServicoAOrdem(eq(osId), any())).thenReturn(osComServico);
+
+            String body = """
+                    {
+                      "servicoId": "%s"
+                    }
+                    """.formatted(servicoId);
+
+            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.itensServico", hasSize(1)))
+                    .andExpect(jsonPath("$.itensServico[0].servicoNome", is("Revisão Completa")))
+                    .andExpect(jsonPath("$.totalServicos", is(150.00)))
+                    .andExpect(jsonPath("$.total", is(150.00)));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 400 quando servicoId está ausente")
+        void deveRetornar400QuandoServicoIdAusente() throws Exception {
+            String body = "{}";
+
+            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.servicoId", notNullValue()));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 quando OS não existe")
+        void deveRetornar404QuandoOSNaoExiste() throws Exception {
+            when(service.adicionarServicoAOrdem(any(), any()))
+                    .thenThrow(new ResourceNotFoundException("OS não encontrada"));
+
+            String body = """
+                    {
+                      "servicoId": "%s"
+                    }
+                    """.formatted(servicoId);
+
+            mockMvc.perform(post("/ordens/{id}/items-servico", UUID.randomUUID())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("Deve retornar 404 quando serviço não existe")
+        void deveRetornar404QuandoServicoNaoExiste() throws Exception {
+            when(service.adicionarServicoAOrdem(any(), any()))
+                    .thenThrow(new ResourceNotFoundException("Serviço não encontrado"));
+
+            String body = """
+                    {
+                      "servicoId": "%s"
+                    }
+                    """.formatted(servicoId);
+
+            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 quando serviço já foi adicionado")
+        void deveRetornar422QuandoServicoJaAdicionado() throws Exception {
+            when(service.adicionarServicoAOrdem(any(), any()))
+                    .thenThrow(new BusinessException("Este serviço já foi adicionado a esta ordem de serviço."));
+
+            String body = """
+                    {
+                      "servicoId": "%s"
+                    }
+                    """.formatted(servicoId);
+
+            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.message", containsString("já foi adicionado")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 quando status não permite adicionar serviço")
+        void deveRetornar422QuandoStatusNaoPermite() throws Exception {
+            when(service.adicionarServicoAOrdem(any(), any()))
+                    .thenThrow(new BusinessException("Não é possível adicionar serviços em uma ordem com status Entregue"));
+
+            String body = """
+                    {
+                      "servicoId": "%s"
+                    }
+                    """.formatted(servicoId);
+
+            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.message", containsString("status")));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 422 quando serviço está desativado")
+        void deveRetornar422QuandoServicoDesativado() throws Exception {
+            when(service.adicionarServicoAOrdem(any(), any()))
+                    .thenThrow(new BusinessException("Serviço desativado não pode ser adicionado"));
+
+            String body = """
+                    {
+                      "servicoId": "%s"
+                    }
+                    """.formatted(servicoId);
+
+            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isUnprocessableEntity())
+                    .andExpect(jsonPath("$.message", containsString("desativado")));
+        }
+    }
+
+    @Nested
     @DisplayName("PATCH /ordens/{id}/avancar")
     class AvancarStatus {
 

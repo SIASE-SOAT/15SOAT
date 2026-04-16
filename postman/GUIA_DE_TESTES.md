@@ -1,15 +1,16 @@
-# Guia de Testes — SIASE via Postman
+# Guia de Testes — SIASE via Postman/Insomnia
 
 > **Pré-requisitos**
 > - Aplicação rodando em `http://localhost:8080`
-> - Coleção `SIASE.postman_collection.json` importada no Postman
+> - Coleção `SIASE.postman_collection.json` importada
 > - PostgreSQL ativo e migrations aplicadas (Flyway roda automaticamente ao iniciar)
+> - Para resetar os dados entre testes: execute `postman/reset_base.sql` e limpe a variável `{{jwtToken}}`
 
 ---
 
 ## Como as variáveis funcionam
 
-A coleção usa variáveis de coleção (`{{variavel}}`) que são **preenchidas automaticamente** pelos scripts de teste de cada requisição. Você não precisa copiar e colar IDs manualmente — basta executar as requisições na ordem indicada.
+A coleção usa variáveis que são **preenchidas automaticamente** pelos scripts de teste. Você não precisa copiar e colar IDs manualmente.
 
 | Variável | Preenchida por |
 |---|---|
@@ -22,13 +23,12 @@ A coleção usa variáveis de coleção (`{{variavel}}`) que são **preenchidas 
 | `{{osNumero}}` | Criar OS |
 | `{{pagamentoId}}` | Registrar pagamento |
 | `{{pedidoCompraId}}` | Criar pedido de compra |
-| `{{agendamentoId}}` | Criar agendamento |
 
 ---
 
 ## Cenário 1 — Ciclo de vida completo de uma OS (fluxo feliz)
 
-Este cenário cobre o fluxo principal: da criação do cadastro até a entrega do veículo com pagamento confirmado.
+Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento confirmado.
 
 ### Passo 1 — Criar usuário do sistema
 
@@ -43,11 +43,11 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 
 **Resposta esperada:** `201 Created`
 
-> Só é necessário registrar uma vez. Se o usuário já existir, pule para o Passo 2.
+> Só é necessário registrar uma vez. Se o usuário já existir, vá ao Passo 2.
 
 ---
 
-### Passo 2 — Fazer login e obter token JWT
+### Passo 2 — Login e obtenção do token JWT
 
 **Requisição:** `Autenticação > Login`
 
@@ -61,12 +61,10 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 **Resposta esperada:** `200 OK`
 
 ```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9..."
-}
+{ "token": "eyJhbGciOiJIUzI1NiJ9..." }
 ```
 
-> O token é salvo automaticamente em `{{jwtToken}}` e enviado no header `Authorization: Bearer` em todas as requisições subsequentes.
+> O token é salvo automaticamente em `{{jwtToken}}` e enviado em todas as requisições seguintes.
 
 ---
 
@@ -86,9 +84,9 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 }
 ```
 
-**Resposta esperada:** `201 Created` — `{{pecaId}}` é salvo automaticamente.
+**Resposta esperada:** `201 Created` — `{{pecaId}}` salvo automaticamente.
 
-> O campo `estoqueAbaixoMinimo` na resposta indica se o estoque está abaixo do mínimo configurado.
+> `estoqueAbaixoMinimo: false` quando `quantidadeEstoque (50) >= estoqueMinimo (10)`.
 
 ---
 
@@ -104,7 +102,7 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 }
 ```
 
-**Resposta esperada:** `201 Created` — `{{servicoId}}` é salvo automaticamente.
+**Resposta esperada:** `201 Created` — `{{servicoId}}` salvo automaticamente.
 
 ---
 
@@ -123,11 +121,11 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 }
 ```
 
-**Resposta esperada:** `201 Created` — `{{clienteId}}` é salvo automaticamente.
+**Resposta esperada:** `201 Created` — `{{clienteId}}` salvo automaticamente.
 
 ---
 
-### Passo 6 — Cadastrar um veículo para o cliente
+### Passo 6 — Cadastrar veículo para o cliente
 
 **Requisição:** `Veículos > Criar veículo`
 
@@ -142,7 +140,7 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 }
 ```
 
-**Resposta esperada:** `201 Created` — `{{veiculoId}}` é salvo automaticamente.
+**Resposta esperada:** `201 Created` — `{{veiculoId}}` salvo automaticamente.
 
 ---
 
@@ -170,16 +168,16 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 }
 ```
 
-**Resposta esperada:** `201 Created` — `{{osId}}` e `{{osNumero}}` são salvos automaticamente.
+**Resposta esperada:** `201 Created` — `{{osId}}` e `{{osNumero}}` salvos automaticamente.
 
-> O estoque da peça é **deduzido automaticamente** neste momento (50 → 48 unidades).
-> O preço dos serviços e peças é um **snapshot** do catálogo no momento da criação.
+> O estoque da peça é **deduzido automaticamente** (50 → 48 unidades).  
+> Os preços são **snapshot** do catálogo no momento da criação.
 
 ---
 
 ### Passo 8 — Avançar status: RECEBIDA → EM_DIAGNOSTICO
 
-**Requisição:** `Ordens de Serviço > Avancar status → EM_DIAGNOSTICO`
+`Ordens de Serviço > Avancar status → EM_DIAGNOSTICO`
 
 `PATCH /api/ordens/{{osId}}/avancar`
 
@@ -189,31 +187,31 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 
 ### Passo 9 — Avançar status: EM_DIAGNOSTICO → AGUARDANDO_APROVACAO
 
-**Requisição:** `Ordens de Serviço > Avancar status → AGUARDANDO_APROVACAO`
+`Ordens de Serviço > Avancar status → AGUARDANDO_APROVACAO`
 
 `PATCH /api/ordens/{{osId}}/avancar`
 
 **Resposta esperada:** `200 OK` com `"status": "AGUARDANDO_APROVACAO"`
 
-> Um e-mail de orçamento é disparado para o cliente (visível nos logs do servidor com o prefixo `[EMAIL]`).
+> E-mail de orçamento disparado para o cliente (visível nos logs com prefixo `[EMAIL]`).
 
 ---
 
-### Passo 10 — Avançar status: AGUARDANDO_APROVACAO → EM_EXECUCAO (cliente aprova)
+### Passo 10 — Avançar status: AGUARDANDO_APROVACAO → EM_EXECUCAO
 
-**Requisição:** `Ordens de Serviço > Avancar status → EM_EXECUCAO (aprovação)`
+`Ordens de Serviço > Avancar status → EM_EXECUCAO (aprovação)`
 
 `PATCH /api/ordens/{{osId}}/avancar`
 
 **Resposta esperada:** `200 OK` com `"status": "EM_EXECUCAO"`
 
-> Um e-mail de confirmação de aprovação é disparado (visível nos logs).
+> E-mail de aprovação disparado (visível nos logs).
 
 ---
 
 ### Passo 11 — Avançar status: EM_EXECUCAO → FINALIZADA
 
-**Requisição:** `Ordens de Serviço > Avancar status → FINALIZADA`
+`Ordens de Serviço > Avancar status → FINALIZADA`
 
 `PATCH /api/ordens/{{osId}}/avancar`
 
@@ -223,7 +221,9 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 
 ### Passo 12 — Registrar pagamento
 
-**Requisição:** `Pagamentos > Registrar pagamento da OS`
+`Pagamentos > Registrar pagamento da OS`
+
+`POST /api/ordens/{{osId}}/pagamento`
 
 ```json
 {
@@ -232,9 +232,7 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 }
 ```
 
-`POST /api/ordens/{{osId}}/pagamento`
-
-**Resposta esperada:** `201 Created` — `{{pagamentoId}}` é salvo automaticamente.
+**Resposta esperada:** `201 Created` — `{{pagamentoId}}` salvo automaticamente.
 
 > Formas aceitas: `DINHEIRO` | `CARTAO_DEBITO` | `CARTAO_CREDITO` | `PIX` | `TRANSFERENCIA`
 
@@ -242,23 +240,19 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 
 ### Passo 13 — Confirmar pagamento (OS avança para ENTREGUE)
 
-**Requisição:** `Pagamentos > Confirmar pagamento`
+`Pagamentos > Confirmar pagamento`
 
 `PATCH /api/pagamentos/{{pagamentoId}}/confirmar`
 
 **Resposta esperada:** `200 OK` com `"status": "PAGO"`
 
-> Ao confirmar o pagamento, a OS avança **automaticamente** de `FINALIZADA` para `ENTREGUE` e o e-mail de confirmação é disparado (visível nos logs).
+> Ao confirmar, a OS avança **automaticamente** para `ENTREGUE` e o e-mail de confirmação é disparado.
 
 ---
 
 ### Passo 14 — Verificar OS entregue
 
-**Requisição:** `Ordens de Serviço > Buscar OS por ID`
-
 `GET /api/ordens/{{osId}}`
-
-**Resultado esperado:**
 
 ```json
 {
@@ -272,66 +266,23 @@ Este cenário cobre o fluxo principal: da criação do cadastro até a entrega d
 
 ---
 
-### Passo 15 — Acompanhar OS pelo número (endpoint público, sem token)
-
-**Requisição:** `Ordens de Serviço > Acompanhar OS pelo número (público, sem token)`
+### Passo 15 — Acompanhar OS pelo número (público, sem token)
 
 `GET /api/ordens/acompanhar/{{osNumero}}`
 
-> Este endpoint **não exige autenticação**. Simula o portal do cliente que consulta o andamento da OS pelo número (ex: `OS-20260414-A3F7C2`).
+> Endpoint **sem autenticação** — simula o cliente consultando o andamento pelo número da OS.
 
 ---
 
-## Cenário 2 — Adicionar peças a uma OS durante a execução
+## Cenário 2 — Adicionar peça ou serviço a uma OS existente
 
-Este cenário testa a adição de peças a uma OS já criada, cenário comum quando diagnósticos adicionais revelam a necessidade de mais insumos.
+Testa a adição de itens após abertura da OS, disponível nos status `RECEBIDA`, `EM_DIAGNOSTICO`, `AGUARDANDO_APROVACAO` e `EM_EXECUCAO`.
 
-> Repita os Passos 1 a 11 do Cenário 1 (ou crie uma nova OS até o status `EM_EXECUCAO`).
+> Execute os Passos 1 a 8 do Cenário 1 para ter uma OS em `EM_DIAGNOSTICO`.
 
-### Passo 1 — Verificar OS atual
+### Adicionar peça
 
-**Requisição:** `Ordens de Serviço > Buscar OS por ID`
-
-`GET /api/ordens/{{osId}}`
-
-Anote o `total` atual e a quantidade de peças em `itensPeca`.
-
-### Passo 2 — Criar uma nova peça (se necessário)
-
-Se quiser testar com uma peça diferente, execute `Peças e Insumos > Criar peça` e salve o novo `{{pecaId}}`.
-
-Caso contrário, use um `{{pecaId}}` já existente com estoque disponível.
-
-### Passo 3 — Adicionar peça à OS
-
-**Requisição:** `Ordens de Serviço > Adicionar peça a OS existente`
-
-```json
-{
-  "pecaId": "{{pecaId}}",
-  "quantidade": 1
-}
-```
-
-`POST /api/ordens/{{osId}}/items-peca`
-
-**Resposta esperada:** `200 OK` com a OS atualizada.
-
-**Validações na resposta:**
-- `itensPeca` contém a nova peça
-- `totalPecas` foi recalculado e aumentou
-- `total` foi recalculado (totalServicos + totalPecas)
-- Novo `totalPecas = totalPecas_anterior + (precoUnitario × quantidade)`
-
-### Passo 4 — Verificar que o estoque foi deduzido
-
-`GET /api/pecas/{{pecaId}}`
-
-O campo `quantidadeEstoque` deve ter diminuído de acordo com a quantidade adicionada.
-
-### Passo 5 — Verificar impossibilidade de adicionar duplicada
-
-Tente adicionar a **mesma peça** novamente:
+`Ordens de Serviço > Adicionar peça a OS existente`
 
 `POST /api/ordens/{{osId}}/items-peca`
 
@@ -342,77 +293,80 @@ Tente adicionar a **mesma peça** novamente:
 }
 ```
 
-**Resposta esperada:** `422 Unprocessable Entity`
+**Resposta esperada:** `200 OK` com OS atualizada — `itensPeca` e `total` recalculados.
+
+> O estoque é deduzido imediatamente.
+
+### Adicionar serviço
+
+`Ordens de Serviço > Adicionar serviço a OS existente`
+
+`POST /api/ordens/{{osId}}/items-servico`
 
 ```json
 {
-  "message": "Esta peça já foi adicionada a esta OS."
+  "servicoId": "{{servicoId}}",
+  "observacoes": "Serviço adicional solicitado"
 }
 ```
 
-### Passo 6 — Testar validações
+**Resposta esperada:** `200 OK` com OS atualizada — `itensServico` e `total` recalculados.
 
-| Cenário | Body | Resposta esperada |
-|---|---|---|
-| Peça não existe | `{"pecaId": "id-invalido", "quantidade": 1}` | `404 Not Found` — "Peça não encontrada" |
-| Peça inativa | `{"pecaId": "id-inativo", "quantidade": 1}` | `422` — "Peça não está ativa" |
-| Estoque insuficiente | `{"pecaId": "{{pecaId}}", "quantidade": 999}` | `422` — "Estoque insuficiente para a peça" |
-| Status não permitido | Criar OS → avançar para `FINALIZADA` → adicionar peça | `422` — "Status não permite adição de peças" |
+### Casos de erro
+
+| Situação | Resposta |
+|---|---|
+| Peça/serviço já na OS | `422` — "já foi adicionado a esta OS" |
+| Estoque insuficiente | `422` — "Estoque insuficiente para a peça" |
+| Peça/serviço desativado | `422` — "Peça/Serviço desativado não pode ser adicionado" |
+| OS em status inválido (`FINALIZADA`, `ENTREGUE`, `CANCELADA`) | `422` — "Não é possível adicionar em uma ordem com status..." |
 
 ---
 
-## Cenário 3 — Cancelamento de OS
+## Cenário 3 — Cancelamento de OS com devolução de estoque
 
-Este cenário testa o cancelamento e a **devolução automática do estoque**.
+### Passo 1 — Verificar estoque antes
 
-> Repita os Passos 1 a 7 do Cenário 1 (ou use variáveis já salvas se acabou de executar o fluxo acima).
+`GET /api/pecas/{{pecaId}}` — anote `quantidadeEstoque`.
 
-### Passo 1 — Abrir nova OS
+### Passo 2 — Criar uma nova OS
 
-Execute `Ordens de Serviço > Criar OS (com serviço e peça)` novamente.
+Execute `Criar OS (com serviço e peça)`. O estoque é deduzido na criação.
 
-Verifique o estoque da peça **antes**: `GET /api/pecas/{{pecaId}}`
+### Passo 3 — (Opcional) Avançar para EM_DIAGNOSTICO
 
-Anote o campo `quantidadeEstoque`.
+`PATCH /api/ordens/{{osId}}/avancar`
 
-### Passo 2 — Avançar para EM_DIAGNOSTICO (opcional)
+> Cancelamento permitido em: `RECEBIDA`, `EM_DIAGNOSTICO`, `AGUARDANDO_APROVACAO`.
 
-Execute `Avancar status → EM_DIAGNOSTICO`.
+### Passo 4 — Cancelar
 
-> O cancelamento é permitido nos status `RECEBIDA`, `EM_DIAGNOSTICO` e `AGUARDANDO_APROVACAO`.
-
-### Passo 3 — Cancelar a OS
-
-**Requisição:** `Ordens de Serviço > Cancelar OS`
+`Ordens de Serviço > Cancelar OS`
 
 `PATCH /api/ordens/{{osId}}/cancelar`
 
 **Resposta esperada:** `200 OK` com `"status": "CANCELADA"` e `dataFechamento` preenchida.
 
-> Um e-mail de cancelamento é disparado (visível nos logs).
+> E-mail de cancelamento disparado (visível nos logs). Estoque devolvido automaticamente.
 
-### Passo 4 — Verificar devolução do estoque
+### Passo 5 — Confirmar devolução do estoque
 
-`GET /api/pecas/{{pecaId}}`
+`GET /api/pecas/{{pecaId}}` — `quantidadeEstoque` deve ter voltado ao valor anterior.
 
-O campo `quantidadeEstoque` deve ter **voltado ao valor anterior** à criação da OS.
+### Casos de erro
 
-### Casos de erro a validar
-
-| Situação | Endpoint | HTTP esperado | Mensagem |
+| Situação | Endpoint | HTTP | Mensagem |
 |---|---|---|---|
-| Cancelar OS em `EM_EXECUCAO` | `PATCH /ordens/{id}/cancelar` | `422` | "Ordem de serviço em execução ou finalizada não pode ser cancelada." |
-| Cancelar OS `ENTREGUE` | `PATCH /ordens/{id}/cancelar` | `422` | "Ordem de serviço já entregue não pode ser cancelada." |
-| Avançar OS `CANCELADA` | `PATCH /ordens/{id}/avancar` | `422` | "Ordem de serviço cancelada não pode ser avançada." |
-| Criar OS com estoque insuficiente | `POST /ordens` | `422` | "Estoque insuficiente para a peça: ..." |
+| Cancelar OS em `EM_EXECUCAO` | `PATCH /ordens/{id}/cancelar` | `422` | "em execução ou finalizada não pode ser cancelada" |
+| Cancelar OS `ENTREGUE` | `PATCH /ordens/{id}/cancelar` | `422` | "já entregue não pode ser cancelada" |
+| Avançar OS `CANCELADA` | `PATCH /ordens/{id}/avancar` | `422` | "cancelada não pode ser avançada" |
+| Criar OS com estoque insuficiente | `POST /ordens` | `422` | "Estoque insuficiente para a peça" |
 
 ---
 
 ## Cenário 4 — Alerta de estoque crítico
 
-Este cenário demonstra o alerta de estoque abaixo do mínimo.
-
-### Passo 1 — Criar peça com estoque próximo do mínimo
+### Passo 1 — Criar peça com estoque abaixo do mínimo
 
 `Peças e Insumos > Criar peça`
 
@@ -428,17 +382,13 @@ Este cenário demonstra o alerta de estoque abaixo do mínimo.
 }
 ```
 
-> `quantidadeEstoque` (3) já está abaixo de `estoqueMinimo` (5). A resposta retorna `"estoqueAbaixoMinimo": true`.
+> `quantidadeEstoque (3) < estoqueMinimo (5)` → resposta retorna `"estoqueAbaixoMinimo": true`.
 
-### Passo 2 — Criar OS usando essa peça
-
-Repita os Passos 5–7 do Cenário 1 (cliente + veículo + OS), usando a nova `{{pecaId}}` com quantidade `1`.
-
-Após criar a OS, consulte a peça novamente — o estoque cai para `2` e `estoqueAbaixoMinimo` permanece `true`.
-
-### Passo 3 — Repor estoque via entrada manual
+### Passo 2 — Repor estoque via entrada manual
 
 `Peças e Insumos > Entrada de estoque`
+
+`PATCH /api/pecas/{{pecaId}}/estoque`
 
 ```json
 {
@@ -447,13 +397,30 @@ Após criar a OS, consulte a peça novamente — o estoque cai para `2` e `estoq
 }
 ```
 
-O estoque sobe para `12` e `estoqueAbaixoMinimo` passa a `false`.
+**Resposta esperada:** `200 OK` — estoque sobe para `13` e `estoqueAbaixoMinimo` passa a `false`.
+
+### Passo 3 — Registrar saída manual
+
+`Peças e Insumos > Saída de estoque`
+
+`PATCH /api/pecas/{{pecaId}}/estoque`
+
+```json
+{
+  "operacao": "SAIDA",
+  "quantidade": 2
+}
+```
+
+**Resposta esperada:** `200 OK` — estoque cai para `11`.
+
+> Retorna `422` se a quantidade solicitada for maior que o estoque disponível.
 
 ---
 
-## Cenário 4 — Reposição de estoque via Pedido de Compra
+## Cenário 5 — Reposição de estoque via Pedido de Compra
 
-Fluxo alternativo ao Cenário 3 para casos onde a reposição precisa de aprovação.
+Fluxo de aprovação formal antes de atualizar o estoque.
 
 ### Passo 1 — Criar pedido de compra
 
@@ -467,11 +434,9 @@ Fluxo alternativo ao Cenário 3 para casos onde a reposição precisa de aprova�
 }
 ```
 
-`{{pedidoCompraId}}` é salvo automaticamente.
+**Resposta esperada:** `201 Created` — `{{pedidoCompraId}}` salvo automaticamente.
 
 ### Passo 2 — Aprovar pedido
-
-`Pedidos de Compra > Aprovar pedido de compra`
 
 `PATCH /api/pedidos-compra/{{pedidoCompraId}}/aprovar`
 
@@ -479,44 +444,494 @@ Status: `PENDENTE → APROVADO`
 
 ### Passo 3 — Receber mercadoria
 
-`Pedidos de Compra > Receber pedido de compra`
-
 `PATCH /api/pedidos-compra/{{pedidoCompraId}}/receber?quantidade=20`
 
 Status: `APROVADO → RECEBIDO`
 
-> O estoque da peça é **incrementado automaticamente** pela quantidade recebida.
+> Estoque da peça **incrementado automaticamente** pela quantidade recebida.
+
+### Passo 4 — (Alternativa) Cancelar pedido
+
+`PATCH /api/pedidos-compra/{{pedidoCompraId}}/cancelar`
+
+Status: `PENDENTE ou APROVADO → CANCELADO`
+
+> Retorna `422` se já estiver `RECEBIDO`.
 
 ---
 
-## Cenário 5 — Agendamento vinculado a uma OS
+## Cenário 6 — Monitoramento de tempo médio de execução
 
-### Passo 1 — Criar agendamento (requer clienteId e veiculoId)
+`Ordens de Serviço > Monitoramento — tempo médio de execução`
 
-`Agendamentos > Criar agendamento`
+`GET /api/ordens/monitoramento/tempo-medio`
 
 ```json
 {
-  "clienteId": "{{clienteId}}",
-  "veiculoId": "{{veiculoId}}",
-  "dataHora": "2026-05-20T10:00:00",
-  "descricaoServicos": "Revisão de 20.000 km e troca de óleo"
+  "tempoMedioMinutos": 127.5,
+  "tempoMedioHoras": 2.13,
+  "descricao": "Tempo médio entre abertura e fechamento das OS finalizadas"
 }
 ```
 
-> Altere a data para um momento futuro antes de enviar.
+> Retorna `0.0` se ainda não houver OS com `dataFechamento` preenchida.
 
-### Passo 2 — Confirmar agendamento
+---
 
-`Agendamentos > Confirmar agendamento`
+## Gestão Administrativa — CRUD de Clientes
 
-`PATCH /api/agendamentos/{{agendamentoId}}/confirmar`
+`Clientes > *`
 
-Status: `AGENDADO → CONFIRMADO`
+### Criar — Pessoa Física
 
-### Passo 3 — Cliente chegou: abrir OS normalmente
+`POST /api/clientes`
 
-Com o agendamento confirmado, execute o Cenário 1 a partir do Passo 7 (Criar OS).
+```json
+{
+  "nome": "João da Silva",
+  "tipoPessoa": "PF",
+  "documento": "529.982.247-25",
+  "email": "joao.silva@email.com",
+  "telefone": "(11) 99999-1234",
+  "endereco": "Rua das Flores, 123 - São Paulo/SP"
+}
+```
+
+`201 Created` — `{{clienteId}}` salvo automaticamente.
+
+### Criar — Pessoa Jurídica
+
+`POST /api/clientes`
+
+```json
+{
+  "nome": "Transportes Silva LTDA",
+  "tipoPessoa": "PJ",
+  "documento": "11.222.333/0001-81",
+  "email": "contato@transportes-silva.com.br",
+  "telefone": "(11) 3333-4444",
+  "endereco": "Av. Industrial, 500 - Guarulhos/SP"
+}
+```
+
+### Listar todos
+
+`GET /api/clientes` → `200 OK` com array de clientes.
+
+### Buscar por ID
+
+`GET /api/clientes/{{clienteId}}` → `200 OK` com dados do cliente.
+
+### Buscar por CPF/CNPJ
+
+`GET /api/clientes/documento/52998224725` → aceita com ou sem pontuação.
+
+### Atualizar
+
+`PUT /api/clientes/{{clienteId}}` — requer todos os campos obrigatórios:
+
+```json
+{
+  "nome": "João da Silva Atualizado",
+  "tipoPessoa": "PF",
+  "documento": "529.982.247-25",
+  "email": "joao.novo@email.com",
+  "telefone": "(11) 98888-5678",
+  "endereco": "Rua Nova, 456 - São Paulo/SP"
+}
+```
+
+### Desativar (soft delete)
+
+`DELETE /api/clientes/{{clienteId}}` → `204 No Content`
+
+> Cliente marcado como `ativo: false`. Não aparece em listagens, mas permanece no banco.
+
+### Validações
+
+| Situação | HTTP | Detalhe |
+|---|---|---|
+| Documento duplicado | `409` | CPF ou CNPJ já cadastrado |
+| E-mail inválido | `400` | Formato de e-mail inválido |
+| `tipoPessoa` ausente | `400` | Campo obrigatório |
+| `documento` ausente | `400` | Campo obrigatório |
+
+---
+
+## Gestão Administrativa — CRUD de Veículos
+
+`Veículos > *`
+
+### Criar — Placa padrão
+
+`POST /api/veiculos`
+
+```json
+{
+  "placa": "ABC1234",
+  "marca": "Toyota",
+  "modelo": "Corolla",
+  "ano": 2022,
+  "cor": "Prata",
+  "clienteId": "{{clienteId}}"
+}
+```
+
+`201 Created` — `{{veiculoId}}` salvo automaticamente.
+
+### Criar — Placa Mercosul
+
+`POST /api/veiculos`
+
+```json
+{
+  "placa": "BRA2E19",
+  "marca": "Honda",
+  "modelo": "Civic",
+  "ano": 2023,
+  "cor": "Preto",
+  "clienteId": "{{clienteId}}"
+}
+```
+
+### Listar todos
+
+`GET /api/veiculos` → `200 OK` com array de veículos.
+
+### Buscar por ID
+
+`GET /api/veiculos/{{veiculoId}}`
+
+### Buscar por placa
+
+`GET /api/veiculos/placa/ABC1234`
+
+### Listar veículos de um cliente
+
+`GET /api/veiculos/cliente/{{clienteId}}`
+
+### Atualizar
+
+`PUT /api/veiculos/{{veiculoId}}` — requer todos os campos obrigatórios:
+
+```json
+{
+  "placa": "ABC1234",
+  "marca": "Toyota",
+  "modelo": "Corolla XEi",
+  "ano": 2022,
+  "cor": "Branco",
+  "clienteId": "{{clienteId}}"
+}
+```
+
+### Desativar (soft delete)
+
+`DELETE /api/veiculos/{{veiculoId}}` → `204 No Content`
+
+### Validações
+
+| Situação | HTTP | Detalhe |
+|---|---|---|
+| Placa duplicada | `409` | Placa já cadastrada |
+| Formato de placa inválido | `400` | Deve ser padrão antigo (ABC1234) ou Mercosul (ABC1D23) |
+| `clienteId` inválido | `404` | Cliente não encontrado |
+| Ano fora do intervalo | `400` | Deve ser entre 1900 e 2027 |
+
+---
+
+## Gestão Administrativa — CRUD de Serviços
+
+`Serviços > *`
+
+### Criar
+
+`POST /api/servicos`
+
+```json
+{
+  "nome": "Troca de Óleo e Filtro",
+  "descricao": "Troca completa do óleo motor com substituição do filtro de óleo",
+  "preco": 120.00
+}
+```
+
+`201 Created` — `{{servicoId}}` salvo automaticamente.
+
+### Listar ativos
+
+`GET /api/servicos`
+
+### Listar todos (incluindo inativos)
+
+`GET /api/servicos/todos`
+
+### Buscar por ID
+
+`GET /api/servicos/{{servicoId}}`
+
+### Atualizar
+
+`PUT /api/servicos/{{servicoId}}`
+
+```json
+{
+  "nome": "Troca de Óleo e Filtro Completo",
+  "descricao": "Troca completa do óleo motor e filtro, com inspeção do arrefecimento",
+  "preco": 145.00
+}
+```
+
+### Vincular insumo (peça necessária para o serviço)
+
+`POST /api/servicos/{{servicoId}}/insumos`
+
+```json
+{
+  "pecaId": "{{pecaId}}",
+  "quantidade": 1
+}
+```
+
+> Define que este serviço consome essa peça do estoque quando realizado.
+
+### Atualizar quantidade do insumo
+
+`PUT /api/servicos/{{servicoId}}/insumos/{{pecaId}}`
+
+```json
+{
+  "pecaId": "{{pecaId}}",
+  "quantidade": 2
+}
+```
+
+### Remover insumo do serviço
+
+`DELETE /api/servicos/{{servicoId}}/insumos/{{pecaId}}` → `204 No Content`
+
+### Desativar serviço (soft delete)
+
+`DELETE /api/servicos/{{servicoId}}` → `204 No Content`
+
+> Serviço inativo não pode ser adicionado a novas OS, mas permanece nas OS já criadas.
+
+### Validações
+
+| Situação | HTTP | Detalhe |
+|---|---|---|
+| `nome` ausente | `400` | Campo obrigatório |
+| `preco` ausente ou zero | `400` | Deve ser maior que 0 |
+
+---
+
+## Gestão Administrativa — CRUD de Peças e Insumos com controle de estoque
+
+`Peças e Insumos > *`
+
+### Criar
+
+`POST /api/pecas`
+
+```json
+{
+  "codigo": "FILTRO-OLEO-001",
+  "nome": "Filtro de Óleo Motor",
+  "descricao": "Filtro de óleo para motores 1.0 a 2.0",
+  "preco": 45.90,
+  "quantidadeEstoque": 50,
+  "estoqueMinimo": 10,
+  "unidadeMedida": "UN"
+}
+```
+
+`201 Created` — `{{pecaId}}` salvo automaticamente.
+
+> `estoqueAbaixoMinimo: true` quando `quantidadeEstoque < estoqueMinimo`.
+
+### Listar ativas
+
+`GET /api/pecas`
+
+### Listar todas (incluindo inativas)
+
+`GET /api/pecas/todas`
+
+### Buscar por ID
+
+`GET /api/pecas/{{pecaId}}`
+
+### Atualizar dados cadastrais
+
+`PUT /api/pecas/{{pecaId}}`
+
+```json
+{
+  "codigo": "FILTRO-OLEO-001",
+  "nome": "Filtro de Óleo Motor Premium",
+  "descricao": "Filtro de óleo premium para motores 1.0 a 2.0",
+  "preco": 52.90,
+  "estoqueMinimo": 15,
+  "unidadeMedida": "UN"
+}
+```
+
+> `quantidadeEstoque` **não é atualizado** por este endpoint — use o endpoint de movimentação.
+
+### Entrada de estoque (recebimento)
+
+`PATCH /api/pecas/{{pecaId}}/estoque`
+
+```json
+{
+  "operacao": "ENTRADA",
+  "quantidade": 30
+}
+```
+
+`200 OK` — estoque incrementado. Retorna peça com novo saldo.
+
+### Saída de estoque (acerto/consumo)
+
+`PATCH /api/pecas/{{pecaId}}/estoque`
+
+```json
+{
+  "operacao": "SAIDA",
+  "quantidade": 5
+}
+```
+
+`200 OK` — estoque decrementado. Retorna `422` se quantidade > estoque disponível.
+
+### Desativar peça (soft delete)
+
+`DELETE /api/pecas/{{pecaId}}` → `204 No Content`
+
+> Peça inativa não pode ser adicionada a novas OS.
+
+### Validações
+
+| Situação | HTTP | Detalhe |
+|---|---|---|
+| `codigo` duplicado | `409` | Código já cadastrado |
+| `codigo` ou `nome` ausente | `400` | Campo obrigatório |
+| `preco` zero ou negativo | `400` | Deve ser maior que 0 |
+| Saída maior que estoque | `422` | "Estoque insuficiente. Disponível: X, solicitado: Y" |
+
+---
+
+## Gestão Administrativa — Listagem e detalhamento de Ordens de Serviço
+
+`Ordens de Serviço > *`
+
+### Listar todas as OS
+
+`GET /api/ordens` → `200 OK` com array completo.
+
+### Filtrar por status
+
+`GET /api/ordens?status=EM_EXECUCAO`
+
+Valores possíveis: `RECEBIDA` | `EM_DIAGNOSTICO` | `AGUARDANDO_APROVACAO` | `EM_EXECUCAO` | `FINALIZADA` | `ENTREGUE` | `CANCELADA`
+
+### Buscar OS por ID (detalhamento completo)
+
+`GET /api/ordens/{{osId}}`
+
+Resposta inclui:
+- Dados do cliente e veículo
+- `itensServico` — lista de serviços com preço snapshot e observações
+- `itensPeca` — lista de peças com código, nome, quantidade e preço snapshot
+- `totalServicos`, `totalPecas`, `total`
+- `dataAbertura` e `dataFechamento` (quando encerrada)
+- `statusDescricao` — descrição legível do status
+
+### Acompanhar pelo número (sem token)
+
+`GET /api/ordens/acompanhar/OS-20260414-A3F7C2`
+
+> Endpoint público — permite ao cliente consultar o andamento sem login.
+
+---
+
+## Gestão Administrativa — Monitoramento do tempo médio de execução
+
+`Ordens de Serviço > Monitoramento — tempo médio de execução`
+
+`GET /api/ordens/monitoramento/tempo-medio`
+
+```json
+{
+  "tempoMedioMinutos": 127.5,
+  "tempoMedioHoras": 2.13,
+  "descricao": "Tempo médio entre abertura e fechamento das OS finalizadas"
+}
+```
+
+> Calculado sobre todas as OS com `dataFechamento` preenchida (`ENTREGUE`).  
+> Retorna `0.0` se nenhuma OS tiver sido encerrada ainda.
+
+Para ter dados no monitoramento, execute o **Cenário 1** completo (até o Passo 13) e então consulte este endpoint.
+
+---
+
+## Referência rápida — Endpoints disponíveis
+
+| Módulo | Método | Endpoint |
+|---|---|---|
+| Auth | `POST` | `/api/auth/registrar` |
+| Auth | `POST` | `/api/auth/login` |
+| Clientes | `GET` | `/api/clientes` |
+| Clientes | `GET` | `/api/clientes/{id}` |
+| Clientes | `GET` | `/api/clientes/documento/{doc}` |
+| Clientes | `POST` | `/api/clientes` |
+| Clientes | `PUT` | `/api/clientes/{id}` |
+| Clientes | `DELETE` | `/api/clientes/{id}` (soft delete) |
+| Veículos | `GET` | `/api/veiculos` |
+| Veículos | `GET` | `/api/veiculos/{id}` |
+| Veículos | `GET` | `/api/veiculos/placa/{placa}` |
+| Veículos | `GET` | `/api/veiculos/cliente/{clienteId}` |
+| Veículos | `POST` | `/api/veiculos` |
+| Veículos | `PUT` | `/api/veiculos/{id}` |
+| Veículos | `DELETE` | `/api/veiculos/{id}` (soft delete) |
+| Peças | `GET` | `/api/pecas` (ativas) |
+| Peças | `GET` | `/api/pecas/todas` (incluindo inativas) |
+| Peças | `GET` | `/api/pecas/{id}` |
+| Peças | `POST` | `/api/pecas` |
+| Peças | `PUT` | `/api/pecas/{id}` |
+| Peças | `PATCH` | `/api/pecas/{id}/estoque` |
+| Peças | `DELETE` | `/api/pecas/{id}` (soft delete) |
+| Serviços | `GET` | `/api/servicos` (ativos) |
+| Serviços | `GET` | `/api/servicos/todos` |
+| Serviços | `GET` | `/api/servicos/{id}` |
+| Serviços | `POST` | `/api/servicos` |
+| Serviços | `PUT` | `/api/servicos/{id}` |
+| Serviços | `POST` | `/api/servicos/{id}/insumos` |
+| Serviços | `PUT` | `/api/servicos/{id}/insumos/{pecaId}` |
+| Serviços | `DELETE` | `/api/servicos/{id}/insumos/{pecaId}` |
+| Serviços | `DELETE` | `/api/servicos/{id}` (soft delete) |
+| Ordens | `GET` | `/api/ordens` |
+| Ordens | `GET` | `/api/ordens?status=EM_EXECUCAO` |
+| Ordens | `GET` | `/api/ordens/{id}` |
+| Ordens | `POST` | `/api/ordens` |
+| Ordens | `POST` | `/api/ordens/{id}/items-peca` |
+| Ordens | `POST` | `/api/ordens/{id}/items-servico` |
+| Ordens | `PATCH` | `/api/ordens/{id}/avancar` |
+| Ordens | `PATCH` | `/api/ordens/{id}/cancelar` |
+| Ordens | `GET` | `/api/ordens/monitoramento/tempo-medio` |
+| Ordens | `GET` | `/api/ordens/acompanhar/{numero}` *(sem token)* |
+| Pagamentos | `POST` | `/api/ordens/{id}/pagamento` |
+| Pagamentos | `GET` | `/api/ordens/{id}/pagamento` |
+| Pagamentos | `PATCH` | `/api/pagamentos/{id}/confirmar` |
+| Pagamentos | `PATCH` | `/api/pagamentos/{id}/cancelar` |
+| Pedidos | `GET` | `/api/pedidos-compra` |
+| Pedidos | `GET` | `/api/pedidos-compra?status=PENDENTE` |
+| Pedidos | `GET` | `/api/pedidos-compra/{id}` |
+| Pedidos | `POST` | `/api/pedidos-compra` |
+| Pedidos | `PATCH` | `/api/pedidos-compra/{id}/aprovar` |
+| Pedidos | `PATCH` | `/api/pedidos-compra/{id}/receber?quantidade=N` |
+| Pedidos | `PATCH` | `/api/pedidos-compra/{id}/cancelar` |
 
 ---
 
@@ -524,28 +939,28 @@ Com o agendamento confirmado, execute o Cenário 1 a partir do Passo 7 (Criar OS
 
 ```
 RECEBIDA
-   ↓ avancar
+   ↓ /avancar
 EM_DIAGNOSTICO
-   ↓ avancar               ← cancelar disponível até aqui
+   ↓ /avancar                ← /cancelar disponível até aqui
 AGUARDANDO_APROVACAO
-   ↓ avancar (cliente aprova)
-EM_EXECUCAO               ← cancelar NÃO permitido a partir daqui
-   ↓ avancar
+   ↓ /avancar (cliente aprova)
+EM_EXECUCAO                  ← /cancelar NÃO permitido a partir daqui
+   ↓ /avancar
 FINALIZADA
-   ↓ (automático ao confirmar pagamento)
+   ↓ automático ao confirmar pagamento
 ENTREGUE
 ```
 
-## Referência rápida — Códigos HTTP da API
+## Referência rápida — Códigos HTTP
 
 | Código | Significado |
 |---|---|
-| `200` | OK — operação realizada com sucesso |
-| `201` | Created — recurso criado com sucesso |
-| `204` | No Content — remoção realizada (soft delete) |
-| `400` | Bad Request — dados inválidos (validação de campos) |
+| `200` | OK |
+| `201` | Created — recurso criado |
+| `204` | No Content — soft delete realizado |
+| `400` | Bad Request — campo inválido ou faltando |
 | `401` | Unauthorized — token ausente ou expirado |
-| `403` | Forbidden — token válido, mas sem permissão |
+| `403` | Forbidden — token válido de usuário inexistente |
 | `404` | Not Found — recurso não encontrado |
-| `409` | Conflict — violação de unicidade (ex: código de peça duplicado) |
-| `422` | Unprocessable Entity — regra de negócio violada (ex: estoque insuficiente, status inválido para a operação) |
+| `409` | Conflict — unicidade violada (ex: código de peça duplicado) |
+| `422` | Unprocessable Entity — regra de negócio violada |

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIASE - Sistema Integrado de Atendimento e Execução de Serviços",
-    "description": "Coleção completa dos endpoints da API SIASE.\n\nFluxo completo de teste:\n1)  Registrar usuário → Login (salva {{jwtToken}})\n2)  Criar Peça → salva {{pecaId}}\n3)  Criar Serviço → salva {{servicoId}}\n4)  Criar Cliente → salva {{clienteId}}\n5)  Criar Veículo → salva {{veiculoId}}\n6)  [Opcional] Criar Agendamento → salva {{agendamentoId}} → Confirmar\n7)  Criar OS → salva {{osId}} e {{osNumero}}\n8)  [Novo] Adicionar Peça a OS → testa validações e cálculo de totais\n9)  Avançar status: RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → EM_EXECUCAO → FINALIZADA\n10) Registrar Pagamento → salva {{pagamentoId}} → Confirmar (avança OS para ENTREGUE)\n11) Acompanhar OS (sem token) pelo {{osNumero}}\n12) [Opcional] Criar Pedido de Compra → salva {{pedidoCompraId}} → Aprovar → Receber",
+    "description": "Coleção completa dos endpoints da API SIASE.\n\nFluxo completo de teste:\n1)  Registrar usuário → Login (salva {{jwtToken}})\n2)  Criar Peça → salva {{pecaId}}\n3)  Criar Serviço → salva {{servicoId}}\n4)  Criar Cliente → salva {{clienteId}}\n5)  Criar Veículo → salva {{veiculoId}}\n6)  Criar OS → salva {{osId}} e {{osNumero}}\n7)  Adicionar Peça a OS → testa validações e cálculo de totais\n8)  Adicionar Serviço a OS → testa validações e recálculo de totais\n9)  Avançar status: RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → EM_EXECUCAO → FINALIZADA\n10) Registrar Pagamento → salva {{pagamentoId}} → Confirmar (avança OS para ENTREGUE)\n11) Acompanhar OS (sem token) pelo {{osNumero}}\n12) Criar Pedido de Compra → salva {{pedidoCompraId}} → Aprovar → Receber",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -61,12 +61,6 @@
       "value": "",
       "type": "string",
       "description": "Número da OS (ex: OS-20260412-A3F7C2) — preenchido automaticamente ao criar uma OS"
-    },
-    {
-      "key": "agendamentoId",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao criar um agendamento"
     },
     {
       "key": "pagamentoId",
@@ -757,121 +751,6 @@
       ]
     },
     {
-      "name": "Agendamentos",
-      "description": "Agendamento de visitas antes da abertura da OS.\n\nFluxo: Criar → Confirmar → (cliente chega) → OS é aberta",
-      "item": [
-        {
-          "name": "Criar agendamento",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const body = pm.response.json();",
-                  "    pm.collectionVariables.set('agendamentoId', body.id);",
-                  "    console.log('agendamentoId salvo:', body.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"dataHora\": \"2026-05-10T10:00:00\",\n  \"descricaoServicos\": \"Troca de óleo e revisão geral\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/agendamentos",
-              "host": ["{{baseUrl}}"],
-              "path": ["agendamentos"]
-            },
-            "description": "Cria um agendamento para data futura. O status inicia como AGENDADO. O ID é salvo em {{agendamentoId}}.\n\nAltera a data para um momento futuro antes de enviar."
-          }
-        },
-        {
-          "name": "Listar agendamentos",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/agendamentos",
-              "host": ["{{baseUrl}}"],
-              "path": ["agendamentos"]
-            }
-          }
-        },
-        {
-          "name": "Listar agendamentos por status",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/agendamentos?status=AGENDADO",
-              "host": ["{{baseUrl}}"],
-              "path": ["agendamentos"],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "AGENDADO",
-                  "description": "Valores: AGENDADO | CONFIRMADO | CANCELADO | REALIZADO"
-                }
-              ]
-            }
-          }
-        },
-        {
-          "name": "Buscar agendamento por ID",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/agendamentos/{{agendamentoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["agendamentos", "{{agendamentoId}}"]
-            }
-          }
-        },
-        {
-          "name": "Listar agendamentos por cliente",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/agendamentos/cliente/{{clienteId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["agendamentos", "cliente", "{{clienteId}}"]
-            }
-          }
-        },
-        {
-          "name": "Confirmar agendamento",
-          "request": {
-            "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/agendamentos/{{agendamentoId}}/confirmar",
-              "host": ["{{baseUrl}}"],
-              "path": ["agendamentos", "{{agendamentoId}}", "confirmar"]
-            },
-            "description": "AGENDADO → CONFIRMADO. Oficina confirma a presença do cliente."
-          }
-        },
-        {
-          "name": "Cancelar agendamento",
-          "request": {
-            "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/agendamentos/{{agendamentoId}}/cancelar",
-              "host": ["{{baseUrl}}"],
-              "path": ["agendamentos", "{{agendamentoId}}", "cancelar"]
-            },
-            "description": "AGENDADO ou CONFIRMADO → CANCELADO. Retorna 422 se já REALIZADO."
-          }
-        }
-      ]
-    },
-    {
       "name": "Ordens de Serviço",
       "description": "Fluxo completo de OS: criação → diagnóstico → aprovação → execução → finalização → pagamento → entrega.\n\nNOVO: Endpoint para adicionar peças a uma OS já criada durante os status RECEBIDA, EM_DIAGNOSTICO, AGUARDANDO_APROVACAO e EM_EXECUCAO.\n\nStatus possíveis: RECEBIDA | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | EM_EXECUCAO | FINALIZADA | ENTREGUE | CANCELADA\n\nO endpoint GET /ordens/acompanhar/{numero} é público (sem token).",
       "item": [
@@ -988,6 +867,25 @@
               "path": ["ordens", "{{osId}}", "items-peca"]
             },
             "description": "Adiciona uma peça a uma OS já criada. Apenas permitido nos status: RECEBIDA, EM_DIAGNOSTICO, AGUARDANDO_APROVACAO e EM_EXECUCAO.\n\nValidações:\n- Peça deve existir e estar ativa\n- Estoque deve ser suficiente\n- Peça não pode estar duplicada na OS\n- Status deve ser um dos permitidos\n\nO preço é snapshot do catálogo no momento da adição."
+          }
+        },
+        {
+          "name": "Adicionar serviço a OS existente",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"servicoId\": \"{{servicoId}}\",\n  \"observacoes\": \"Serviço adicional\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/items-servico",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "items-servico"]
+            },
+            "description": "Adiciona um serviço a uma OS já criada. Apenas permitido nos status: RECEBIDA, EM_DIAGNOSTICO, AGUARDANDO_APROVACAO e EM_EXECUCAO.\n\nValidações:\n- Serviço deve existir e estar ativo\n- Serviço não pode estar duplicado na OS\n- Status deve ser um dos permitidos\n\nO preço é snapshot do catálogo no momento da adição."
           }
         },
         {

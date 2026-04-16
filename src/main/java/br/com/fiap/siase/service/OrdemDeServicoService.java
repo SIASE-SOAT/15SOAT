@@ -197,6 +197,38 @@ public class OrdemDeServicoService {
     }
 
     @Transactional
+    public OrdemDeServicoResponse adicionarServicoAOrdem(UUID orderId, ItemServicoRequest request) {
+        var os = findOrThrow(orderId);
+
+        if (!isStatusPermitidoParaAdicionarServico(os.getStatus())) {
+            throw new BusinessException("Não é possível adicionar serviços em uma ordem com status " + os.getStatus().getDescricao());
+        }
+
+        if (jaTemServico(os, request.servicoId())) {
+            throw new BusinessException("Este serviço já foi adicionado a esta ordem de serviço.");
+        }
+
+        var servico = servicoRepository.findById(request.servicoId())
+                .orElseThrow(() -> new ResourceNotFoundException("Serviço não encontrado: " + request.servicoId()));
+
+        if (!Boolean.TRUE.equals(servico.getAtivo())) {
+            throw new BusinessException("Serviço desativado não pode ser adicionado: " + request.servicoId());
+        }
+
+        var item = new ItemServico();
+        item.setOrdemDeServico(os);
+        item.setServico(servico);
+        item.setPrecoUnitario(servico.getPreco());
+        item.setTempoEstimadoMinutos(servico.getTempoEstimadoMinutos());
+        item.setObservacoes(request.observacoes());
+        os.getItensServico().add(item);
+
+        os.recalcularTotais();
+
+        return OrdemDeServicoResponse.from(repository.save(os));
+    }
+
+    @Transactional
     public OrdemDeServicoResponse cancelar(UUID id) {
         var os = findOrThrow(id);
         try {
@@ -230,7 +262,19 @@ public class OrdemDeServicoService {
                 .anyMatch(item -> item.getPeca().getId().equals(pecaId));
     }
 
+    private boolean jaTemServico(OrdemDeServico os, UUID servicoId) {
+        return os.getItensServico().stream()
+                .anyMatch(item -> item.getServico().getId().equals(servicoId));
+    }
+
     private boolean isStatusPermitidoParaAdicionarPeca(StatusOS status) {
+        return status == StatusOS.RECEBIDA
+                || status == StatusOS.EM_DIAGNOSTICO
+                || status == StatusOS.AGUARDANDO_APROVACAO
+                || status == StatusOS.EM_EXECUCAO;
+    }
+
+    private boolean isStatusPermitidoParaAdicionarServico(StatusOS status) {
         return status == StatusOS.RECEBIDA
                 || status == StatusOS.EM_DIAGNOSTICO
                 || status == StatusOS.AGUARDANDO_APROVACAO

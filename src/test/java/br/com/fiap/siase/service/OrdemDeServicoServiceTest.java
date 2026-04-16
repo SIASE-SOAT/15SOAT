@@ -729,6 +729,209 @@ class OrdemDeServicoServiceTest {
     }
 
     // ------------------------------------------------------------------ //
+    //  Adicionar Serviço à Ordem                                          //
+    // ------------------------------------------------------------------ //
+
+    @Nested
+    @DisplayName("Adicionar serviço à ordem")
+    class AdicionarServicoAOrdem {
+
+        @BeforeEach
+        void setUpServico() {
+            servico.setAtivo(true);
+            servico.setTempoEstimadoMinutos(60);
+        }
+
+        @Test
+        @DisplayName("Deve adicionar serviço com sucesso e recalcular totais")
+        void deveAdicionarServicoComSucesso() {
+            os.setStatus(StatusOS.RECEBIDA);
+            os.setTotalServicos(BigDecimal.ZERO);
+            os.setTotal(BigDecimal.ZERO);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null));
+
+            assertThat(os.getItensServico()).hasSize(1);
+            assertThat(os.getItensServico().get(0).getPrecoUnitario()).isEqualByComparingTo("120.00");
+            assertThat(os.getTotalServicos()).isEqualByComparingTo("120.00");
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve fazer snapshot do preço do serviço no momento da adição")
+        void deveFazerSnapshotDoPrecoDoServico() {
+            os.setStatus(StatusOS.RECEBIDA);
+            servico.setPreco(new BigDecimal("150.00"));
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null));
+
+            ItemServico itemAdicionado = os.getItensServico().get(0);
+            assertThat(itemAdicionado.getPrecoUnitario()).isEqualByComparingTo("150.00");
+        }
+
+        @Test
+        @DisplayName("Deve permitir adicionar serviço com status RECEBIDA")
+        void devePermitirAdicionarEmStatusRecebida() {
+            os.setStatus(StatusOS.RECEBIDA);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null));
+
+            assertThat(os.getItensServico()).hasSize(1);
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve permitir adicionar serviço com status EM_DIAGNOSTICO")
+        void devePermitirAdicionarEmStatusEmDiagnostico() {
+            os.setStatus(StatusOS.EM_DIAGNOSTICO);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null));
+
+            assertThat(os.getItensServico()).hasSize(1);
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve permitir adicionar serviço com status AGUARDANDO_APROVACAO")
+        void devePermitirAdicionarEmStatusAguardandoAprovacao() {
+            os.setStatus(StatusOS.AGUARDANDO_APROVACAO);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null));
+
+            assertThat(os.getItensServico()).hasSize(1);
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve permitir adicionar serviço com status EM_EXECUCAO")
+        void devePermitirAdicionarEmStatusEmExecucao() {
+            os.setStatus(StatusOS.EM_EXECUCAO);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
+            when(repository.save(any())).thenReturn(os);
+
+            service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null));
+
+            assertThat(os.getItensServico()).hasSize(1);
+            verify(repository).save(os);
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar adicionar em status FINALIZADA")
+        void deveRejeitarAdicionarEmStatusFinalizada() {
+            os.setStatus(StatusOS.FINALIZADA);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("status");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar adicionar em status ENTREGUE")
+        void deveRejeitarAdicionarEmStatusEntregue() {
+            os.setStatus(StatusOS.ENTREGUE);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("status");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar adicionar em status CANCELADA")
+        void deveRejeitarAdicionarEmStatusCancelada() {
+            os.setStatus(StatusOS.CANCELADA);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("status");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar ResourceNotFoundException quando OS não existe")
+        void deveLancarExcecaoQuandoOSNaoExiste() {
+            when(repository.findById(any())).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(UUID.randomUUID(), new ItemServicoRequest(servicoId, null)))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("OS não encontrada");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar ResourceNotFoundException quando serviço não existe")
+        void deveLancarExcecaoQuandoServicoNaoExiste() {
+            os.setStatus(StatusOS.RECEBIDA);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(servicoRepository.findById(servicoId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Serviço não encontrado");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar BusinessException quando serviço está desativado")
+        void deveLancarExcecaoQuandoServicoDesativado() {
+            os.setStatus(StatusOS.RECEBIDA);
+            servico.setAtivo(false);
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
+
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("desativado");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Deve lançar BusinessException quando tenta adicionar serviço duplicado")
+        void deveLancarExcecaoQuandoServicoDuplicado() {
+            os.setStatus(StatusOS.RECEBIDA);
+            ItemServico itemExistente = new ItemServico();
+            itemExistente.setServico(servico);
+            itemExistente.setPrecoUnitario(servico.getPreco());
+            itemExistente.setTempoEstimadoMinutos(servico.getTempoEstimadoMinutos());
+            os.getItensServico().add(itemExistente);
+
+            when(repository.findById(osId)).thenReturn(Optional.of(os));
+
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("já foi adicionado");
+
+            verify(repository, never()).save(any());
+        }
+    }
+
+    // ------------------------------------------------------------------ //
     //  Helpers                                                             //
     // ------------------------------------------------------------------ //
 

@@ -89,13 +89,23 @@
       </div>
 
       <!-- Ações -->
-      @if (podeAvancar() || podeCancelar()) {
+      @if (podeAvancar() || podeCancelar() || podeAdicionarPeca() || podeAdicionarServico()) {
         <div class="section-card">
           <div class="section-header">
             <mat-icon>settings</mat-icon>
             <h2>Ações</h2>
           </div>
           <div class="acoes-body">
+            @if (podeAdicionarServico()) {
+              <button mat-flat-button class="btn-adicionar" (click)="abrirDialogAdicionarServico()" [disabled]="actionLoading()">
+                <mat-icon>add_circle</mat-icon> Adicionar serviço
+              </button>
+            }
+            @if (podeAdicionarPeca()) {
+              <button mat-flat-button class="btn-adicionar" (click)="abrirDialogAdicionarPeca()" [disabled]="actionLoading()">
+                <mat-icon>add_circle</mat-icon> Adicionar peça
+              </button>
+            }
             @if (podeAvancar()) {
               <button mat-flat-button class="btn-avancar" (click)="avancar()" [disabled]="actionLoading()">
                 <mat-icon>arrow_forward</mat-icon> Avançar status

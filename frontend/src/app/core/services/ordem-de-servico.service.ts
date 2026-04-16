@@ -1,6 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
+  ItemPecaRequest,
+  ItemServicoRequest,
   OrdemDeServicoRequest,
   OrdemDeServicoResponse,
   StatusOS,
@@ -40,5 +42,13 @@ export class OrdemDeServicoService {
 
   tempoMedioExecucao() {
     return this.http.get<TempoMedioResponse>(`${this.base}/monitoramento/tempo-medio`);
+  }
+
+  adicionarPeca(id: string, body: ItemPecaRequest) {
+    return this.http.post<OrdemDeServicoResponse>(`${this.base}/${id}/items-peca`, body);
+  }
+
+  adicionarServico(id: string, body: ItemServicoRequest) {
+    return this.http.post<OrdemDeServicoResponse>(`${this.base}/${id}/items-servico`, body);
   }
 }

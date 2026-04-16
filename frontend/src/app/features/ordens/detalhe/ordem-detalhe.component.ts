@@ -14,6 +14,8 @@ import { PagamentoResponse } from '../../../core/models/pagamento.model';
 import { OrdemDeServicoService } from '../../../core/services/ordem-de-servico.service';
 import { PagamentoService } from '../../../core/services/pagamento.service';
 import { PagamentoFormDialogComponent } from '../dialogs/pagamento-form-dialog.component';
+import { AdicionarPecaDialogComponent } from '../dialogs/adicionar-peca-dialog.component';
+import { AdicionarServicoDialogComponent } from '../dialogs/adicionar-servico-dialog.component';
 
 
 @Component({
@@ -61,6 +63,16 @@ export class OrdemDetalheComponent implements OnInit {
 
   protected podeCancelarPagamento() {
     return this.pagamento()?.status === 'PENDENTE';
+  }
+
+  protected podeAdicionarPeca() {
+    const s = this.os()?.status;
+    return s && ['RECEBIDA', 'EM_DIAGNOSTICO', 'AGUARDANDO_APROVACAO', 'EM_EXECUCAO'].includes(s);
+  }
+
+  protected podeAdicionarServico() {
+    const s = this.os()?.status;
+    return s && ['RECEBIDA', 'EM_DIAGNOSTICO', 'AGUARDANDO_APROVACAO', 'EM_EXECUCAO'].includes(s);
   }
 
   ngOnInit() {
@@ -157,6 +169,50 @@ export class OrdemDetalheComponent implements OnInit {
         this.actionLoading.set(false);
         this.snackBar.open('Erro ao cancelar pagamento.', 'Fechar', { duration: 3000 });
       },
+    });
+  }
+
+  protected abrirDialogAdicionarPeca() {
+    this.dialog.open(AdicionarPecaDialogComponent, {
+      width: '480px',
+      data: { orderId: this.id() },
+    }).afterClosed().subscribe(result => {
+      if (!result) return;
+      this.actionLoading.set(true);
+      this.service.adicionarPeca(this.id(), result).subscribe({
+        next: (os) => {
+          this.os.set(os);
+          this.actionLoading.set(false);
+          this.snackBar.open('Peça adicionada!', 'Fechar', { duration: 3000 });
+        },
+        error: (error) => {
+          this.actionLoading.set(false);
+          const mensagem = error.error?.message || 'Erro ao adicionar peça.';
+          this.snackBar.open(mensagem, 'Fechar', { duration: 3000 });
+        },
+      });
+    });
+  }
+
+  protected abrirDialogAdicionarServico() {
+    this.dialog.open(AdicionarServicoDialogComponent, {
+      width: '480px',
+      data: { orderId: this.id() },
+    }).afterClosed().subscribe(result => {
+      if (!result) return;
+      this.actionLoading.set(true);
+      this.service.adicionarServico(this.id(), result).subscribe({
+        next: (os) => {
+          this.os.set(os);
+          this.actionLoading.set(false);
+          this.snackBar.open('Serviço adicionado!', 'Fechar', { duration: 3000 });
+        },
+        error: (error) => {
+          this.actionLoading.set(false);
+          const mensagem = error.error?.message || 'Erro ao adicionar serviço.';
+          this.snackBar.open(mensagem, 'Fechar', { duration: 3000 });
+        },
+      });
     });
   }
 }

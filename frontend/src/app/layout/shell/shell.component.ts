@@ -44,7 +44,6 @@ export class ShellComponent {
       items: [
         { label: 'Peças e Insumos',   icon: 'inventory_2',   route: '/pecas' },
         { label: 'Serviços',          icon: 'handyman',      route: '/servicos' },
-        { label: 'Agendamentos',      icon: 'event',         route: '/agendamentos' },
         { label: 'Ordens de Serviço', icon: 'assignment',    route: '/ordens' },
         { label: 'Pedidos de Compra', icon: 'shopping_cart', route: '/pedidos-compra' },
       ],

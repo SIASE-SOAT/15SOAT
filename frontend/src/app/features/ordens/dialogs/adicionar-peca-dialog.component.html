@@ -1,0 +1,92 @@
+<h2 mat-dialog-title>Adicionar Peça</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" novalidate class="flex flex-col gap-4 min-w-[420px] pt-2">
+
+    @if (loading()) {
+      <div class="flex justify-center py-8">
+        <mat-spinner diameter="40" />
+      </div>
+    } @else {
+      <!-- Seleção de Peça -->
+      <mat-form-field>
+        <mat-label>Peça</mat-label>
+        <mat-select formControlName="pecaId">
+          @for (p of pecas(); track p.id) {
+            <mat-option [value]="p.id">
+              {{ p.codigo }} — {{ p.nome }} 
+              @if (p.quantidadeEstoque > 0) {
+                <span class="text-gray-500">({{ p.quantidadeEstoque }} disponível)</span>
+              } @else {
+                <span class="text-red-500">(Sem estoque)</span>
+              }
+            </mat-option>
+          }
+          @if (pecas().length === 0) {
+            <mat-option disabled><span class="text-gray-500">Nenhuma peça disponível</span></mat-option>
+          }
+        </mat-select>
+        @if (form.controls.pecaId.hasError('required') && form.controls.pecaId.touched) {
+          <mat-error>Obrigatório</mat-error>
+        }
+      </mat-form-field>
+
+      <!-- Exibição de detalhes da peça selecionada -->
+      @if (pecaSelecionada(); as peca) {
+        <div class="bg-gray-50 p-3 rounded border border-gray-200 text-sm">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <p class="text-gray-600">Preço unitário</p>
+              <p class="font-semibold">R$ {{ peca.preco | number:'1.2-2' }}</p>
+            </div>
+            <div>
+              <p class="text-gray-600">Estoque disponível</p>
+              <p class="font-semibold">{{ peca.quantidadeEstoque }}</p>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Quantidade -->
+      <mat-form-field>
+        <mat-label>Quantidade</mat-label>
+        <input matInput type="number" formControlName="quantidade" />
+        @if (form.controls.quantidade.hasError('required') && form.controls.quantidade.touched) {
+          <mat-error>Obrigatório</mat-error>
+        }
+        @if (estoqueDisponivel() === 0 && pecaSelecionada()) {
+          <mat-error>Esta peça não possui estoque disponível</mat-error>
+        }
+        @if (estoqueDisponivel() > 0 && !quantidadeValida() && form.controls.quantidade.value) {
+          <mat-error>Máximo {{ estoqueDisponivel() }} unidade(s)</mat-error>
+        }
+        @if (estoqueDisponivel() > 0 && pecaSelecionada()) {
+          <mat-hint>Disponível: {{ estoqueDisponivel() }} unidade(s)</mat-hint>
+        }
+      </mat-form-field>
+
+      <!-- Total Estimado -->
+      @if (pecaSelecionada() && quantidadeValida()) {
+        <div class="bg-blue-50 p-3 rounded border border-blue-200 text-sm">
+          <p class="text-gray-600 mb-1">Total estimado</p>
+          <p class="text-lg font-bold text-blue-700">
+            R$ {{ totalEstimado() | number:'1.2-2' }}
+          </p>
+        </div>
+      }
+    }
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="gap-2 pt-4">
+  <button mat-button (click)="dialogRef.close()">Cancelar</button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="submit()"
+    [disabled]="form.invalid || !quantidadeValida() || loading()"
+  >
+    Adicionar
+  </button>
+</mat-dialog-actions>

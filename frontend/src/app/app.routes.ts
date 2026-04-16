@@ -45,11 +45,6 @@ export const routes: Routes = [
           import('./features/servicos/lista/servicos-lista.component').then(m => m.ServicosListaComponent),
       },
       {
-        path: 'agendamentos',
-        loadComponent: () =>
-          import('./features/agendamentos/lista/agendamentos-lista.component').then(m => m.AgendamentosListaComponent),
-      },
-      {
         path: 'ordens',
         loadComponent: () =>
           import('./features/ordens/lista/ordens-lista.component').then(m => m.OrdensListaComponent),
