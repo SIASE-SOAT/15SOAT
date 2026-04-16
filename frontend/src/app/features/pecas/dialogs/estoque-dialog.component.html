@@ -1,0 +1,34 @@
+<h2 mat-dialog-title>Movimentar Estoque</h2>
+
+<mat-dialog-content>
+  <p class="text-sm text-gray-500 pb-2">
+    <strong>{{ data.peca.nome }}</strong> — Estoque atual:
+    <span class="font-semibold">{{ data.peca.quantidadeEstoque }} {{ data.peca.unidadeMedida }}</span>
+  </p>
+
+  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[360px]">
+
+    <mat-form-field>
+      <mat-label>Operação</mat-label>
+      <mat-select formControlName="operacao">
+        <mat-option value="ENTRADA">Entrada (recebimento)</mat-option>
+        <mat-option value="SAIDA">Saída (consumo / ajuste)</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Quantidade</mat-label>
+      <input matInput type="number" formControlName="quantidade" />
+      <mat-hint>{{ data.peca.unidadeMedida }}</mat-hint>
+      @if (form.controls.quantidade.invalid && form.controls.quantidade.touched) {
+        <mat-error>Quantidade deve ser maior que zero</mat-error>
+      }
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close()">Cancelar</button>
+  <button mat-flat-button (click)="submit()">Confirmar</button>
+</mat-dialog-actions>

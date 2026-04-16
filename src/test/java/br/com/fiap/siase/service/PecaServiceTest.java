@@ -76,7 +76,7 @@ class PecaServiceTest {
 
             List<PecaResponse> resultado = pecaService.listarAtivas();
 
-            assertThat(resultado.get(0).estoqueAbaixoDoMinimo()).isTrue();
+            assertThat(resultado.get(0).estoqueAbaixoMinimo()).isTrue();
         }
 
         @Test
@@ -88,7 +88,7 @@ class PecaServiceTest {
 
             List<PecaResponse> resultado = pecaService.listarAtivas();
 
-            assertThat(resultado.get(0).estoqueAbaixoDoMinimo()).isFalse();
+            assertThat(resultado.get(0).estoqueAbaixoMinimo()).isFalse();
         }
     }
 

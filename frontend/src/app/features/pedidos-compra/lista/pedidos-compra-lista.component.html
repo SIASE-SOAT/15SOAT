@@ -1,0 +1,59 @@
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-bold">Pedidos de Compra</h1>
+  <button mat-flat-button (click)="abrirNovoPedido()"><mat-icon>add</mat-icon> Novo Pedido</button>
+</div>
+
+@if (loading()) {
+  <div class="flex justify-center py-12"><mat-spinner /></div>
+} @else {
+  <div class="overflow-auto rounded-lg border border-gray-200">
+    <table mat-table [dataSource]="pedidos()" class="w-full">
+
+      <ng-container matColumnDef="peca">
+        <th mat-header-cell *matHeaderCellDef>Peça</th>
+        <td mat-cell *matCellDef="let p">
+          {{ p.pecaNome }} <span class="text-xs text-gray-500">({{ p.pecaCodigo }})</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="qtd">
+        <th mat-header-cell *matHeaderCellDef>Qtd. Solicitada</th>
+        <td mat-cell *matCellDef="let p">{{ p.quantidadeSolicitada }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="qtdRecebida">
+        <th mat-header-cell *matHeaderCellDef>Qtd. Recebida</th>
+        <td mat-cell *matCellDef="let p">{{ p.quantidadeRecebida }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let p">
+          <mat-chip>{{ p.statusDescricao }}</mat-chip>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="data">
+        <th mat-header-cell *matHeaderCellDef>Criado em</th>
+        <td mat-cell *matCellDef="let p">{{ p.criadoEm | date:'dd/MM/yyyy' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="acoes">
+        <th mat-header-cell *matHeaderCellDef>Ações</th>
+        <td mat-cell *matCellDef="let p">
+          <button mat-icon-button aria-label="Aprovar pedido" (click)="aprovar(p)"
+                  [disabled]="p.status !== 'PENDENTE'"><mat-icon>thumb_up</mat-icon></button>
+          <button mat-icon-button aria-label="Receber pedido" (click)="receber(p)"
+                  [disabled]="p.status !== 'APROVADO'"><mat-icon>inventory</mat-icon></button>
+          <button mat-icon-button aria-label="Cancelar pedido" (click)="cancelar(p)"
+                  [disabled]="p.status === 'RECEBIDO' || p.status === 'CANCELADO'">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="colunas"></tr>
+      <tr mat-row *matRowDef="let row; columns: colunas;" class="hover:bg-gray-50"></tr>
+    </table>
+  </div>
+}

@@ -1,0 +1,115 @@
+<div class="shell">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────────── -->
+  <aside [class]="'sidebar' + (sidebarCollapsed() ? ' collapsed' : '')">
+
+    <!-- Header / Logo -->
+    <div [class]="'sidebar-header' + (sidebarCollapsed() ? ' collapsed' : '')">
+      @if (!sidebarCollapsed()) {
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="logo-icon">
+            <mat-icon style="font-size:18px;width:18px;height:18px;line-height:18px;color:white">
+              build_circle
+            </mat-icon>
+          </div>
+          <div class="logo-text">
+            <p class="logo-name">SIASE</p>
+            <p class="logo-sub">Oficina Mecânica</p>
+          </div>
+        </div>
+      } @else {
+        <div class="logo-icon">
+          <mat-icon style="font-size:18px;width:18px;height:18px;line-height:18px;color:white">
+            build_circle
+          </mat-icon>
+        </div>
+      }
+      <button
+        class="sidebar-toggle"
+        (click)="sidebarCollapsed.update(v => !v)"
+        [attr.title]="sidebarCollapsed() ? 'Expandir menu' : 'Recolher menu'">
+        <mat-icon>{{ sidebarCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+      </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+      @for (group of navGroups; track group.label; let first = $first) {
+
+        @if (!sidebarCollapsed()) {
+          <p class="nav-group-label">{{ group.label }}</p>
+        } @else if (!first) {
+          <hr class="nav-separator" />
+        }
+
+        @for (item of group.items; track item.route) {
+          <a
+            routerLinkActive="active"
+            [routerLink]="item.route"
+            [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+            [matTooltip]="sidebarCollapsed() ? item.label : ''"
+            matTooltipPosition="right"
+            [class]="'nav-item' + (sidebarCollapsed() ? ' centered' : '')"
+          >
+            <mat-icon>{{ item.icon }}</mat-icon>
+            @if (!sidebarCollapsed()) {
+              <span>{{ item.label }}</span>
+            }
+          </a>
+        }
+      }
+    </nav>
+
+    <!-- Logout -->
+    <div class="sidebar-footer">
+      <button
+        [class]="'logout-btn' + (sidebarCollapsed() ? ' centered' : '')"
+        [matTooltip]="sidebarCollapsed() ? 'Sair' : ''"
+        matTooltipPosition="right"
+        (click)="auth.logout()">
+        <mat-icon>logout</mat-icon>
+        @if (!sidebarCollapsed()) {
+          <span>Sair</span>
+        }
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main area ───────────────────────────────────────────────── -->
+  <div class="main">
+
+    <!-- Navbar -->
+    <header class="navbar">
+      <button class="navbar-toggle" (click)="sidebarCollapsed.update(v => !v)" title="Alternar menu">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <div class="breadcrumb">
+        <span class="breadcrumb-root">SIASE</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">{{ pageTitle() }}</span>
+      </div>
+
+      <div class="navbar-right">
+        <div class="user-info">
+          <p class="user-name">Administrador</p>
+          <p class="user-role">Oficina Mecânica</p>
+        </div>
+        <div class="avatar">A</div>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="content">
+      <div class="content-inner">
+        <router-outlet />
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>SIASE &copy; 2026 &mdash; Sistema de Gestão da Oficina Mecânica</span>
+      <span>v1.0</span>
+    </footer>
+  </div>
+</div>

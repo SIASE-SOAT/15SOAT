@@ -90,10 +90,25 @@ public class OrdemDeServico extends BaseEntity {
             case EM_EXECUCAO -> StatusOS.FINALIZADA;
             case FINALIZADA -> StatusOS.ENTREGUE;
             case ENTREGUE -> throw new IllegalStateException("Ordem de serviço já foi entregue.");
+            case CANCELADA -> throw new IllegalStateException("Ordem de serviço cancelada não pode ser avançada.");
         };
 
         if (this.status == StatusOS.ENTREGUE) {
             this.dataFechamento = LocalDateTime.now();
         }
+    }
+
+    public void cancelar() {
+        if (this.status == StatusOS.ENTREGUE) {
+            throw new IllegalStateException("Ordem de serviço já entregue não pode ser cancelada.");
+        }
+        if (this.status == StatusOS.CANCELADA) {
+            throw new IllegalStateException("Ordem de serviço já está cancelada.");
+        }
+        if (this.status == StatusOS.EM_EXECUCAO || this.status == StatusOS.FINALIZADA) {
+            throw new IllegalStateException("Ordem de serviço em execução ou finalizada não pode ser cancelada. Entre em contato com a oficina.");
+        }
+        this.status = StatusOS.CANCELADA;
+        this.dataFechamento = LocalDateTime.now();
     }
 }

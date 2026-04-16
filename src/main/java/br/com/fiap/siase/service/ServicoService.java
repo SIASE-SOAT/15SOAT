@@ -22,18 +22,21 @@ public class ServicoService {
     private final ServicoRepository repository;
     private final PecaService pecaService;
 
+    @Transactional(readOnly = true)
     public List<ServicoResponse> listarAtivos() {
         return repository.findByAtivoTrue().stream()
                 .map(ServicoResponse::from)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ServicoResponse> listarTodos() {
         return repository.findAll().stream()
                 .map(ServicoResponse::from)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public ServicoResponse buscarPorId(UUID id) {
         return ServicoResponse.from(findOrThrow(id));
     }

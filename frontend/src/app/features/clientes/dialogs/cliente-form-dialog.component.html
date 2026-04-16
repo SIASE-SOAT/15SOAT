@@ -1,0 +1,51 @@
+<h2 mat-dialog-title>{{ data.cliente ? 'Editar Cliente' : 'Novo Cliente' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[420px] pt-2">
+
+    <mat-form-field>
+      <mat-label>Nome completo</mat-label>
+      <input matInput formControlName="nome" />
+      @if (form.controls.nome.hasError('required') && form.controls.nome.touched) {
+        <mat-error>Nome obrigatório</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Tipo de pessoa</mat-label>
+      <mat-select formControlName="tipoPessoa">
+        <mat-option value="PF">Pessoa Física (CPF)</mat-option>
+        <mat-option value="PJ">Pessoa Jurídica (CNPJ)</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>{{ form.controls.tipoPessoa.value === 'PJ' ? 'CNPJ' : 'CPF' }}</mat-label>
+      <input matInput formControlName="documento" />
+      @if (form.controls.documento.hasError('required') && form.controls.documento.touched) {
+        <mat-error>Documento obrigatório</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>E-mail</mat-label>
+      <input matInput type="email" formControlName="email" />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Telefone</mat-label>
+      <input matInput formControlName="telefone" />
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Endereço</mat-label>
+      <input matInput formControlName="endereco" />
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="dialogRef.close()">Cancelar</button>
+  <button mat-flat-button (click)="submit()">Salvar</button>
+</mat-dialog-actions>

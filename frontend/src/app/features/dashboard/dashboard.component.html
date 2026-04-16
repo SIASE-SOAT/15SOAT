@@ -1,0 +1,71 @@
+<!-- Header -->
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <p>Visão geral da oficina em tempo real</p>
+</div>
+
+@if (loading()) {
+  <div style="display:flex;justify-content:center;padding:4rem 0">
+    <mat-spinner diameter="48" />
+  </div>
+} @else {
+
+  <!-- Tempo médio de execução -->
+  <div class="tempo-card">
+    <div class="tempo-icon">
+      <mat-icon>timer</mat-icon>
+    </div>
+    <div>
+      <p class="tempo-label">Tempo médio de execução</p>
+      <p class="tempo-value">{{ tempoMedioHoras() }}h {{ tempoMedioMinutosRestantes() }}min</p>
+    </div>
+  </div>
+
+  <!-- Cards de OS por status -->
+  <div class="status-grid">
+    @for (card of statusCards(); track card.status) {
+      <a
+        class="status-card"
+        [routerLink]="['/ordens']"
+        [queryParams]="{ status: card.status }"
+      >
+        <div class="status-icon" [style.background-color]="iconBg(card.status)">
+          <mat-icon [style.color]="iconColor(card.status)">{{ card.icon }}</mat-icon>
+        </div>
+        <span class="status-count">{{ card.count }}</span>
+        <span class="status-label">{{ card.label }}</span>
+      </a>
+    }
+  </div>
+
+  <!-- Peças com estoque crítico -->
+  @if (pecasCriticas().length > 0) {
+    <div class="alertas-section">
+      <div class="alertas-header">
+        <div class="alertas-icon">
+          <mat-icon>warning</mat-icon>
+        </div>
+        <h2>Estoque abaixo do mínimo</h2>
+        <span class="alertas-badge">{{ pecasCriticas().length }}</span>
+      </div>
+
+      <div class="alertas-card">
+        @for (peca of pecasCriticas(); track peca.id) {
+          <div class="alerta-row">
+            <span class="alerta-nome">{{ peca.nome }}</span>
+            <div class="alerta-estoque">
+              <span class="estoque-atual">{{ peca.quantidadeEstoque }}</span>
+              <span class="estoque-sep">/</span>
+              <span class="estoque-min">{{ peca.estoqueMinimo }}</span>
+              <span class="estoque-un">{{ peca.unidadeMedida }}</span>
+            </div>
+          </div>
+        }
+        <div class="alertas-actions">
+          <a mat-button routerLink="/pedidos-compra">Ver pedidos de compra</a>
+          <a mat-button routerLink="/pecas">Gerenciar peças</a>
+        </div>
+      </div>
+    </div>
+  }
+}

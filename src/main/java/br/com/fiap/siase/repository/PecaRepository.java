@@ -1,7 +1,9 @@
 package br.com.fiap.siase.repository;
 
 import br.com.fiap.siase.model.Peca;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -20,4 +22,8 @@ public interface PecaRepository extends JpaRepository<Peca, UUID> {
 
     @Query("SELECT p FROM Peca p WHERE p.ativo = true AND p.quantidadeEstoque < p.estoqueMinimo")
     List<Peca> findEstoqueBaixo();
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Peca p WHERE p.id = :id")
+    Optional<Peca> findByIdParaAtualizacao(UUID id);
 }

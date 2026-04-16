@@ -50,6 +50,6 @@ jwt:
 
 logging:
   level:
-    br.com.fiap.siase: DEBUG
+    br.com.fiap.siase: INFO
     org.springframework.web: INFO
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: WARN

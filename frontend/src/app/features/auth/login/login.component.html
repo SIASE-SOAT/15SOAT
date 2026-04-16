@@ -1,0 +1,85 @@
+<div class="login-page">
+  <div class="login-card">
+
+    <!-- Header com logo -->
+    <div class="login-header">
+      <div class="brand-icon">
+        <mat-icon>build_circle</mat-icon>
+      </div>
+      <p class="brand-name">SIASE</p>
+      <p class="brand-sub">Oficina Mecânica</p>
+    </div>
+
+    <!-- Formulário -->
+    <div class="login-body">
+      <p class="login-title">Acesse sua conta</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <div class="field-block">
+          <mat-form-field appearance="outline">
+            <mat-label>Usuário</mat-label>
+            <mat-icon matPrefix>person</mat-icon>
+            <input matInput formControlName="username" autocomplete="username" />
+            @if (form.controls.username.hasError('required') && form.controls.username.touched) {
+              <mat-error>Usuário obrigatório</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <div class="field-block">
+          <mat-form-field appearance="outline">
+            <mat-label>Senha</mat-label>
+            <mat-icon matPrefix>lock</mat-icon>
+            <input
+              matInput
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="current-password"
+            />
+            <button
+              matSuffix
+              mat-icon-button
+              type="button"
+              [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
+              (click)="showPassword.update(v => !v)"
+            >
+              <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            @if (form.controls.password.hasError('required') && form.controls.password.touched) {
+              <mat-error>Senha obrigatória</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        @if (error()) {
+          <div class="error-msg" role="alert">
+            <mat-icon>error_outline</mat-icon>
+            {{ error() }}
+          </div>
+        }
+
+        <button
+          mat-flat-button
+          type="submit"
+          class="submit-btn"
+          [disabled]="loading()"
+        >
+          @if (loading()) {
+            <mat-spinner diameter="20" />
+          } @else {
+            <mat-icon>login</mat-icon>
+          }
+          Entrar
+        </button>
+
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="login-footer">
+      SIASE &copy; 2025 &mdash; Sistema de Gestão da Oficina Mecânica
+    </div>
+
+  </div>
+</div>

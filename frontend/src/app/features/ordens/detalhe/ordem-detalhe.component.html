@@ -1,0 +1,212 @@
+@if (loading()) {
+  <div class="loader"><mat-spinner /></div>
+
+} @else if (os()) {
+
+  <!-- ── Header ─────────────────────────────────────── -->
+  <div class="os-header">
+    <a class="back-btn" mat-icon-button routerLink="/ordens" matTooltip="Voltar para lista">
+      <mat-icon>arrow_back</mat-icon>
+    </a>
+    <div class="header-info">
+      <h1>{{ os()!.numero }}</h1>
+      <p class="subtitle">{{ os()!.clienteNome }} &mdash; {{ os()!.veiculoModelo }} ({{ os()!.veiculoPlaca }})</p>
+    </div>
+    <span [class]="'status-badge status-' + os()!.status">
+      {{ os()!.statusDescricao }}
+    </span>
+  </div>
+
+  <!-- ── Grid ───────────────────────────────────────── -->
+  <div class="os-grid">
+
+    <!-- Coluna principal -->
+    <div class="col-main">
+
+      <!-- Serviços -->
+      <div class="section-card">
+        <div class="section-header">
+          <mat-icon>handyman</mat-icon>
+          <h2>Serviços</h2>
+          <span class="count-badge">{{ os()!.itensServico.length }}</span>
+        </div>
+        @for (item of os()!.itensServico; track item.servicoId) {
+          <div class="item-row">
+            <div class="item-info">
+              <p class="item-name">{{ item.servicoNome }}</p>
+              @if (item.observacoes) {
+                <p class="item-meta">{{ item.observacoes }}</p>
+              }
+            </div>
+            <span class="item-price">R$ {{ item.precoUnitario | number:'1.2-2' }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Peças -->
+      @if (os()!.itensPeca.length > 0) {
+        <div class="section-card">
+          <div class="section-header">
+            <mat-icon>inventory_2</mat-icon>
+            <h2>Peças e Insumos</h2>
+            <span class="count-badge">{{ os()!.itensPeca.length }}</span>
+          </div>
+          @for (item of os()!.itensPeca; track item.pecaId) {
+            <div class="item-row">
+              <div class="item-info">
+                <p class="item-name">{{ item.pecaNome }}</p>
+                <p class="item-meta">{{ item.pecaCodigo }} &times; {{ item.quantidade }}</p>
+              </div>
+              <span class="item-price">R$ {{ item.precoUnitario * item.quantidade | number:'1.2-2' }}</span>
+            </div>
+          }
+        </div>
+      }
+
+    </div>
+
+    <!-- Coluna lateral -->
+    <div class="col-side">
+
+      <!-- Resumo financeiro -->
+      <div class="section-card">
+        <div class="section-header">
+          <mat-icon>receipt_long</mat-icon>
+          <h2>Resumo financeiro</h2>
+        </div>
+        <div class="resumo-row">
+          <span class="resumo-label">Serviços</span>
+          <span class="resumo-value">R$ {{ os()!.totalServicos | number:'1.2-2' }}</span>
+        </div>
+        <div class="resumo-row">
+          <span class="resumo-label">Peças</span>
+          <span class="resumo-value">R$ {{ os()!.totalPecas | number:'1.2-2' }}</span>
+        </div>
+        <div class="resumo-row total-row">
+          <span class="resumo-label">Total</span>
+          <span class="resumo-value">R$ {{ os()!.total | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Ações -->
+      @if (podeAvancar() || podeCancelar() || podeAdicionarPeca() || podeAdicionarServico()) {
+        <div class="section-card">
+          <div class="section-header">
+            <mat-icon>settings</mat-icon>
+            <h2>Ações</h2>
+          </div>
+          <div class="acoes-body">
+            @if (podeAdicionarServico()) {
+              <button mat-flat-button class="btn-adicionar" (click)="abrirDialogAdicionarServico()" [disabled]="actionLoading()">
+                <mat-icon>add_circle</mat-icon> Adicionar serviço
+              </button>
+            }
+            @if (podeAdicionarPeca()) {
+              <button mat-flat-button class="btn-adicionar" (click)="abrirDialogAdicionarPeca()" [disabled]="actionLoading()">
+                <mat-icon>add_circle</mat-icon> Adicionar peça
+              </button>
+            }
+            @if (podeAvancar()) {
+              <button mat-flat-button class="btn-avancar" (click)="avancar()" [disabled]="actionLoading()">
+                <mat-icon>arrow_forward</mat-icon> Avançar status
+              </button>
+            }
+            @if (podeCancelar()) {
+              <button mat-stroked-button color="warn" (click)="cancelar()" [disabled]="actionLoading()">
+                <mat-icon>cancel</mat-icon> Cancelar OS
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Pagamento -->
+      <div class="section-card">
+        <div class="section-header">
+          <mat-icon>payments</mat-icon>
+          <h2>Pagamento</h2>
+        </div>
+
+        @if (pagamento(); as p) {
+          <div class="pagamento-body">
+            <div class="pagamento-row">
+              <span class="pag-label">Forma</span>
+              <span class="pag-value">{{ p.formaPagamentoDescricao }}</span>
+            </div>
+            <div class="pagamento-row">
+              <span class="pag-label">Valor</span>
+              <span class="pag-value">R$ {{ p.valor | number:'1.2-2' }}</span>
+            </div>
+            <div class="pagamento-row">
+              <span class="pag-label">Status</span>
+              @if (p.status === 'PAGO') {
+                <span class="pag-status-pago">{{ p.statusDescricao }}</span>
+              } @else if (p.status === 'PENDENTE') {
+                <span class="pag-status-pendente">{{ p.statusDescricao }}</span>
+              } @else {
+                <span class="pag-status-cancelado">{{ p.statusDescricao }}</span>
+              }
+            </div>
+            @if (p.dataPagamento) {
+              <div class="pagamento-row">
+                <span class="pag-label">Data</span>
+                <span class="pag-value">{{ p.dataPagamento | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            }
+            @if (podeConfirmarPagamento() || podeCancelarPagamento()) {
+              <div class="pagamento-actions">
+                @if (podeConfirmarPagamento()) {
+                  <button mat-flat-button (click)="confirmarPagamento()" [disabled]="actionLoading()">
+                    <mat-icon>check_circle</mat-icon> Confirmar pagamento
+                  </button>
+                }
+                @if (podeCancelarPagamento()) {
+                  <button mat-stroked-button color="warn" (click)="cancelarPagamento()" [disabled]="actionLoading()">
+                    <mat-icon>cancel</mat-icon> Cancelar pagamento
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+        } @else if (podeRegistrarPagamento()) {
+          <div class="pagamento-body">
+            <div class="sem-pagamento">
+              <mat-icon>add_card</mat-icon>
+              <p>Nenhum pagamento registrado.</p>
+              <button mat-flat-button (click)="registrarPagamento()" [disabled]="actionLoading()">
+                <mat-icon>add_card</mat-icon> Registrar pagamento
+              </button>
+            </div>
+          </div>
+
+        } @else {
+          <div class="pagamento-body">
+            <p class="pag-indisponivel">Disponível quando a OS estiver finalizada.</p>
+          </div>
+        }
+      </div>
+
+      <!-- Datas -->
+      <div class="section-card">
+        <div class="section-header">
+          <mat-icon>calendar_today</mat-icon>
+          <h2>Datas</h2>
+        </div>
+        <div class="datas-body">
+          <div class="data-row">
+            <span class="data-label">Abertura</span>
+            <span class="data-value">{{ os()!.dataAbertura | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          @if (os()!.dataFechamento) {
+            <div class="data-row">
+              <span class="data-label">Fechamento</span>
+              <span class="data-value">{{ os()!.dataFechamento | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+  </div>
+}
