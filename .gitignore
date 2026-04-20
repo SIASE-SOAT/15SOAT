@@ -43,3 +43,6 @@ Thumbs.db
 
 # Logs
 logs/
+
+# Local git worktrees
+.worktrees/
