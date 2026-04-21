@@ -37,7 +37,7 @@
 - Read: `target/site/jacoco/jacoco.csv`
 - Create: `docs/test-coverage/critical-flow-coverage-2026-04-20.md`
 
-- [ ] **Step 1: Record the failing baseline expectation**
+- [x] **Step 1: Record the failing baseline expectation**
 
 Create `docs/test-coverage/critical-flow-coverage-2026-04-20.md` with the initial table and leave the "final" column empty so the gap is explicit:
 
@@ -59,7 +59,7 @@ Create `docs/test-coverage/critical-flow-coverage-2026-04-20.md` with the initia
 - Preserve existing passing coverage on `OrdemDeServicoService`, `PagamentoService`, and `PecaService`.
 ```
 
-- [ ] **Step 2: Run the current coverage report to verify the gap exists**
+- [x] **Step 2: Run the current coverage report to verify the gap exists**
 
 Run: `cmd /c "set JAVA_HOME=C:\Java\jdk-17.0.2&& set PATH=C:\Java\jdk-17.0.2\bin;%PATH%&& java -Dmaven.multiModuleProjectDirectory=%CD% -classpath .mvn\wrapper\maven-wrapper.jar org.apache.maven.wrapper.MavenWrapperMain test"`
 
@@ -67,7 +67,7 @@ Expected:
 - PASS on the current suite
 - Existing `target/site/jacoco/jacoco.csv` still showing zero or near-zero coverage for the classes above
 
-- [ ] **Step 3: Note the exact classes to attack first**
+- [x] **Step 3: Note the exact classes to attack first**
 
 Append this bullet list to the evidence file:
 
@@ -95,7 +95,7 @@ git commit -m "docs: record critical flow coverage baseline"
 - Test target: `src/main/java/br/com/fiap/siase/model/Agendamento.java`
 - Reference: `src/test/java/br/com/fiap/siase/model/OrdemDeServicoEntityTest.java`
 
-- [ ] **Step 1: Write the failing entity tests**
+- [x] **Step 1: Write the failing entity tests**
 
 Create `src/test/java/br/com/fiap/siase/model/AgendamentoEntityTest.java` with the initial red cases:
 
@@ -195,7 +195,7 @@ class AgendamentoEntityTest {
 }
 ```
 
-- [ ] **Step 2: Run the new entity test and verify red**
+- [x] **Step 2: Run the new entity test and verify red**
 
 Run: `cmd /c "set JAVA_HOME=C:\Java\jdk-17.0.2&& set PATH=C:\Java\jdk-17.0.2\bin;%PATH%&& java -Dmaven.multiModuleProjectDirectory=%CD% -classpath .mvn\wrapper\maven-wrapper.jar org.apache.maven.wrapper.MavenWrapperMain -Dtest=AgendamentoEntityTest test"`
 
@@ -203,7 +203,7 @@ Expected:
 - If the class does not exist yet, compilation/test discovery fails
 - If the class compiles, at least one assertion fails until the code matches expected behavior
 
-- [ ] **Step 3: Write the minimal production fix only if needed**
+- [x] **Step 3: Write the minimal production fix only if needed**
 
 If the tests reveal a real mismatch, keep `Agendamento.java` minimal and explicit:
 
@@ -231,7 +231,7 @@ public void realizar(OrdemDeServico os) {
 }
 ```
 
-- [ ] **Step 4: Run the entity test to verify green**
+- [x] **Step 4: Run the entity test to verify green**
 
 Run: `cmd /c "set JAVA_HOME=C:\Java\jdk-17.0.2&& set PATH=C:\Java\jdk-17.0.2\bin;%PATH%&& java -Dmaven.multiModuleProjectDirectory=%CD% -classpath .mvn\wrapper\maven-wrapper.jar org.apache.maven.wrapper.MavenWrapperMain -Dtest=AgendamentoEntityTest test"`
 
@@ -251,7 +251,7 @@ git commit -m "test: cover agendamento domain transitions"
 - Test target: `src/main/java/br/com/fiap/siase/service/AgendamentoService.java`
 - Reference: `src/test/java/br/com/fiap/siase/service/PagamentoServiceTest.java`
 
-- [ ] **Step 1: Write the failing service tests**
+- [x] **Step 1: Write the failing service tests**
 
 Create `src/test/java/br/com/fiap/siase/service/AgendamentoServiceTest.java` with these scenarios:
 
@@ -436,7 +436,7 @@ class AgendamentoServiceTest {
 }
 ```
 
-- [ ] **Step 2: Run the service test and verify red**
+- [x] **Step 2: Run the service test and verify red**
 
 Run: `cmd /c "set JAVA_HOME=C:\Java\jdk-17.0.2&& set PATH=C:\Java\jdk-17.0.2\bin;%PATH%&& java -Dmaven.multiModuleProjectDirectory=%CD% -classpath .mvn\wrapper\maven-wrapper.jar org.apache.maven.wrapper.MavenWrapperMain -Dtest=AgendamentoServiceTest test"`
 
@@ -444,7 +444,7 @@ Expected:
 - FAIL on missing test class first
 - Then FAIL only if current service behavior differs from the scenarios above
 
-- [ ] **Step 3: Apply the minimal production adjustment only if tests reveal one**
+- [x] **Step 3: Apply the minimal production adjustment only if tests reveal one**
 
 Keep `AgendamentoService.java` aligned with the current behavior. If a bug is exposed, the production fix should stay in the current shape:
 
@@ -464,7 +464,7 @@ emailService.enviarConfirmacaoAgendamento(
 );
 ```
 
-- [ ] **Step 4: Run the service test to verify green**
+- [x] **Step 4: Run the service test to verify green**
 
 Run: `cmd /c "set JAVA_HOME=C:\Java\jdk-17.0.2&& set PATH=C:\Java\jdk-17.0.2\bin;%PATH%&& java -Dmaven.multiModuleProjectDirectory=%CD% -classpath .mvn\wrapper\maven-wrapper.jar org.apache.maven.wrapper.MavenWrapperMain -Dtest=AgendamentoServiceTest test"`
 
@@ -484,7 +484,7 @@ git commit -m "test: cover agendamento service flow"
 - Test target: `src/main/java/br/com/fiap/siase/controller/PagamentoController.java`
 - Reference: `src/test/java/br/com/fiap/siase/controller/OrdemDeServicoControllerTest.java`
 
-- [ ] **Step 1: Write the failing controller tests**
+- [x] **Step 1: Write the failing controller tests**
 
 Create `src/test/java/br/com/fiap/siase/controller/PagamentoControllerTest.java`:
 
@@ -661,7 +661,7 @@ class PagamentoControllerTest {
 }
 ```
 
-- [ ] **Step 2: Run the controller test and verify red**
+- [x] **Step 2: Run the controller test and verify red**
 
 Run: `cmd /c "set JAVA_HOME=C:\Java\jdk-17.0.2&& set PATH=C:\Java\jdk-17.0.2\bin;%PATH%&& java -Dmaven.multiModuleProjectDirectory=%CD% -classpath .mvn\wrapper\maven-wrapper.jar org.apache.maven.wrapper.MavenWrapperMain -Dtest=PagamentoControllerTest test"`
 
@@ -669,7 +669,7 @@ Expected:
 - FAIL before the class exists
 - Then PASS or expose contract mismatches to correct minimally
 
-- [ ] **Step 3: Adjust controller behavior only if a mismatch is revealed**
+- [x] **Step 3: Adjust controller behavior only if a mismatch is revealed**
 
 The controller should remain a thin adapter:
 
@@ -685,7 +685,7 @@ public ResponseEntity<PagamentoResponse> registrar(@PathVariable UUID osId, @Val
 }
 ```
 
-- [ ] **Step 4: Run the controller test to verify green**
+- [x] **Step 4: Run the controller test to verify green**
 
 Run: `cmd /c "set JAVA_HOME=C:\Java\jdk-17.0.2&& set PATH=C:\Java\jdk-17.0.2\bin;%PATH%&& java -Dmaven.multiModuleProjectDirectory=%CD% -classpath .mvn\wrapper\maven-wrapper.jar org.apache.maven.wrapper.MavenWrapperMain -Dtest=PagamentoControllerTest test"`
 
@@ -705,7 +705,7 @@ git commit -m "test: cover pagamento controller endpoints"
 - Test target: `src/main/java/br/com/fiap/siase/controller/PedidoCompraController.java`
 - Reference: `src/test/java/br/com/fiap/siase/controller/OrdemDeServicoControllerTest.java`
 
-- [ ] **Step 1: Write the failing controller tests**
+- [x] **Step 1: Write the failing controller tests**
 
 Create `src/test/java/br/com/fiap/siase/controller/PedidoCompraControllerTest.java`:
 
@@ -926,7 +926,7 @@ class PedidoCompraControllerTest {
 }
 ```
 
-- [ ] **Step 2: Run the controller test and verify red**
+- [x] **Step 2: Run the controller test and verify red**
 
 Run: `cmd /c "set JAVA_HOME=C:\Java\jdk-17.0.2&& set PATH=C:\Java\jdk-17.0.2\bin;%PATH%&& java -Dmaven.multiModuleProjectDirectory=%CD% -classpath .mvn\wrapper\maven-wrapper.jar org.apache.maven.wrapper.MavenWrapperMain -Dtest=PedidoCompraControllerTest test"`
 
@@ -934,7 +934,7 @@ Expected:
 - FAIL before the class exists
 - Then FAIL only on real contract mismatches
 
-- [ ] **Step 3: Adjust controller behavior only if a mismatch is revealed**
+- [x] **Step 3: Adjust controller behavior only if a mismatch is revealed**
 
 Keep `PedidoCompraController.java` as a thin adapter:
 
@@ -946,7 +946,7 @@ public ResponseEntity<List<PedidoCompraResponse>> listar(@RequestParam(required 
 }
 ```
 
-- [ ] **Step 4: Run the controller test to verify green**
+- [x] **Step 4: Run the controller test to verify green**
 
 Run: `cmd /c "set JAVA_HOME=C:\Java\jdk-17.0.2&& set PATH=C:\Java\jdk-17.0.2\bin;%PATH%&& java -Dmaven.multiModuleProjectDirectory=%CD% -classpath .mvn\wrapper\maven-wrapper.jar org.apache.maven.wrapper.MavenWrapperMain -Dtest=PedidoCompraControllerTest test"`
 
@@ -965,7 +965,7 @@ git commit -m "test: cover pedido compra controller endpoints"
 - Modify: `docs/test-coverage/critical-flow-coverage-2026-04-20.md`
 - Read: `target/site/jacoco/jacoco.csv`
 
-- [ ] **Step 1: Run the focused regression set**
+- [x] **Step 1: Run the focused regression set**
 
 Run:
 
@@ -977,6 +977,8 @@ Expected: PASS
 
 - [ ] **Step 2: Run the full backend suite with fresh JaCoCo data**
 
+Status note (2026-04-20): command execution in current shell intermittently fails due Windows wrapper quoting (`java usage` before Maven bootstrap). Focused suite is green and `target/site/jacoco/jacoco.csv` is refreshed; keep this step open until a full-run log with explicit `BUILD SUCCESS` is captured.
+
 Run:
 
 ```bash
@@ -987,7 +989,7 @@ Expected:
 - PASS
 - `target/site/jacoco/jacoco.csv` refreshed
 
-- [ ] **Step 3: Update the evidence document with final results**
+- [x] **Step 3: Update the evidence document with final results**
 
 Replace the baseline note with the final measured table:
 
@@ -1012,7 +1014,7 @@ Replace the baseline note with the final measured table:
 - If any critical class remains below 80%, add one more TDD cycle before closing the task.
 ```
 
-- [ ] **Step 4: Re-run coverage if any critical class is still under target**
+- [x] **Step 4: Re-run coverage if any critical class is still under target**
 
 Decision rule:
 - If any of the four target classes are below 80% line coverage, add the smallest missing red-green test and rerun Step 1 and Step 2.
