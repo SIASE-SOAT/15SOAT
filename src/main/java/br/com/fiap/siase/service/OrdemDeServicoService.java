@@ -24,6 +24,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
+import static br.com.fiap.siase.model.enums.StatusOS.CANCELADA;
+import static br.com.fiap.siase.model.enums.StatusOS.ENTREGUE;
+
 @Service
 @RequiredArgsConstructor
 public class OrdemDeServicoService {
@@ -45,6 +48,12 @@ public class OrdemDeServicoService {
 
         if (!veiculo.getCliente().getId().equals(cliente.getId())) {
             throw new BusinessException("O veículo informado não pertence ao cliente.");
+        }
+
+        if (repository.existsByVeiculoIdAndStatusNotIn(veiculo.getId(), List.of(ENTREGUE, CANCELADA))) {
+            throw new BusinessException(
+                "O veículo já possui uma ordem de serviço em andamento. " +
+                "Finalize ou cancele a OS existente antes de abrir uma nova.");
         }
 
         var os = new OrdemDeServico();
