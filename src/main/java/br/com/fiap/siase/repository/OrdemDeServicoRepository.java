@@ -21,6 +21,8 @@ public interface OrdemDeServicoRepository extends JpaRepository<OrdemDeServico, 
 
     List<OrdemDeServico> findByStatus(StatusOS status);
 
+    boolean existsByVeiculoIdAndStatusNotIn(UUID veiculoId, List<StatusOS> statuses);
+
     @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (data_fechamento - data_abertura)) / 60.0) " +
                    "FROM ordens_de_servico WHERE data_fechamento IS NOT NULL",
            nativeQuery = true)

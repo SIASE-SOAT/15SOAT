@@ -29,6 +29,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -278,10 +280,25 @@ class OrdemDeServicoServiceTest {
         }
 
         @Test
+        @DisplayName("Deve lançar BusinessException quando veículo já tem OS em andamento")
+        void deveLancarExcecaoQuandoVeiculoJaTemOSAtiva() {
+            when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
+            when(veiculoRepository.findById(veiculoId)).thenReturn(Optional.of(veiculo));
+            when(repository.existsByVeiculoIdAndStatusNotIn(eq(veiculoId), anyList())).thenReturn(true);
+
+            assertThatThrownBy(() -> service.criar(requestSomenteServico()))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("já possui uma ordem de serviço em andamento");
+
+            verify(repository, never()).save(any());
+        }
+
+        @Test
         @DisplayName("Deve lançar ResourceNotFoundException quando serviço não existe")
         void deveLancarExcecaoQuandoServicoNaoExiste() {
             when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
             when(veiculoRepository.findById(veiculoId)).thenReturn(Optional.of(veiculo));
+            when(repository.existsByVeiculoIdAndStatusNotIn(eq(veiculoId), anyList())).thenReturn(false);
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.criar(requestSomenteServico()))
@@ -939,6 +956,7 @@ class OrdemDeServicoServiceTest {
         when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
         when(veiculoRepository.findById(veiculoId)).thenReturn(Optional.of(veiculo));
         when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
+        when(repository.existsByVeiculoIdAndStatusNotIn(eq(veiculoId), anyList())).thenReturn(false);
         when(repository.save(any())).thenReturn(os);
     }
 
