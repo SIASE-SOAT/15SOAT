@@ -4,6 +4,7 @@ import br.com.fiap.siase.dto.request.ItemPecaRequest;
 import br.com.fiap.siase.dto.request.ItemServicoRequest;
 import br.com.fiap.siase.dto.request.OrdemDeServicoRequest;
 import br.com.fiap.siase.dto.response.OrdemDeServicoResponse;
+import br.com.fiap.siase.dto.response.PreparacaoAberturaOrdemResponse;
 import br.com.fiap.siase.exception.BusinessException;
 import br.com.fiap.siase.exception.ResourceNotFoundException;
 import br.com.fiap.siase.model.ItemPeca;
@@ -127,6 +128,43 @@ public class OrdemDeServicoService {
     }
 
     @Transactional(readOnly = true)
+    public PreparacaoAberturaOrdemResponse prepararAbertura(String documento, String placa) {
+        String documentoLimpo = limparDocumento(documento);
+
+        var cliente = clienteRepository.findByDocumento(documentoLimpo)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado para o documento: " + documento));
+
+        var veiculosAtivos = veiculoRepository.findByClienteId(cliente.getId()).stream()
+                .filter(veiculo -> Boolean.TRUE.equals(veiculo.getAtivo()))
+                .map(PreparacaoAberturaOrdemResponse.VeiculoIdentificadoResponse::from)
+                .toList();
+
+        PreparacaoAberturaOrdemResponse.VeiculoIdentificadoResponse veiculoSelecionado = null;
+        if (placa != null && !placa.isBlank()) {
+            String placaNormalizada = placa.toUpperCase().trim();
+            var veiculo = veiculoRepository.findByPlaca(placaNormalizada)
+                    .orElseThrow(() -> new ResourceNotFoundException("Veículo não encontrado para a placa: " + placa));
+
+            if (!veiculo.getCliente().getId().equals(cliente.getId())) {
+                throw new BusinessException("O veículo informado não pertence ao cliente identificado pelo documento.");
+            }
+
+            if (!Boolean.TRUE.equals(veiculo.getAtivo())) {
+                throw new BusinessException("O veículo informado está inativo e não pode ser usado para abrir uma OS.");
+            }
+
+            veiculoSelecionado = PreparacaoAberturaOrdemResponse.VeiculoIdentificadoResponse.from(veiculo);
+        }
+
+        return new PreparacaoAberturaOrdemResponse(
+                PreparacaoAberturaOrdemResponse.ClienteIdentificadoResponse.from(cliente),
+                veiculosAtivos,
+                veiculoSelecionado,
+                veiculoSelecionado != null
+        );
+    }
+
+    @Transactional(readOnly = true)
     public double calcularTempoMedioExecucaoMinutos() {
         Double resultado = repository.calcularTempoMedioExecucaoMinutos();
         return resultado != null ? resultado : 0.0;
@@ -238,6 +276,34 @@ public class OrdemDeServicoService {
     }
 
     @Transactional
+    public OrdemDeServicoResponse iniciarExecucaoItemServico(UUID ordemId, UUID itemId) {
+        var os = findOrThrow(ordemId);
+
+        if (os.getStatus() != StatusOS.EM_EXECUCAO) {
+            throw new BusinessException("Só é possível iniciar a execução de serviços quando a OS está em execução.");
+        }
+
+        var item = findItemServico(os, itemId);
+        item.iniciarExecucao();
+
+        return OrdemDeServicoResponse.from(repository.save(os));
+    }
+
+    @Transactional
+    public OrdemDeServicoResponse finalizarExecucaoItemServico(UUID ordemId, UUID itemId) {
+        var os = findOrThrow(ordemId);
+
+        if (os.getStatus() != StatusOS.EM_EXECUCAO) {
+            throw new BusinessException("Só é possível finalizar a execução de serviços quando a OS está em execução.");
+        }
+
+        var item = findItemServico(os, itemId);
+        item.finalizarExecucao();
+
+        return OrdemDeServicoResponse.from(repository.save(os));
+    }
+
+    @Transactional
     public OrdemDeServicoResponse cancelar(UUID id) {
         var os = findOrThrow(id);
         try {
@@ -276,6 +342,13 @@ public class OrdemDeServicoService {
                 .anyMatch(item -> item.getServico().getId().equals(servicoId));
     }
 
+    private ItemServico findItemServico(OrdemDeServico os, UUID itemId) {
+        return os.getItensServico().stream()
+                .filter(item -> item.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Item de serviço não encontrado: " + itemId));
+    }
+
     private boolean isStatusPermitidoParaAdicionarPeca(StatusOS status) {
         return status == StatusOS.RECEBIDA
                 || status == StatusOS.EM_DIAGNOSTICO
@@ -294,5 +367,9 @@ public class OrdemDeServicoService {
         String data = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String sufixo = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
         return "OS-" + data + "-" + sufixo;
+    }
+
+    private String limparDocumento(String documento) {
+        return documento.replaceAll("[^0-9]", "");
     }
 }

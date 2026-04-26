@@ -9,6 +9,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { VeiculoResponse } from '../../../core/models/veiculo.model';
 import { VeiculoService } from '../../../core/services/veiculo.service';
 import { VeiculoFormDialogComponent } from '../dialogs/veiculo-form-dialog.component';
+import { extractApiError } from '../../../core/utils/api-error.util';
 
 @Component({
   selector: 'app-veiculos-lista',
@@ -42,7 +43,7 @@ export class VeiculosListaComponent implements OnInit {
         if (!result) return;
         this.service.criar(result).subscribe({
           next: () => { this.snackBar.open('Veículo criado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao criar veículo.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao criar veículo.'), 'Fechar', { duration: 5000 }),
         });
       });
   }
@@ -53,7 +54,7 @@ export class VeiculosListaComponent implements OnInit {
         if (!result) return;
         this.service.atualizar(v.id, result).subscribe({
           next: () => { this.snackBar.open('Veículo atualizado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao atualizar veículo.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao atualizar veículo.'), 'Fechar', { duration: 5000 }),
         });
       });
   }

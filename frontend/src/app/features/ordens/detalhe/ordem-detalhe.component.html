@@ -34,11 +34,31 @@
           <div class="item-row">
             <div class="item-info">
               <p class="item-name">{{ item.servicoNome }}</p>
+              <span [class]="'item-status-tag ' + itemStatusClass(item)">{{ itemStatusLabel(item) }}</span>
               @if (item.observacoes) {
                 <p class="item-meta">{{ item.observacoes }}</p>
               }
+              <div class="item-execucao">
+                <span class="exec-label">Início:</span>
+                <span class="exec-value">{{ item.dataInicioExecucao ? (item.dataInicioExecucao | date:'dd/MM/yyyy HH:mm') : '—' }}</span>
+                <span class="exec-sep">•</span>
+                <span class="exec-label">Fim:</span>
+                <span class="exec-value">{{ item.dataFimExecucao ? (item.dataFimExecucao | date:'dd/MM/yyyy HH:mm') : '—' }}</span>
+              </div>
             </div>
-            <span class="item-price">R$ {{ item.precoUnitario | number:'1.2-2' }}</span>
+            <div class="item-actions">
+              <span class="item-price">R$ {{ item.precoUnitario | number:'1.2-2' }}</span>
+              @if (podeIniciarItem() && !item.dataInicioExecucao) {
+                <button mat-stroked-button class="btn-item" (click)="iniciarExecucaoItem(item.id)" [disabled]="actionLoading()">
+                  <mat-icon>play_arrow</mat-icon> Iniciar
+                </button>
+              }
+              @if (podeFinalizarItem() && item.dataInicioExecucao && !item.dataFimExecucao) {
+                <button mat-flat-button class="btn-item btn-item-finalizar" (click)="finalizarExecucaoItem(item.id)" [disabled]="actionLoading()">
+                  <mat-icon>check_circle</mat-icon> Finalizar
+                </button>
+              }
+            </div>
           </div>
         }
       </div>
@@ -106,9 +126,10 @@
                 <mat-icon>add_circle</mat-icon> Adicionar peça
               </button>
             }
-            @if (podeAvancar()) {
+            @if (proximoStatusInfo(); as prox) {
               <button mat-flat-button class="btn-avancar" (click)="avancar()" [disabled]="actionLoading()">
-                <mat-icon>arrow_forward</mat-icon> Avançar status
+                <mat-icon>{{ prox.icon }}</mat-icon>
+                {{ prox.label }}
               </button>
             }
             @if (podeCancelar()) {

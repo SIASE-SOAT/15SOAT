@@ -9,13 +9,14 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { OrdemDeServicoResponse } from '../../../core/models/ordem-de-servico.model';
+import { ItemServicoResponse, OrdemDeServicoResponse, StatusOS } from '../../../core/models/ordem-de-servico.model';
 import { PagamentoResponse } from '../../../core/models/pagamento.model';
 import { OrdemDeServicoService } from '../../../core/services/ordem-de-servico.service';
 import { PagamentoService } from '../../../core/services/pagamento.service';
 import { PagamentoFormDialogComponent } from '../dialogs/pagamento-form-dialog.component';
 import { AdicionarPecaDialogComponent } from '../dialogs/adicionar-peca-dialog.component';
 import { AdicionarServicoDialogComponent } from '../dialogs/adicionar-servico-dialog.component';
+import { extractApiError } from '../../../core/utils/api-error.util';
 
 
 @Component({
@@ -41,9 +42,23 @@ export class OrdemDetalheComponent implements OnInit {
   protected readonly os = signal<OrdemDeServicoResponse | null>(null);
   protected readonly pagamento = signal<PagamentoResponse | null>(null);
 
-  protected podeAvancar() {
+  private static readonly PROXIMO_STATUS: Record<StatusOS, { label: string; icon: string } | null> = {
+    RECEBIDA:             { label: 'Iniciar Diagnóstico',         icon: 'manage_search'      },
+    EM_DIAGNOSTICO:       { label: 'Enviar para Aprovação',       icon: 'send'               },
+    AGUARDANDO_APROVACAO: { label: 'Aprovar e Iniciar Execução',  icon: 'engineering'        },
+    EM_EXECUCAO:          { label: 'Finalizar OS',                icon: 'task_alt'           },
+    FINALIZADA:           { label: 'Confirmar Entrega',           icon: 'local_shipping'     },
+    ENTREGUE:             null,
+    CANCELADA:            null,
+  };
+
+  protected proximoStatusInfo() {
     const s = this.os()?.status;
-    return s && !['ENTREGUE', 'CANCELADA'].includes(s);
+    return s ? OrdemDetalheComponent.PROXIMO_STATUS[s] : null;
+  }
+
+  protected podeAvancar() {
+    return !!this.proximoStatusInfo();
   }
 
   protected podeCancelar() {
@@ -75,6 +90,26 @@ export class OrdemDetalheComponent implements OnInit {
     return s && ['RECEBIDA', 'EM_DIAGNOSTICO', 'AGUARDANDO_APROVACAO', 'EM_EXECUCAO'].includes(s);
   }
 
+  protected podeIniciarItem() {
+    return this.os()?.status === 'EM_EXECUCAO';
+  }
+
+  protected podeFinalizarItem() {
+    return this.os()?.status === 'EM_EXECUCAO';
+  }
+
+  protected itemStatusLabel(item: ItemServicoResponse) {
+    if (item.dataFimExecucao) return 'Finalizado';
+    if (item.dataInicioExecucao) return 'Em execução';
+    return 'Não iniciado';
+  }
+
+  protected itemStatusClass(item: ItemServicoResponse) {
+    if (item.dataFimExecucao) return 'item-status-finalizado';
+    if (item.dataInicioExecucao) return 'item-status-execucao';
+    return 'item-status-nao-iniciado';
+  }
+
   ngOnInit() {
     this.carregarOS();
   }
@@ -101,7 +136,10 @@ export class OrdemDetalheComponent implements OnInit {
     this.actionLoading.set(true);
     this.service.avancarStatus(this.id()).subscribe({
       next: (os) => { this.os.set(os); this.actionLoading.set(false); },
-      error: () => this.actionLoading.set(false),
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.snackBar.open(extractApiError(err, 'Erro ao avançar status da OS.'), 'Fechar', { duration: 5000 });
+      },
     });
   }
 
@@ -109,7 +147,10 @@ export class OrdemDetalheComponent implements OnInit {
     this.actionLoading.set(true);
     this.service.cancelar(this.id()).subscribe({
       next: (os) => { this.os.set(os); this.actionLoading.set(false); },
-      error: () => this.actionLoading.set(false),
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.snackBar.open(extractApiError(err, 'Erro ao cancelar OS.'), 'Fechar', { duration: 5000 });
+      },
     });
   }
 
@@ -129,9 +170,9 @@ export class OrdemDetalheComponent implements OnInit {
           this.actionLoading.set(false);
           this.snackBar.open('Pagamento registrado!', 'Fechar', { duration: 3000 });
         },
-        error: () => {
+        error: (err) => {
           this.actionLoading.set(false);
-          this.snackBar.open('Erro ao registrar pagamento.', 'Fechar', { duration: 3000 });
+          this.snackBar.open(extractApiError(err, 'Erro ao registrar pagamento.'), 'Fechar', { duration: 5000 });
         },
       });
     });
@@ -148,9 +189,9 @@ export class OrdemDetalheComponent implements OnInit {
         this.snackBar.open('Pagamento confirmado!', 'Fechar', { duration: 3000 });
         this.carregarOS();
       },
-      error: () => {
+      error: (err) => {
         this.actionLoading.set(false);
-        this.snackBar.open('Erro ao confirmar pagamento.', 'Fechar', { duration: 3000 });
+        this.snackBar.open(extractApiError(err, 'Erro ao confirmar pagamento.'), 'Fechar', { duration: 5000 });
       },
     });
   }
@@ -165,9 +206,9 @@ export class OrdemDetalheComponent implements OnInit {
         this.actionLoading.set(false);
         this.snackBar.open('Pagamento cancelado.', 'Fechar', { duration: 3000 });
       },
-      error: () => {
+      error: (err) => {
         this.actionLoading.set(false);
-        this.snackBar.open('Erro ao cancelar pagamento.', 'Fechar', { duration: 3000 });
+        this.snackBar.open(extractApiError(err, 'Erro ao cancelar pagamento.'), 'Fechar', { duration: 5000 });
       },
     });
   }
@@ -185,10 +226,9 @@ export class OrdemDetalheComponent implements OnInit {
           this.actionLoading.set(false);
           this.snackBar.open('Peça adicionada!', 'Fechar', { duration: 3000 });
         },
-        error: (error) => {
+        error: (err) => {
           this.actionLoading.set(false);
-          const mensagem = error.error?.message || 'Erro ao adicionar peça.';
-          this.snackBar.open(mensagem, 'Fechar', { duration: 3000 });
+          this.snackBar.open(extractApiError(err, 'Erro ao adicionar peça.'), 'Fechar', { duration: 5000 });
         },
       });
     });
@@ -207,12 +247,41 @@ export class OrdemDetalheComponent implements OnInit {
           this.actionLoading.set(false);
           this.snackBar.open('Serviço adicionado!', 'Fechar', { duration: 3000 });
         },
-        error: (error) => {
+        error: (err) => {
           this.actionLoading.set(false);
-          const mensagem = error.error?.message || 'Erro ao adicionar serviço.';
-          this.snackBar.open(mensagem, 'Fechar', { duration: 3000 });
+          this.snackBar.open(extractApiError(err, 'Erro ao adicionar serviço.'), 'Fechar', { duration: 5000 });
         },
       });
+    });
+  }
+
+  protected iniciarExecucaoItem(itemId: string) {
+    this.actionLoading.set(true);
+    this.service.iniciarExecucaoItem(this.id(), itemId).subscribe({
+      next: (os) => {
+        this.os.set(os);
+        this.actionLoading.set(false);
+        this.snackBar.open('Execução iniciada!', 'Fechar', { duration: 3000 });
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.snackBar.open(extractApiError(err, 'Erro ao iniciar execução do serviço.'), 'Fechar', { duration: 5000 });
+      },
+    });
+  }
+
+  protected finalizarExecucaoItem(itemId: string) {
+    this.actionLoading.set(true);
+    this.service.finalizarExecucaoItem(this.id(), itemId).subscribe({
+      next: (os) => {
+        this.os.set(os);
+        this.actionLoading.set(false);
+        this.snackBar.open('Execução finalizada!', 'Fechar', { duration: 3000 });
+      },
+      error: (err) => {
+        this.actionLoading.set(false);
+        this.snackBar.open(extractApiError(err, 'Erro ao finalizar execução do serviço.'), 'Fechar', { duration: 5000 });
+      },
     });
   }
 }

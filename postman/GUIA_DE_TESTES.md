@@ -19,6 +19,7 @@ A coleção usa variáveis que são **preenchidas automaticamente** pelos script
 | `{{veiculoId}}` | Criar veículo |
 | `{{pecaId}}` | Criar peça |
 | `{{servicoId}}` | Criar serviço |
+| `{{itemServicoId}}` | Criar OS / Adicionar serviço |
 | `{{osId}}` | Criar OS |
 | `{{osNumero}}` | Criar OS |
 | `{{pagamentoId}}` | Registrar pagamento |
@@ -63,7 +64,6 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 ```json
 { "token": "eyJhbGciOiJIUzI1NiJ9..." }
 ```
-
 > O token é salvo automaticamente em `{{jwtToken}}` e enviado em todas as requisições seguintes.
 
 ---
@@ -144,7 +144,49 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 7 — Abrir uma Ordem de Serviço
+### Passo 7 — Preparar abertura da OS por CPF/CNPJ e placa
+
+**Requisição:** `Ordens de Serviço > Preparar abertura da OS (documento + placa)`
+
+`GET /api/ordens/preparar-abertura?documento=52998224725&placa=ABC1234`
+
+**Resposta esperada:** `200 OK`
+
+```json
+{
+  "cliente": {
+    "id": "{{clienteId}}",
+    "nome": "João da Silva",
+    "documento": "52998224725"
+  },
+  "veiculos": [
+    {
+      "id": "{{veiculoId}}",
+      "placa": "ABC1234",
+      "marca": "Toyota",
+      "modelo": "Corolla",
+      "ano": 2022,
+      "ativo": true
+    }
+  ],
+  "veiculoSelecionado": {
+    "id": "{{veiculoId}}",
+    "placa": "ABC1234",
+    "marca": "Toyota",
+    "modelo": "Corolla",
+    "ano": 2022,
+    "ativo": true
+  },
+  "prontoParaAbertura": true
+}
+```
+
+> Esta etapa explicita no backend a identificação do cliente por CPF/CNPJ antes da abertura da OS.  
+> Também valida que a placa informada pertence ao cliente identificado.
+
+---
+
+### Passo 8 — Abrir uma Ordem de Serviço
 
 **Requisição:** `Ordens de Serviço > Criar OS (com serviço e peça)`
 
@@ -175,7 +217,7 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 8 — Avançar status: RECEBIDA → EM_DIAGNOSTICO
+### Passo 9 — Avançar status: RECEBIDA → EM_DIAGNOSTICO
 
 `Ordens de Serviço > Avancar status → EM_DIAGNOSTICO`
 
@@ -185,7 +227,7 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 9 — Avançar status: EM_DIAGNOSTICO → AGUARDANDO_APROVACAO
+### Passo 10 — Avançar status: EM_DIAGNOSTICO → AGUARDANDO_APROVACAO
 
 `Ordens de Serviço > Avancar status → AGUARDANDO_APROVACAO`
 
@@ -197,7 +239,7 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 10 — Avançar status: AGUARDANDO_APROVACAO → EM_EXECUCAO
+### Passo 11 — Avançar status: AGUARDANDO_APROVACAO → EM_EXECUCAO
 
 `Ordens de Serviço > Avancar status → EM_EXECUCAO (aprovação)`
 
@@ -209,7 +251,29 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 11 — Avançar status: EM_EXECUCAO → FINALIZADA
+### Passo 12 — Iniciar execução do serviço (item)
+
+`Ordens de Serviço > Iniciar execução do serviço (item)`
+
+`PATCH /api/ordens/{{osId}}/itens-servico/{{itemServicoId}}/iniciar`
+
+**Resposta esperada:** `200 OK` com `itensServico[].dataInicioExecucao` preenchido.
+
+> O `{{itemServicoId}}` vem da resposta da criação da OS (`itensServico[0].id`).
+
+---
+
+### Passo 13 — Finalizar execução do serviço (item)
+
+`Ordens de Serviço > Finalizar execução do serviço (item)`
+
+`PATCH /api/ordens/{{osId}}/itens-servico/{{itemServicoId}}/finalizar`
+
+**Resposta esperada:** `200 OK` com `itensServico[].dataFimExecucao` preenchido.
+
+---
+
+### Passo 14 — Avançar status: EM_EXECUCAO → FINALIZADA
 
 `Ordens de Serviço > Avancar status → FINALIZADA`
 
@@ -219,7 +283,7 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 12 — Registrar pagamento
+### Passo 15 — Registrar pagamento
 
 `Pagamentos > Registrar pagamento da OS`
 
@@ -238,7 +302,7 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 13 — Confirmar pagamento (OS avança para ENTREGUE)
+### Passo 16 — Confirmar pagamento (OS avança para ENTREGUE)
 
 `Pagamentos > Confirmar pagamento`
 
@@ -250,7 +314,7 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 14 — Verificar OS entregue
+### Passo 17 — Verificar OS entregue
 
 `GET /api/ordens/{{osId}}`
 
@@ -266,7 +330,7 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 15 — Acompanhar OS pelo número (público, sem token)
+### Passo 18 — Acompanhar OS pelo número (público, sem token)
 
 `GET /api/ordens/acompanhar/{{osNumero}}`
 
@@ -278,7 +342,7 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 Testa a adição de itens após abertura da OS, disponível nos status `RECEBIDA`, `EM_DIAGNOSTICO`, `AGUARDANDO_APROVACAO` e `EM_EXECUCAO`.
 
-> Execute os Passos 1 a 8 do Cenário 1 para ter uma OS em `EM_DIAGNOSTICO`.
+> Execute os Passos 1 a 9 do Cenário 1 para ter uma OS em `EM_DIAGNOSTICO`.
 
 ### Adicionar peça
 
@@ -470,11 +534,12 @@ Status: `PENDENTE ou APROVADO → CANCELADO`
 {
   "tempoMedioMinutos": 127.5,
   "tempoMedioHoras": 2.13,
-  "descricao": "Tempo médio entre abertura e fechamento das OS finalizadas"
+  "descricao": "Tempo médio de execução dos serviços finalizados"
 }
 ```
 
-> Retorna `0.0` se ainda não houver OS com `dataFechamento` preenchida.
+> Calculado sobre os itens de serviço com `dataInicioExecucao` e `dataFimExecucao` preenchidos.
+> Retorna `0.0` se ainda não houver itens de serviço finalizados.
 
 ---
 
@@ -872,7 +937,7 @@ Resposta inclui:
 > Calculado sobre todas as OS com `dataFechamento` preenchida (`ENTREGUE`).  
 > Retorna `0.0` se nenhuma OS tiver sido encerrada ainda.
 
-Para ter dados no monitoramento, execute o **Cenário 1** completo (até o Passo 13) e então consulte este endpoint.
+Para ter dados no monitoramento, execute o **Cenário 1** completo (até o Passo 14) e então consulte este endpoint.
 
 ---
 
@@ -914,9 +979,12 @@ Para ter dados no monitoramento, execute o **Cenário 1** completo (até o Passo
 | Ordens | `GET` | `/api/ordens` |
 | Ordens | `GET` | `/api/ordens?status=EM_EXECUCAO` |
 | Ordens | `GET` | `/api/ordens/{id}` |
+| Ordens | `GET` | `/api/ordens/preparar-abertura?documento={doc}&placa={placa}` |
 | Ordens | `POST` | `/api/ordens` |
 | Ordens | `POST` | `/api/ordens/{id}/items-peca` |
 | Ordens | `POST` | `/api/ordens/{id}/items-servico` |
+| Ordens | `PATCH` | `/api/ordens/{id}/itens-servico/{itemId}/iniciar` |
+| Ordens | `PATCH` | `/api/ordens/{id}/itens-servico/{itemId}/finalizar` |
 | Ordens | `PATCH` | `/api/ordens/{id}/avancar` |
 | Ordens | `PATCH` | `/api/ordens/{id}/cancelar` |
 | Ordens | `GET` | `/api/ordens/monitoramento/tempo-medio` |

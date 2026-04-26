@@ -1,120 +1,294 @@
-<h2 mat-dialog-title>Nova Ordem de Serviço</h2>
+<div mat-dialog-title>
+  <div class="dialog-header">
+    <div class="header-icon">
+      <mat-icon>assignment_add</mat-icon>
+    </div>
+    <div class="header-text">
+      <h2>Nova Ordem de Servico</h2>
+      <p>Identifique o cliente e o veiculo antes de abrir o atendimento</p>
+    </div>
+  </div>
+</div>
 
 <mat-dialog-content>
-  <form [formGroup]="form" novalidate class="flex flex-col gap-4 min-w-[580px] pt-2">
-
-    <!-- Cliente / Veículo -->
-    <div class="grid grid-cols-2 gap-3">
-      <mat-form-field>
-        <mat-label>Cliente</mat-label>
-        <mat-select formControlName="clienteId">
-          @for (c of clientes(); track c.id) {
-            <mat-option [value]="c.id">{{ c.nome }}</mat-option>
-          }
-        </mat-select>
-        @if (form.controls.clienteId.hasError('required') && form.controls.clienteId.touched) {
-          <mat-error>Obrigatório</mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field>
-        <mat-label>Veículo</mat-label>
-        <mat-select formControlName="veiculoId">
-          @for (v of veiculos(); track v.id) {
-            <mat-option [value]="v.id">{{ v.placa }} — {{ v.modelo }}</mat-option>
-          }
-        </mat-select>
-        @if (form.controls.veiculoId.hasError('required') && form.controls.veiculoId.touched) {
-          <mat-error>Obrigatório</mat-error>
-        }
-        @if (!form.controls.clienteId.value) {
-          <mat-hint>Selecione um cliente primeiro</mat-hint>
-        }
-      </mat-form-field>
-    </div>
-
-    <mat-form-field>
-      <mat-label>Observações gerais</mat-label>
-      <textarea matInput formControlName="observacoes" rows="2"></textarea>
-      <mat-hint>Opcional</mat-hint>
-    </mat-form-field>
-
-    <mat-divider />
-
-    <!-- Serviços -->
-    <div>
-      <div class="flex justify-between items-center mb-2">
-        <span class="font-medium text-sm">
-          Serviços <span class="text-red-500">*</span>
-        </span>
-        <button mat-stroked-button type="button" (click)="adicionarServico()">
-          <mat-icon>add</mat-icon> Adicionar serviço
-        </button>
+  @if (apiError()) {
+    <div class="api-error-banner">
+      <mat-icon>error_outline</mat-icon>
+      <div class="api-error-text">
+        <strong>Nao foi possivel criar a OS</strong>
+        <span>{{ apiError() }}</span>
       </div>
+      <button mat-icon-button type="button" (click)="apiError.set(null)" class="close-btn">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
 
-      @if (semServicos()) {
-        <p class="text-red-600 text-xs mb-2">Adicione pelo menos um serviço</p>
-      }
+  @if (carregando()) {
+    <div class="loader">
+      <mat-spinner diameter="48" />
+    </div>
+  } @else {
+    <form [formGroup]="form" novalidate class="flex flex-col gap-4 py-4">
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">
+            <mat-icon>person_outline</mat-icon>
+            Identificacao
+          </span>
+        </div>
 
-      @for (item of itensServico.controls; track $index) {
-        <div [formGroup]="$any(item)" class="flex gap-2 items-start mb-2">
-          <mat-form-field class="flex-1">
-            <mat-label>Serviço</mat-label>
-            <mat-select formControlName="servicoId">
-              @for (s of servicos(); track s.id) {
-                <mat-option [value]="s.id">{{ s.nome }} — R$ {{ s.preco | number:'1.2-2' }}</mat-option>
-              }
-            </mat-select>
+        <div class="grid grid-cols-2 gap-3">
+          <mat-form-field appearance="outline">
+            <mat-label>CPF / CNPJ</mat-label>
+            <input matInput formControlName="documento" placeholder="Digite o documento do cliente" />
+            <mat-icon matPrefix class="mr-2 text-slate-400">badge</mat-icon>
+            @if (form.controls.documento.hasError('required') && form.controls.documento.touched) {
+              <mat-error>Informe o CPF ou CNPJ</mat-error>
+            }
           </mat-form-field>
-          <mat-form-field class="w-44">
-            <mat-label>Obs. do serviço</mat-label>
-            <input matInput formControlName="observacoes" />
+
+          <mat-form-field appearance="outline">
+            <mat-label>Placa</mat-label>
+            <input matInput formControlName="placa" placeholder="Opcional para busca direta" />
+            <mat-icon matPrefix class="mr-2 text-slate-400">directions_car</mat-icon>
+            <mat-hint>Informe a placa para validar o veiculo do cliente</mat-hint>
           </mat-form-field>
-          <button mat-icon-button type="button" color="warn" (click)="removerServico($index)" class="mt-1">
-            <mat-icon>delete</mat-icon>
+        </div>
+
+        <div class="identificacao-actions">
+          <button mat-stroked-button type="button" (click)="prepararAbertura()" [disabled]="preparandoAbertura()">
+            @if (preparandoAbertura()) {
+              <mat-spinner diameter="18" class="inline-spinner" />
+              Buscando...
+            } @else {
+              <ng-container>
+                <mat-icon>search</mat-icon>
+                Buscar cliente e veiculo
+              </ng-container>
+            }
           </button>
         </div>
-      }
-    </div>
 
-    <mat-divider />
+        @if (clienteIdentificado(); as cliente) {
+          <div class="cliente-card">
+            <mat-icon>person</mat-icon>
+            <div class="cliente-info">
+              <div class="nome">{{ cliente.nome }}</div>
+              <div class="descricao">
+                Documento: {{ cliente.documento }}
+                @if (cliente.telefone) { - {{ cliente.telefone }} }
+                @if (cliente.email) { - {{ cliente.email }} }
+              </div>
+            </div>
+          </div>
+        }
 
-    <!-- Peças -->
-    <div>
-      <div class="flex justify-between items-center mb-2">
-        <span class="font-medium text-sm">
-          Peças e Insumos <span class="text-gray-400 text-xs font-normal">(opcional)</span>
-        </span>
-        <button mat-stroked-button type="button" (click)="adicionarPeca()">
-          <mat-icon>add</mat-icon> Adicionar peça
-        </button>
-      </div>
-
-      @for (item of itensPeca.controls; track $index) {
-        <div [formGroup]="$any(item)" class="flex gap-2 items-start mb-2">
-          <mat-form-field class="flex-1">
-            <mat-label>Peça</mat-label>
-            <mat-select formControlName="pecaId">
-              @for (p of pecas(); track p.id) {
-                <mat-option [value]="p.id">{{ p.codigo }} — {{ p.nome }}</mat-option>
+        @if (buscaPreparada()) {
+          <mat-form-field appearance="outline">
+            <mat-label>Veiculo identificado</mat-label>
+            <mat-select formControlName="veiculoId">
+              @for (v of veiculos(); track v.id) {
+                <mat-option [value]="v.id">
+                  <span class="font-mono font-bold">{{ v.placa }}</span>
+                  - {{ v.marca }} {{ v.modelo }}
+                </mat-option>
+              }
+              @if (veiculos().length === 0) {
+                <mat-option disabled>Nenhum veiculo ativo encontrado para este cliente</mat-option>
               }
             </mat-select>
+            <mat-icon matPrefix class="mr-2 text-slate-400">directions_car</mat-icon>
+            @if (form.controls.veiculoId.hasError('required') && form.controls.veiculoId.touched) {
+              <mat-error>Selecione um veiculo</mat-error>
+            }
+            <mat-hint>
+              @if (veiculos().length > 1) {
+                Selecione um dos veiculos encontrados para este cliente
+              } @else if (veiculos().length === 1) {
+                Veiculo carregado a partir da identificacao
+              } @else {
+                Cadastre ou reative um veiculo antes de abrir a OS
+              }
+            </mat-hint>
           </mat-form-field>
-          <mat-form-field class="w-28">
-            <mat-label>Qtd.</mat-label>
-            <input matInput type="number" formControlName="quantidade" />
-          </mat-form-field>
-          <button mat-icon-button type="button" color="warn" (click)="removerPeca($index)" class="mt-1">
-            <mat-icon>delete</mat-icon>
+        }
+
+        @if (veiculoSelecionado(); as v) {
+          <div class="veiculo-card">
+            <mat-icon>directions_car</mat-icon>
+            <div class="veiculo-info">
+              <div class="placa">{{ v.placa }}</div>
+              <div class="descricao">{{ v.marca }} {{ v.modelo }} - {{ v.ano }}</div>
+            </div>
+          </div>
+        }
+
+        <mat-form-field appearance="outline">
+          <mat-label>Observacoes gerais</mat-label>
+          <textarea
+            matInput
+            formControlName="observacoes"
+            rows="2"
+            placeholder="Descreva o problema relatado pelo cliente..."
+          ></textarea>
+          <mat-icon matPrefix class="mr-2 text-slate-400">notes</mat-icon>
+          <mat-hint>Opcional</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">
+            <mat-icon>handyman</mat-icon>
+            Servicos
+            @if (itensServicoCount() > 0) {
+              <span class="badge">{{ itensServicoCount() }}</span>
+            }
+            <span class="text-red-500 text-base">*</span>
+          </span>
+          <button mat-stroked-button type="button" (click)="adicionarServico()">
+            <mat-icon>add</mat-icon> Adicionar servico
           </button>
         </div>
-      }
-    </div>
 
-  </form>
+        @if (semServicos()) {
+          <div class="erro-servicos">
+            <mat-icon>error_outline</mat-icon>
+            Adicione pelo menos um servico para criar a OS
+          </div>
+        }
+
+        @if (itensServicoCount() === 0 && !semServicos()) {
+          <div class="empty-state">
+            Nenhum servico adicionado ainda
+          </div>
+        }
+
+        @for (item of itensServico.controls; track $index) {
+          <div [formGroup]="$any(item)">
+            <div class="item-row item-servico">
+              <mat-form-field appearance="outline">
+                <mat-label>Servico</mat-label>
+                <mat-select formControlName="servicoId">
+                  @for (s of servicos(); track s.id) {
+                    <mat-option [value]="s.id">{{ s.nome }}</mat-option>
+                  }
+                </mat-select>
+                @if ($any(item).controls.servicoId.hasError('required') && $any(item).controls.servicoId.touched) {
+                  <mat-error>Obrigatorio</mat-error>
+                }
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Observacao</mat-label>
+                <input matInput formControlName="observacoes" placeholder="Opcional" />
+              </mat-form-field>
+              <button
+                mat-icon-button
+                type="button"
+                color="warn"
+                (click)="removerServico($index)"
+                matTooltip="Remover servico"
+                class="mt-1"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+            @if (precoServico($any(item).controls.servicoId.value) > 0) {
+              <div class="item-meta">
+                <span class="preco-tag">
+                  R$ {{ precoServico($any(item).controls.servicoId.value) | number:'1.2-2' }}
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">
+            <mat-icon>inventory_2</mat-icon>
+            Pecas e Insumos
+            @if (itensPecaCount() > 0) {
+              <span class="badge">{{ itensPecaCount() }}</span>
+            }
+            <span class="optional">(opcional)</span>
+          </span>
+          <button mat-stroked-button type="button" (click)="adicionarPeca()">
+            <mat-icon>add</mat-icon> Adicionar peca
+          </button>
+        </div>
+
+        @if (itensPecaCount() === 0) {
+          <div class="empty-state">
+            Nenhuma peca adicionada - voce pode adicionar depois no detalhe da OS
+          </div>
+        }
+
+        @for (item of itensPeca.controls; track $index) {
+          <div [formGroup]="$any(item)">
+            <div class="item-row item-peca">
+              <mat-form-field appearance="outline">
+                <mat-label>Peca / Insumo</mat-label>
+                <mat-select formControlName="pecaId">
+                  @for (p of pecas(); track p.id) {
+                    <mat-option [value]="p.id">
+                      <span class="font-mono text-xs">{{ p.codigo }}</span> - {{ p.nome }}
+                    </mat-option>
+                  }
+                </mat-select>
+                @if ($any(item).controls.pecaId.hasError('required') && $any(item).controls.pecaId.touched) {
+                  <mat-error>Obrigatorio</mat-error>
+                }
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Qtd.</mat-label>
+                <input matInput type="number" formControlName="quantidade" min="1" />
+              </mat-form-field>
+              <button
+                mat-icon-button
+                type="button"
+                color="warn"
+                (click)="removerPeca($index)"
+                matTooltip="Remover peca"
+                class="mt-1"
+              >
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+            @if (estoqueDisponivelPeca($any(item).controls.pecaId.value) > 0) {
+              <div class="item-meta">
+                <span class="estoque-tag">
+                  Estoque: {{ estoqueDisponivelPeca($any(item).controls.pecaId.value) }}
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </form>
+  }
 </mat-dialog-content>
 
+@if (totalEstimado() > 0) {
+  <div class="totais-footer">
+    <span class="total-label">Total estimado</span>
+    <span class="total-valor">R$ {{ totalEstimado() | number:'1.2-2' }}</span>
+  </div>
+}
+
 <mat-dialog-actions align="end">
-  <button mat-button (click)="dialogRef.close()">Cancelar</button>
-  <button mat-flat-button (click)="submit()">Criar OS</button>
+  <button mat-button (click)="dialogRef.close()" [disabled]="enviando()">Cancelar</button>
+  <button mat-flat-button color="primary" (click)="submit()" [disabled]="carregando() || preparandoAbertura() || enviando()">
+    @if (enviando()) {
+      <mat-spinner diameter="18" class="inline-spinner" />
+      Criando...
+    } @else {
+      <ng-container>
+        <mat-icon>assignment_turned_in</mat-icon>
+        Criar OS
+      </ng-container>
+    }
+  </button>
 </mat-dialog-actions>

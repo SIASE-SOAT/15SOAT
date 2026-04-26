@@ -37,7 +37,9 @@ public record OrdemDeServicoResponse(
             String servicoNome,
             BigDecimal precoUnitario,
             Integer tempoEstimadoMinutos,
-            String observacoes
+            String observacoes,
+            LocalDateTime dataInicioExecucao,
+            LocalDateTime dataFimExecucao
     ) {
         public static ItemServicoResponse from(ItemServico item) {
             return new ItemServicoResponse(
@@ -46,7 +48,9 @@ public record OrdemDeServicoResponse(
                     item.getServico().getNome(),
                     item.getPrecoUnitario(),
                     item.getTempoEstimadoMinutos(),
-                    item.getObservacoes()
+                item.getObservacoes(),
+                item.getDataInicioExecucao(),
+                item.getDataFimExecucao()
             );
         }
     }

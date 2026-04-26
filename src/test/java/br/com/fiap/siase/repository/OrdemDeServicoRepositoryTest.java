@@ -1,7 +1,9 @@
 package br.com.fiap.siase.repository;
 
 import br.com.fiap.siase.model.Cliente;
+import br.com.fiap.siase.model.ItemServico;
 import br.com.fiap.siase.model.OrdemDeServico;
+import br.com.fiap.siase.model.Servico;
 import br.com.fiap.siase.model.Veiculo;
 import br.com.fiap.siase.model.enums.StatusOS;
 import br.com.fiap.siase.model.enums.TipoPessoa;
@@ -38,10 +40,14 @@ class OrdemDeServicoRepositoryTest {
     private VeiculoRepository veiculoRepository;
 
     @Autowired
+    private ServicoRepository servicoRepository;
+
+    @Autowired
     private TestEntityManager entityManager;
 
     private Cliente cliente;
     private Veiculo veiculo;
+    private Servico servico;
     private OrdemDeServico ordemDeServico;
 
     @BeforeEach
@@ -61,6 +67,13 @@ class OrdemDeServicoRepositoryTest {
         veiculo.setModelo("Corolla");
         veiculo.setAno(2020);
         veiculo = veiculoRepository.save(veiculo);
+
+        servico = new Servico();
+        servico.setNome("Troca de óleo");
+        servico.setDescricao("Serviço básico de manutenção");
+        servico.setPreco(new BigDecimal("100.00"));
+        servico.setTempoEstimadoMinutos(60);
+        servico = servicoRepository.save(servico);
 
         ordemDeServico = new OrdemDeServico();
         ordemDeServico.setNumero("OS-2026-0001");
@@ -210,19 +223,25 @@ class OrdemDeServicoRepositoryTest {
     }
 
     @Test
-    @DisplayName("Deve calcular tempo médio de execução em minutos")
+    @DisplayName("Deve calcular tempo médio de execução dos serviços em minutos")
     void testCalcularTempoMedioExecucaoMinutos() {
-        LocalDateTime dataAbertura = LocalDateTime.now().minusMinutes(60);
-        LocalDateTime dataFechamento = LocalDateTime.now();
-
         OrdemDeServico os1 = new OrdemDeServico();
         os1.setNumero("OS-T-001");
         os1.setCliente(cliente);
         os1.setVeiculo(veiculo);
-        os1.setStatus(StatusOS.FINALIZADA);
-        os1.setDataAbertura(dataAbertura);
-        os1.setDataFechamento(dataFechamento);
         os1.setTotal(BigDecimal.ZERO);
+
+        ordemDeServicoRepository.save(os1);
+        entityManager.flush();
+
+        ItemServico item1 = new ItemServico();
+        item1.setOrdemDeServico(os1);
+        item1.setServico(servico);
+        item1.setPrecoUnitario(servico.getPreco());
+        item1.setTempoEstimadoMinutos(servico.getTempoEstimadoMinutos());
+        item1.setDataInicioExecucao(LocalDateTime.now().minusMinutes(60));
+        item1.setDataFimExecucao(LocalDateTime.now());
+        os1.getItensServico().add(item1);
 
         ordemDeServicoRepository.save(os1);
         entityManager.flush();
@@ -236,15 +255,12 @@ class OrdemDeServicoRepositoryTest {
     }
 
     @Test
-    @DisplayName("Deve retornar null quando nenhuma ordem foi fechada")
+    @DisplayName("Deve retornar null quando nenhum serviço foi finalizado")
     void testCalcularTempoMedioExecucaoMinutosNoPecas() {
         OrdemDeServico os1 = new OrdemDeServico();
         os1.setNumero("OS-T-002");
         os1.setCliente(cliente);
         os1.setVeiculo(veiculo);
-        os1.setStatus(StatusOS.RECEBIDA);
-        os1.setDataAbertura(LocalDateTime.now());
-        os1.setDataFechamento(null);
         os1.setTotal(BigDecimal.ZERO);
 
         ordemDeServicoRepository.save(os1);

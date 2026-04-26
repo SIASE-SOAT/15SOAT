@@ -41,6 +41,12 @@ public class ItemServico {
     @Column(name = "tempo_estimado_minutos")
     private Integer tempoEstimadoMinutos;
 
+    @Column(name = "data_inicio_execucao")
+    private LocalDateTime dataInicioExecucao;
+
+    @Column(name = "data_fim_execucao")
+    private LocalDateTime dataFimExecucao;
+
     @Column(columnDefinition = "TEXT")
     private String observacoes;
 
@@ -50,5 +56,20 @@ public class ItemServico {
     @PrePersist
     protected void onCreate() {
         criadoEm = LocalDateTime.now();
+    }
+
+    public void iniciarExecucao() {
+        if (dataInicioExecucao == null) {
+            dataInicioExecucao = LocalDateTime.now();
+        }
+    }
+
+    public void finalizarExecucao() {
+        if (dataInicioExecucao == null) {
+            iniciarExecucao();
+        }
+        if (dataFimExecucao == null) {
+            dataFimExecucao = LocalDateTime.now();
+        }
     }
 }

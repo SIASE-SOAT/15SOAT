@@ -4,6 +4,7 @@ import br.com.fiap.siase.dto.request.ItemPecaRequest;
 import br.com.fiap.siase.dto.request.ItemServicoRequest;
 import br.com.fiap.siase.dto.request.OrdemDeServicoRequest;
 import br.com.fiap.siase.dto.response.OrdemDeServicoResponse;
+import br.com.fiap.siase.dto.response.PreparacaoAberturaOrdemResponse;
 import br.com.fiap.siase.model.enums.StatusOS;
 import br.com.fiap.siase.service.OrdemDeServicoService;
 import jakarta.validation.Valid;
@@ -47,6 +48,13 @@ public class OrdemDeServicoController {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
 
+    @GetMapping("/preparar-abertura")
+    public ResponseEntity<PreparacaoAberturaOrdemResponse> prepararAbertura(
+            @RequestParam String documento,
+            @RequestParam(required = false) String placa) {
+        return ResponseEntity.ok(service.prepararAbertura(documento, placa));
+    }
+
     @PostMapping("/{id}/items-peca")
     public ResponseEntity<OrdemDeServicoResponse> adicionarPeca(
             @PathVariable UUID id,
@@ -61,6 +69,20 @@ public class OrdemDeServicoController {
             @Valid @RequestBody ItemServicoRequest request) {
         OrdemDeServicoResponse response = service.adicionarServicoAOrdem(id, request);
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/itens-servico/{itemId}/iniciar")
+    public ResponseEntity<OrdemDeServicoResponse> iniciarExecucaoItemServico(
+            @PathVariable UUID id,
+            @PathVariable UUID itemId) {
+        return ResponseEntity.ok(service.iniciarExecucaoItemServico(id, itemId));
+    }
+
+    @PatchMapping("/{id}/itens-servico/{itemId}/finalizar")
+    public ResponseEntity<OrdemDeServicoResponse> finalizarExecucaoItemServico(
+            @PathVariable UUID id,
+            @PathVariable UUID itemId) {
+        return ResponseEntity.ok(service.finalizarExecucaoItemServico(id, itemId));
     }
 
     @PatchMapping("/{id}/avancar")
@@ -79,7 +101,7 @@ public class OrdemDeServicoController {
         return ResponseEntity.ok(Map.of(
                 "tempoMedioMinutos", Math.round(minutos * 100.0) / 100.0,
                 "tempoMedioHoras", Math.round((minutos / 60.0) * 100.0) / 100.0,
-                "descricao", "Tempo médio entre abertura e fechamento das OS finalizadas"
+            "descricao", "Tempo médio de execução dos serviços finalizados"
         ));
     }
 

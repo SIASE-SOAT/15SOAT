@@ -145,11 +145,46 @@
       margin: 0 0 0.125rem;
     }
 
+    .item-status-tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 0.1rem 0.55rem;
+      font-size: 0.66rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+
+      &.item-status-nao-iniciado { background: #fef3c7; color: #92400e; }
+      &.item-status-execucao { background: #dbeafe; color: #1e40af; }
+      &.item-status-finalizado { background: #dcfce7; color: #166534; }
+    }
+
     .item-meta {
       font-size: 0.75rem;
       color: #9ca3af;
       margin: 0;
     }
+
+    .item-execucao {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+      font-size: 0.7rem;
+      color: #9ca3af;
+
+      .exec-label { font-weight: 600; color: #6b7280; }
+      .exec-value { font-variant-numeric: tabular-nums; }
+      .exec-sep { color: #d1d5db; }
+    }
+  }
+
+  .item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+    min-width: 140px;
   }
 
   .item-price {
@@ -157,6 +192,19 @@
     font-weight: 700;
     color: #15803d;
     white-space: nowrap;
+  }
+
+  .btn-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .btn-item-finalizar {
+    background: #16a34a;
+    color: #fff;
   }
 }
 

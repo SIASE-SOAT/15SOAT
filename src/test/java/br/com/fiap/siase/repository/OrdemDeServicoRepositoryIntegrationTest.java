@@ -1,7 +1,9 @@
 package br.com.fiap.siase.repository;
 
 import br.com.fiap.siase.model.Cliente;
+import br.com.fiap.siase.model.ItemServico;
 import br.com.fiap.siase.model.OrdemDeServico;
+import br.com.fiap.siase.model.Servico;
 import br.com.fiap.siase.model.Veiculo;
 import br.com.fiap.siase.model.enums.StatusOS;
 import br.com.fiap.siase.model.enums.TipoPessoa;
@@ -39,10 +41,14 @@ class OrdemDeServicoRepositoryIntegrationTest {
     private VeiculoRepository veiculoRepository;
 
     @Autowired
+    private ServicoRepository servicoRepository;
+
+    @Autowired
     private TestEntityManager entityManager;
 
     private Cliente cliente;
     private Veiculo veiculo;
+    private Servico servico;
 
     @BeforeEach
     void setUp() {
@@ -61,6 +67,13 @@ class OrdemDeServicoRepositoryIntegrationTest {
         veiculo.setModelo("Civic");
         veiculo.setAno(2022);
         veiculo = veiculoRepository.save(veiculo);
+
+        servico = new Servico();
+        servico.setNome("Revisão");
+        servico.setDescricao("Revisão completa");
+        servico.setPreco(new BigDecimal("200.00"));
+        servico.setTempoEstimadoMinutos(120);
+        servico = servicoRepository.save(servico);
     }
 
     @Nested
@@ -235,15 +248,21 @@ class OrdemDeServicoRepositoryIntegrationTest {
     class CalculoTempoMedio {
 
         @Test
-        @DisplayName("Deve calcular corretamente tempo médio com uma ordem fechada")
+        @DisplayName("Deve calcular corretamente tempo médio com um serviço finalizado")
         void testCalcularTempoMedioUmaOrdem() {
-            LocalDateTime abertura = LocalDateTime.now().minusMinutes(120);
-            LocalDateTime fechamento = LocalDateTime.now();
-
             OrdemDeServico os = OrdemDeServicoRepositoryIntegrationTest.this.criarOrdemDeServico("OS-TEMPO-001");
-            os.setDataAbertura(abertura);
-            os.setDataFechamento(fechamento);
-            os.setStatus(StatusOS.FINALIZADA);
+
+            ordemDeServicoRepository.save(os);
+            entityManager.flush();
+
+            ItemServico item = new ItemServico();
+            item.setOrdemDeServico(os);
+            item.setServico(servico);
+            item.setPrecoUnitario(servico.getPreco());
+            item.setTempoEstimadoMinutos(servico.getTempoEstimadoMinutos());
+            item.setDataInicioExecucao(LocalDateTime.now().minusMinutes(120));
+            item.setDataFimExecucao(LocalDateTime.now());
+            os.getItensServico().add(item);
 
             ordemDeServicoRepository.save(os);
             entityManager.flush();
@@ -261,14 +280,29 @@ class OrdemDeServicoRepositoryIntegrationTest {
             LocalDateTime agora = LocalDateTime.now();
 
             OrdemDeServico os1 = OrdemDeServicoRepositoryIntegrationTest.this.criarOrdemDeServico("OS-TEMPO-001");
-            os1.setDataAbertura(agora.minusMinutes(60));
-            os1.setDataFechamento(agora);
-            os1.setStatus(StatusOS.FINALIZADA);
 
             OrdemDeServico os2 = OrdemDeServicoRepositoryIntegrationTest.this.criarOrdemDeServico("OS-TEMPO-002");
-            os2.setDataAbertura(agora.minusMinutes(120));
-            os2.setDataFechamento(agora);
-            os2.setStatus(StatusOS.FINALIZADA);
+
+            ordemDeServicoRepository.saveAll(List.of(os1, os2));
+            entityManager.flush();
+
+            ItemServico item1 = new ItemServico();
+            item1.setOrdemDeServico(os1);
+            item1.setServico(servico);
+            item1.setPrecoUnitario(servico.getPreco());
+            item1.setTempoEstimadoMinutos(servico.getTempoEstimadoMinutos());
+            item1.setDataInicioExecucao(agora.minusMinutes(60));
+            item1.setDataFimExecucao(agora);
+            os1.getItensServico().add(item1);
+
+            ItemServico item2 = new ItemServico();
+            item2.setOrdemDeServico(os2);
+            item2.setServico(servico);
+            item2.setPrecoUnitario(servico.getPreco());
+            item2.setTempoEstimadoMinutos(servico.getTempoEstimadoMinutos());
+            item2.setDataInicioExecucao(agora.minusMinutes(120));
+            item2.setDataFimExecucao(agora);
+            os2.getItensServico().add(item2);
 
             ordemDeServicoRepository.saveAll(List.of(os1, os2));
             entityManager.flush();
@@ -287,16 +321,22 @@ class OrdemDeServicoRepositoryIntegrationTest {
             LocalDateTime agora = LocalDateTime.now();
 
             OrdemDeServico osAberta = OrdemDeServicoRepositoryIntegrationTest.this.criarOrdemDeServico("OS-TEMPO-ABERTA");
-            osAberta.setDataAbertura(agora.minusMinutes(60));
-            osAberta.setDataFechamento(null);
-            osAberta.setStatus(StatusOS.EM_EXECUCAO);
 
             OrdemDeServico osFechada = OrdemDeServicoRepositoryIntegrationTest.this.criarOrdemDeServico("OS-TEMPO-FECHADA");
-            osFechada.setDataAbertura(agora.minusMinutes(120));
-            osFechada.setDataFechamento(agora);
-            osFechada.setStatus(StatusOS.FINALIZADA);
 
             ordemDeServicoRepository.saveAll(List.of(osAberta, osFechada));
+            entityManager.flush();
+
+            ItemServico itemFechado = new ItemServico();
+            itemFechado.setOrdemDeServico(osFechada);
+            itemFechado.setServico(servico);
+            itemFechado.setPrecoUnitario(servico.getPreco());
+            itemFechado.setTempoEstimadoMinutos(servico.getTempoEstimadoMinutos());
+            itemFechado.setDataInicioExecucao(agora.minusMinutes(120));
+            itemFechado.setDataFimExecucao(agora);
+            osFechada.getItensServico().add(itemFechado);
+
+            ordemDeServicoRepository.save(osFechada);
             entityManager.flush();
 
             Double tempoMedio = ordemDeServicoRepository.calcularTempoMedioExecucaoMinutos();

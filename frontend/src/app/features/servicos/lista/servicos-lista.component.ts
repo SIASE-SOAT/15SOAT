@@ -13,6 +13,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ServicoResponse } from '../../../core/models/servico.model';
 import { ServicoService } from '../../../core/services/servico.service';
 import { ServicoFormDialogComponent } from '../dialogs/servico-form-dialog.component';
+import { extractApiError } from '../../../core/utils/api-error.util';
 
 @Component({
   selector: 'app-servicos-lista',
@@ -50,7 +51,7 @@ export class ServicosListaComponent implements OnInit {
         if (!result) return;
         this.service.criar(result).subscribe({
           next: () => { this.snackBar.open('Serviço criado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao criar serviço.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao criar serviço.'), 'Fechar', { duration: 5000 }),
         });
       });
   }
@@ -61,7 +62,7 @@ export class ServicosListaComponent implements OnInit {
         if (!result) return;
         this.service.atualizar(s.id, result).subscribe({
           next: () => { this.snackBar.open('Serviço atualizado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao atualizar serviço.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao atualizar serviço.'), 'Fechar', { duration: 5000 }),
         });
       });
   }

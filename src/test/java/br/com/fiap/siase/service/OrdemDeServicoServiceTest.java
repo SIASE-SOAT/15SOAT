@@ -4,6 +4,7 @@ import br.com.fiap.siase.dto.request.ItemPecaRequest;
 import br.com.fiap.siase.dto.request.ItemServicoRequest;
 import br.com.fiap.siase.dto.request.OrdemDeServicoRequest;
 import br.com.fiap.siase.dto.response.OrdemDeServicoResponse;
+import br.com.fiap.siase.dto.response.PreparacaoAberturaOrdemResponse;
 import br.com.fiap.siase.exception.BusinessException;
 import br.com.fiap.siase.exception.ResourceNotFoundException;
 import br.com.fiap.siase.model.*;
@@ -509,6 +510,76 @@ class OrdemDeServicoServiceTest {
             assertThat(resultado).hasSize(1);
             assertThat(resultado.get(0).status()).isEqualTo(StatusOS.EM_EXECUCAO.name());
             verify(repository).findByStatus(StatusOS.EM_EXECUCAO);
+        }
+    }
+
+    @Nested
+    @DisplayName("Preparar abertura da OS")
+    class PrepararAbertura {
+
+        @Test
+        @DisplayName("Deve identificar cliente por documento e retornar apenas veiculos ativos")
+        void devePrepararAberturaPorDocumento() {
+            Veiculo veiculoInativo = new Veiculo();
+            ReflectionTestUtils.setField(veiculoInativo, "id", UUID.randomUUID());
+            veiculoInativo.setPlaca("ZZZ9999");
+            veiculoInativo.setMarca("Ford");
+            veiculoInativo.setModelo("Ka");
+            veiculoInativo.setAno(2018);
+            veiculoInativo.setAtivo(false);
+            veiculoInativo.setCliente(cliente);
+
+            when(clienteRepository.findByDocumento("52998224725")).thenReturn(Optional.of(cliente));
+            when(veiculoRepository.findByClienteId(clienteId)).thenReturn(List.of(veiculo, veiculoInativo));
+
+            PreparacaoAberturaOrdemResponse response = service.prepararAbertura("529.982.247-25", null);
+
+            assertThat(response.cliente().id()).isEqualTo(clienteId);
+            assertThat(response.veiculos()).hasSize(1);
+            assertThat(response.veiculos().get(0).placa()).isEqualTo("ABC1234");
+            assertThat(response.veiculoSelecionado()).isNull();
+            assertThat(response.prontoParaAbertura()).isFalse();
+        }
+
+        @Test
+        @DisplayName("Deve selecionar veiculo quando placa pertence ao cliente")
+        void deveSelecionarVeiculoPelaPlaca() {
+            when(clienteRepository.findByDocumento("52998224725")).thenReturn(Optional.of(cliente));
+            when(veiculoRepository.findByClienteId(clienteId)).thenReturn(List.of(veiculo));
+            when(veiculoRepository.findByPlaca("ABC1234")).thenReturn(Optional.of(veiculo));
+
+            PreparacaoAberturaOrdemResponse response = service.prepararAbertura("52998224725", "abc1234");
+
+            assertThat(response.veiculoSelecionado()).isNotNull();
+            assertThat(response.veiculoSelecionado().placa()).isEqualTo("ABC1234");
+            assertThat(response.prontoParaAbertura()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Deve lancar excecao quando placa pertence a outro cliente")
+        void deveLancarExcecaoQuandoPlacaPertenceAOutroCliente() {
+            Cliente outroCliente = new Cliente();
+            ReflectionTestUtils.setField(outroCliente, "id", UUID.randomUUID());
+            outroCliente.setNome("Maria");
+            outroCliente.setDocumento("11222333000181");
+            outroCliente.setTipoPessoa(TipoPessoa.PJ);
+
+            Veiculo veiculoOutroCliente = new Veiculo();
+            ReflectionTestUtils.setField(veiculoOutroCliente, "id", UUID.randomUUID());
+            veiculoOutroCliente.setPlaca("DEF1G23");
+            veiculoOutroCliente.setMarca("Honda");
+            veiculoOutroCliente.setModelo("City");
+            veiculoOutroCliente.setAno(2023);
+            veiculoOutroCliente.setAtivo(true);
+            veiculoOutroCliente.setCliente(outroCliente);
+
+            when(clienteRepository.findByDocumento("52998224725")).thenReturn(Optional.of(cliente));
+            when(veiculoRepository.findByClienteId(clienteId)).thenReturn(List.of(veiculo));
+            when(veiculoRepository.findByPlaca("DEF1G23")).thenReturn(Optional.of(veiculoOutroCliente));
+
+            assertThatThrownBy(() -> service.prepararAbertura("52998224725", "DEF1G23"))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("pertence ao cliente");
         }
     }
 

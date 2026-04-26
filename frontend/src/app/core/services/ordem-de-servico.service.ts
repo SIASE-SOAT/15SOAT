@@ -5,6 +5,7 @@ import {
   ItemServicoRequest,
   OrdemDeServicoRequest,
   OrdemDeServicoResponse,
+  PreparacaoAberturaOrdemResponse,
   StatusOS,
   TempoMedioResponse,
 } from '../models/ordem-de-servico.model';
@@ -26,6 +27,14 @@ export class OrdemDeServicoService {
 
   acompanharPorNumero(numero: string) {
     return this.http.get<OrdemDeServicoResponse>(`${this.base}/acompanhar/${numero}`);
+  }
+
+  prepararAbertura(documento: string, placa?: string) {
+    let params = new HttpParams().set('documento', documento);
+    if (placa?.trim()) {
+      params = params.set('placa', placa.trim().toUpperCase());
+    }
+    return this.http.get<PreparacaoAberturaOrdemResponse>(`${this.base}/preparar-abertura`, { params });
   }
 
   criar(body: OrdemDeServicoRequest) {
@@ -50,5 +59,13 @@ export class OrdemDeServicoService {
 
   adicionarServico(id: string, body: ItemServicoRequest) {
     return this.http.post<OrdemDeServicoResponse>(`${this.base}/${id}/items-servico`, body);
+  }
+
+  iniciarExecucaoItem(id: string, itemId: string) {
+    return this.http.patch<OrdemDeServicoResponse>(`${this.base}/${id}/itens-servico/${itemId}/iniciar`, null);
+  }
+
+  finalizarExecucaoItem(id: string, itemId: string) {
+    return this.http.patch<OrdemDeServicoResponse>(`${this.base}/${id}/itens-servico/${itemId}/finalizar`, null);
   }
 }

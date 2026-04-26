@@ -12,6 +12,7 @@ import { PecaResponse } from '../../../core/models/peca.model';
 import { PecaService } from '../../../core/services/peca.service';
 import { PecaFormDialogComponent } from '../dialogs/peca-form-dialog.component';
 import { EstoqueDialogComponent } from '../dialogs/estoque-dialog.component';
+import { extractApiError } from '../../../core/utils/api-error.util';
 
 @Component({
   selector: 'app-pecas-lista',
@@ -49,7 +50,7 @@ export class PecasListaComponent implements OnInit {
         if (!result) return;
         this.service.criar(result).subscribe({
           next: () => { this.snackBar.open('Peça criada!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao criar peça.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao criar peça.'), 'Fechar', { duration: 5000 }),
         });
       });
   }
@@ -60,7 +61,7 @@ export class PecasListaComponent implements OnInit {
         if (!result) return;
         this.service.atualizar(p.id, result).subscribe({
           next: () => { this.snackBar.open('Peça atualizada!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao atualizar peça.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao atualizar peça.'), 'Fechar', { duration: 5000 }),
         });
       });
   }
@@ -71,7 +72,7 @@ export class PecasListaComponent implements OnInit {
         if (!result) return;
         this.service.movimentarEstoque(p.id, result).subscribe({
           next: () => { this.snackBar.open('Estoque atualizado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao movimentar estoque.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao movimentar estoque.'), 'Fechar', { duration: 5000 }),
         });
       });
   }
