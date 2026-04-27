@@ -48,6 +48,13 @@ export class ShellComponent {
         { label: 'Pedidos de Compra', icon: 'shopping_cart', route: '/pedidos-compra' },
       ],
     },
+    {
+      label: 'Acesso Rápido',
+      items: [
+        { label: 'Fila do Mecânico',  icon: 'build',         route: '/mecanico' },
+        { label: 'Portal do Cliente', icon: 'person_search',  route: '/acompanhar' },
+      ],
+    },
   ];
 
   private readonly allItems = this.navGroups.flatMap(g => g.items);
