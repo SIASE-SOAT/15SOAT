@@ -1,3 +1,5 @@
+<div [class]="backLink !== '/ordens' ? 'standalone-wrap' : ''">
+
 @if (loading()) {
   <div class="loader"><mat-spinner /></div>
 
@@ -5,7 +7,7 @@
 
   <!-- ── Header ─────────────────────────────────────── -->
   <div class="os-header">
-    <a class="back-btn" mat-icon-button routerLink="/ordens" matTooltip="Voltar para lista">
+    <a class="back-btn" mat-icon-button [routerLink]="backLink" matTooltip="Voltar">
       <mat-icon>arrow_back</mat-icon>
     </a>
     <div class="header-info">
@@ -109,7 +111,7 @@
       </div>
 
       <!-- Ações -->
-      @if (podeAvancar() || podeCancelar() || podeAdicionarPeca() || podeAdicionarServico()) {
+      @if (!isMecanico && (podeAvancar() || podeCancelar() || podeAdicionarPeca() || podeAdicionarServico())) {
         <div class="section-card">
           <div class="section-header">
             <mat-icon>settings</mat-icon>
@@ -129,8 +131,13 @@
             @if (proximoStatusInfo(); as prox) {
               <button mat-flat-button class="btn-avancar" (click)="avancar()" [disabled]="actionLoading()">
                 <mat-icon>{{ prox.icon }}</mat-icon>
-                {{ prox.label }}
+                {{ prox.label }}   
               </button>
+            }
+            @if (aguardandoAprovacaoCliente()) {
+              <p class="acao-info">
+                Aguardando aprovação do cliente no portal.
+              </p>
             }
             @if (podeCancelar()) {
               <button mat-stroked-button color="warn" (click)="cancelar()" [disabled]="actionLoading()">
@@ -142,6 +149,7 @@
       }
 
       <!-- Pagamento -->
+      @if (!isMecanico) {
       <div class="section-card">
         <div class="section-header">
           <mat-icon>payments</mat-icon>
@@ -207,6 +215,7 @@
           </div>
         }
       </div>
+      }
 
       <!-- Datas -->
       <div class="section-card">
@@ -231,3 +240,5 @@
     </div>
   </div>
 }
+
+</div>

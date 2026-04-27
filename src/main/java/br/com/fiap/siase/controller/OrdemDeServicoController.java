@@ -109,4 +109,14 @@ public class OrdemDeServicoController {
     public ResponseEntity<OrdemDeServicoResponse> acompanhar(@PathVariable String numero) {
         return ResponseEntity.ok(service.buscarPorNumero(numero));
     }
+
+    @PatchMapping("/acompanhar/{numero}/aprovar-orcamento")
+    public ResponseEntity<OrdemDeServicoResponse> aprovarOrcamentoPublico(@PathVariable String numero) {
+        return ResponseEntity.ok(service.aprovarOrcamentoPorNumero(numero));
+    }
+
+    @PatchMapping("/acompanhar/{numero}/recusar-orcamento")
+    public ResponseEntity<OrdemDeServicoResponse> recusarOrcamentoPublico(@PathVariable String numero) {
+        return ResponseEntity.ok(service.recusarOrcamentoPorNumero(numero));
+    }
 }

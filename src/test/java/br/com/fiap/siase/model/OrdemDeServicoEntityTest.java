@@ -44,9 +44,17 @@ class OrdemDeServicoEntityTest {
         }
 
         @Test
-        @DisplayName("AGUARDANDO_APROVACAO → EM_EXECUCAO")
-        void deveAvancarDeAguardandoAprovacaoParaEmExecucao() {
+        @DisplayName("AGUARDANDO_APROVACAO → APROVADO (cliente aprova)")
+        void deveAvancarDeAguardandoAprovacaoParaAprovado() {
             os.setStatus(StatusOS.AGUARDANDO_APROVACAO);
+            os.avancarStatus();
+            assertThat(os.getStatus()).isEqualTo(StatusOS.APROVADO);
+        }
+
+        @Test
+        @DisplayName("APROVADO → EM_EXECUCAO (mecânico inicia)")
+        void deveAvancarDeAprovadoParaEmExecucao() {
+            os.setStatus(StatusOS.APROVADO);
             os.avancarStatus();
             assertThat(os.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
         }

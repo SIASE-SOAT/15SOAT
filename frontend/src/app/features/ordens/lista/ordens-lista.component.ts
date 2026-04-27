@@ -20,6 +20,7 @@ const STATUS_COLOR: Record<StatusOS, string> = {
   RECEBIDA:             'bg-gray-100 text-gray-700',
   EM_DIAGNOSTICO:       'bg-purple-100 text-purple-700',
   AGUARDANDO_APROVACAO: 'bg-yellow-100 text-yellow-700',
+  APROVADO:             'bg-green-100 text-green-800',
   EM_EXECUCAO:          'bg-blue-100 text-blue-700',
   FINALIZADA:           'bg-green-100 text-green-700',
   ENTREGUE:             'bg-green-200 text-green-900',

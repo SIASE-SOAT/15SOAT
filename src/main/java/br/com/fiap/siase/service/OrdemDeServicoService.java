@@ -127,6 +127,30 @@ public class OrdemDeServicoService {
         );
     }
 
+    @Transactional
+    public OrdemDeServicoResponse aprovarOrcamentoPorNumero(String numero) {
+        var os = repository.findByNumero(numero)
+                .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + numero));
+
+        if (os.getStatus() != StatusOS.AGUARDANDO_APROVACAO) {
+            throw new BusinessException("A OS " + numero + " não está aguardando aprovação no momento.");
+        }
+
+        return avancarStatusInterno(os.getId(), true);
+    }
+
+    @Transactional
+    public OrdemDeServicoResponse recusarOrcamentoPorNumero(String numero) {
+        var os = repository.findByNumero(numero)
+                .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + numero));
+
+        if (os.getStatus() != StatusOS.AGUARDANDO_APROVACAO) {
+            throw new BusinessException("A OS " + numero + " não está aguardando aprovação no momento.");
+        }
+
+        return cancelar(os.getId());
+    }
+
     @Transactional(readOnly = true)
     public PreparacaoAberturaOrdemResponse prepararAbertura(String documento, String placa) {
         String documentoLimpo = limparDocumento(documento);
@@ -172,8 +196,16 @@ public class OrdemDeServicoService {
 
     @Transactional
     public OrdemDeServicoResponse avancarStatus(UUID id) {
+        return avancarStatusInterno(id, false);
+    }
+
+    private OrdemDeServicoResponse avancarStatusInterno(UUID id, boolean aprovadoPeloCliente) {
         var os = findOrThrow(id);
         StatusOS statusAnterior = os.getStatus();
+
+        if (statusAnterior == StatusOS.AGUARDANDO_APROVACAO && !aprovadoPeloCliente) {
+            throw new BusinessException("O orçamento ainda aguarda aprovação do cliente no portal público.");
+        }
 
         try {
             os.avancarStatus();
@@ -195,8 +227,8 @@ public class OrdemDeServicoService {
             );
         }
 
-        // Dispara email quando orçamento é aprovado e execução inicia
-        if (statusAnterior == StatusOS.AGUARDANDO_APROVACAO && os.getStatus() == StatusOS.EM_EXECUCAO) {
+        // Dispara email quando cliente aprova o orçamento
+        if (statusAnterior == StatusOS.AGUARDANDO_APROVACAO && os.getStatus() == StatusOS.APROVADO) {
             String email = os.getCliente().getEmail() != null
                     ? os.getCliente().getEmail() : "sem-email@siase.com";
             emailService.enviarOrcamentoAprovado(email, os.getCliente().getNome(), os.getNumero());
@@ -352,14 +384,12 @@ public class OrdemDeServicoService {
     private boolean isStatusPermitidoParaAdicionarPeca(StatusOS status) {
         return status == StatusOS.RECEBIDA
                 || status == StatusOS.EM_DIAGNOSTICO
-                || status == StatusOS.AGUARDANDO_APROVACAO
                 || status == StatusOS.EM_EXECUCAO;
     }
 
     private boolean isStatusPermitidoParaAdicionarServico(StatusOS status) {
         return status == StatusOS.RECEBIDA
                 || status == StatusOS.EM_DIAGNOSTICO
-                || status == StatusOS.AGUARDANDO_APROVACAO
                 || status == StatusOS.EM_EXECUCAO;
     }
 

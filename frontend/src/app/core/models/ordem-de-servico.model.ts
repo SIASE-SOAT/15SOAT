@@ -2,6 +2,7 @@ export type StatusOS =
   | 'RECEBIDA'
   | 'EM_DIAGNOSTICO'
   | 'AGUARDANDO_APROVACAO'
+  | 'APROVADO'
   | 'EM_EXECUCAO'
   | 'FINALIZADA'
   | 'ENTREGUE'

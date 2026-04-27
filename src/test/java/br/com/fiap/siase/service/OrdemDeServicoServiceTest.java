@@ -384,20 +384,30 @@ class OrdemDeServicoServiceTest {
         void devePercorrerTodosOsStatus() {
             os.setStatus(StatusOS.RECEBIDA);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
+            when(repository.findByNumero(os.getNumero())).thenReturn(Optional.of(os));
             when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
+            // Office: RECEBIDA → EM_DIAGNOSTICO
             service.avancarStatus(osId);
             assertThat(os.getStatus()).isEqualTo(StatusOS.EM_DIAGNOSTICO);
 
+            // Office: EM_DIAGNOSTICO → AGUARDANDO_APROVACAO
             service.avancarStatus(osId);
             assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
 
+            // Cliente: AGUARDANDO_APROVACAO → APROVADO (aprovação pelo portal público)
+            service.aprovarOrcamentoPorNumero(os.getNumero());
+            assertThat(os.getStatus()).isEqualTo(StatusOS.APROVADO);
+
+            // Office (mecânico): APROVADO → EM_EXECUCAO
             service.avancarStatus(osId);
             assertThat(os.getStatus()).isEqualTo(StatusOS.EM_EXECUCAO);
 
+            // Office: EM_EXECUCAO → FINALIZADA
             service.avancarStatus(osId);
             assertThat(os.getStatus()).isEqualTo(StatusOS.FINALIZADA);
 
+            // Office: FINALIZADA → ENTREGUE
             service.avancarStatus(osId);
             assertThat(os.getStatus()).isEqualTo(StatusOS.ENTREGUE);
         }
@@ -674,17 +684,16 @@ class OrdemDeServicoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve permitir adicionar peça com status AGUARDANDO_APROVACAO")
-        void devePermitirAdicionarEmStatusAguardandoAprovacao() {
+        @DisplayName("Deve rejeitar adicionar peça com status AGUARDANDO_APROVACAO (orçamento bloqueado)")
+        void deveRejeitarAdicionarEmStatusAguardandoAprovacao() {
             os.setStatus(StatusOS.AGUARDANDO_APROVACAO);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
-            when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
-            when(repository.save(any())).thenReturn(os);
 
-            service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1));
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("status");
 
-            assertThat(os.getItensPeca()).hasSize(1);
-            verify(repository).save(os);
+            verify(repository, never()).save(any());
         }
 
         @Test
@@ -892,17 +901,16 @@ class OrdemDeServicoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve permitir adicionar serviço com status AGUARDANDO_APROVACAO")
-        void devePermitirAdicionarEmStatusAguardandoAprovacao() {
+        @DisplayName("Deve rejeitar adicionar serviço com status AGUARDANDO_APROVACAO (orçamento bloqueado)")
+        void deveRejeitarAdicionarEmStatusAguardandoAprovacao() {
             os.setStatus(StatusOS.AGUARDANDO_APROVACAO);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
-            when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
-            when(repository.save(any())).thenReturn(os);
 
-            service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null));
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessageContaining("status");
 
-            assertThat(os.getItensServico()).hasSize(1);
-            verify(repository).save(os);
+            verify(repository, never()).save(any());
         }
 
         @Test

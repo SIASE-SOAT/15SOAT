@@ -9,9 +9,25 @@ export const routes: Routes = [
       import('./features/auth/login/login.component').then(m => m.LoginComponent),
   },
   {
+    path: 'acompanhar',
+    loadComponent: () =>
+      import('./features/ordens/acompanhar/acompanhar.component').then(m => m.AcompanharComponent),
+  },
+  {
     path: 'acompanhar/:numero',
     loadComponent: () =>
       import('./features/ordens/acompanhar/acompanhar.component').then(m => m.AcompanharComponent),
+  },
+  {
+    path: 'mecanico',
+    loadComponent: () =>
+      import('./features/mecanico/mecanico.component').then(m => m.MecanicoComponent),
+  },
+  {
+    path: 'mecanico/ordens/:id',
+    data: { backLink: '/mecanico' },
+    loadComponent: () =>
+      import('./features/ordens/detalhe/ordem-detalhe.component').then(m => m.OrdemDetalheComponent),
   },
   {
     path: '',

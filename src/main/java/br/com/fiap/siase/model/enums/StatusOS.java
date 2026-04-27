@@ -5,6 +5,7 @@ public enum StatusOS {
     RECEBIDA("Recebida"),
     EM_DIAGNOSTICO("Em Diagnóstico"),
     AGUARDANDO_APROVACAO("Aguardando Aprovação"),
+    APROVADO("Aprovado"),
     EM_EXECUCAO("Em Execução"),
     FINALIZADA("Finalizada"),
     ENTREGUE("Entregue"),

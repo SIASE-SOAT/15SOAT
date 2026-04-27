@@ -1,65 +1,160 @@
-<div class="min-h-screen bg-gray-50 flex items-start justify-center py-12 px-4">
-  <div class="w-full max-w-2xl">
+<main class="pagina-cliente">
+  <section class="hero">
+    <div class="hero__inner">
+      <p class="hero__eyebrow">Portal do Cliente</p>
+      <h1>Acompanhe e aprove seu orçamento</h1>
+      <p>
+        Esta area e exclusiva para clientes. Consulte sua Ordem de Serviço pelo numero recebido por e-mail e aprove ou recuse o orçamento sem precisar fazer login.
+      </p>
 
-    <div class="flex items-center gap-2 mb-8">
-      <mat-icon class="text-blue-600 !text-4xl">build_circle</mat-icon>
-      <div>
-        <h1 class="text-2xl font-bold leading-none">SIASE</h1>
-        <p class="text-sm text-gray-500">Acompanhamento de Ordem de Serviço</p>
-      </div>
+      <form [formGroup]="buscaForm" (ngSubmit)="buscar()" class="busca-card">
+        <mat-form-field appearance="outline" class="campo-numero">
+          <mat-label>Número da OS</mat-label>
+          <input matInput formControlName="numero" placeholder="Ex: OS-20260426-AB12CD" />
+        </mat-form-field>
+        <button mat-flat-button type="submit" class="btn-buscar" [disabled]="loading()">
+          <mat-icon>search</mat-icon>
+          Buscar OS
+        </button>
+      </form>
     </div>
+  </section>
 
+  <section class="conteudo">
     @if (loading()) {
-      <div class="flex justify-center py-12">
-        <mat-spinner aria-label="Buscando OS..." />
+      <div class="loading-box">
+        <mat-spinner aria-label="Buscando OS..." diameter="34" />
+        <span>Consultando sua OS...</span>
       </div>
-    } @else if (error()) {
-      <mat-card class="border border-red-200">
-        <mat-card-content class="flex items-center gap-3 py-6">
-          <mat-icon class="text-red-500">error_outline</mat-icon>
+    }
+
+    @if (error()) {
+      <mat-card class="alerta alerta-erro">
+        <mat-card-content>
+          <mat-icon>error_outline</mat-icon>
           <span>{{ error() }}</span>
-        </mat-card-content>
-      </mat-card>
-    } @else if (os()) {
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>OS {{ os()!.numero }}</mat-card-title>
-          <mat-card-subtitle>
-            {{ os()!.clienteNome }} — {{ os()!.veiculoModelo }} ({{ os()!.veiculoPlaca }})
-          </mat-card-subtitle>
-        </mat-card-header>
-
-        <mat-card-content class="pt-4">
-          @if (os()!.status !== 'CANCELADA') {
-            <mat-stepper [selectedIndex]="stepIndex()" linear="false" class="mb-6">
-              @for (step of STATUS_STEPS; track step) {
-                <mat-step [label]="labelFor(step)" [completed]="isCompleted(step)" />
-              }
-            </mat-stepper>
-          } @else {
-            <div class="flex items-center gap-2 text-red-600 mb-4 p-3 bg-red-50 rounded">
-              <mat-icon>cancel</mat-icon>
-              <span class="font-medium">Ordem de Serviço Cancelada</span>
-            </div>
-          }
-
-          <div class="grid grid-cols-3 gap-4 text-center border-t pt-4">
-            <div>
-              <p class="text-xs text-gray-500">Serviços</p>
-              <p class="font-semibold">R$ {{ os()!.totalServicos | number:'1.2-2' }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500">Peças</p>
-              <p class="font-semibold">R$ {{ os()!.totalPecas | number:'1.2-2' }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500">Total</p>
-              <p class="text-lg font-bold text-blue-700">R$ {{ os()!.total | number:'1.2-2' }}</p>
-            </div>
-          </div>
         </mat-card-content>
       </mat-card>
     }
 
-  </div>
-</div>
+    @if (os(); as ordem) {
+      <mat-card class="os-card">
+        <mat-card-header>
+          <mat-card-title>{{ ordem.numero }}</mat-card-title>
+          <mat-card-subtitle>{{ ordem.clienteNome }} • {{ ordem.veiculoModelo }} ({{ ordem.veiculoPlaca }})</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="status-atual">
+            <span class="status-label">Status atual</span>
+            <span [class]="'status-chip status-' + ordem.status">{{ ordem.statusDescricao }}</span>
+          </div>
+
+          <div class="etapas" aria-label="Etapas da OS">
+            @for (step of STATUS_STEPS; track step) {
+              <div [class]="'etapa ' + (isCompleted(step) ? 'done' : '') + (ordem.status === step ? ' atual' : '')">
+                <span class="dot"></span>
+                <span>{{ labelFor(step) }}</span>
+              </div>
+            }
+          </div>
+
+          @if (podeAprovarOuRecusar()) {
+            <section class="orcamento-box">
+              <h2>Seu orçamento está pronto</h2>
+              <p>
+                Confira os valores abaixo. Ao aprovar, sua OS entra em execução. Ao recusar, a OS será cancelada.
+              </p>
+              <div class="orcamento-acoes">
+                <button mat-flat-button class="btn-aprovar" (click)="aprovarOrcamento()" [disabled]="actionLoading()">
+                  <mat-icon>check_circle</mat-icon>
+                  Aprovar orçamento
+                </button>
+                <button mat-stroked-button class="btn-recusar" (click)="recusarOrcamento()" [disabled]="actionLoading()">
+                  <mat-icon>cancel</mat-icon>
+                  Recusar orçamento
+                </button>
+              </div>
+            </section>
+          } @else {
+            <mat-card class="alerta alerta-info" appearance="outlined">
+              <mat-card-content>
+                <mat-icon>info</mat-icon>
+                <span>Esta OS não está mais na etapa de aprovação de orçamento.</span>
+              </mat-card-content>
+            </mat-card>
+          }
+
+          <section class="totais-grid">
+            <div>
+              <p>Serviços</p>
+              <strong>R$ {{ ordem.totalServicos | number:'1.2-2' }}</strong>
+            </div>
+            <div>
+              <p>Peças</p>
+              <strong>R$ {{ ordem.totalPecas | number:'1.2-2' }}</strong>
+            </div>
+            <div>
+              <p>Total</p>
+              <strong class="total-geral">R$ {{ ordem.total | number:'1.2-2' }}</strong>
+            </div>
+          </section>
+
+          @if (ordem.itensServico.length > 0) {
+            <section class="itens-box">
+              <h3>Serviços previstos</h3>
+              @for (item of ordem.itensServico; track item.id) {
+                <div class="item-row">
+                  <div>
+                    <p class="item-nome">{{ item.servicoNome }}</p>
+                    @if (item.observacoes) {
+                      <p class="item-meta">{{ item.observacoes }}</p>
+                    }
+                  </div>
+                  <strong>R$ {{ item.precoUnitario | number:'1.2-2' }}</strong>
+                </div>
+              }
+            </section>
+          }
+
+          @if (ordem.itensPeca.length > 0) {
+            <section class="itens-box">
+              <h3>Peças e Insumos</h3>
+              @for (item of ordem.itensPeca; track item.pecaId) {
+                <div class="item-row">
+                  <div>
+                    <p class="item-nome">{{ item.pecaNome }}</p>
+                    <p class="item-meta">{{ item.pecaCodigo }} &times; {{ item.quantidade }}</p>
+                  </div>
+                  <strong>R$ {{ item.precoUnitario * item.quantidade | number:'1.2-2' }}</strong>
+                </div>
+              }
+            </section>
+          }
+
+          @if (ordem.observacoes) {
+            <section class="obs-box">
+              <h3>Observações da oficina</h3>
+              <p>{{ ordem.observacoes }}</p>
+            </section>
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <mat-card class="separacao-card" appearance="outlined">
+      <mat-card-content>
+        <div class="separacao-conteudo">
+          <div>
+            <p class="separacao-titulo">Acesso da oficina</p>
+      
+          </div>
+          <a mat-stroked-button routerLink="/login" class="btn-login-oficina">
+            <mat-icon>login</mat-icon>
+            Entrar como oficina
+          </a>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+</main>

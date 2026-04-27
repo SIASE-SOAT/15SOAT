@@ -29,6 +29,14 @@ export class OrdemDeServicoService {
     return this.http.get<OrdemDeServicoResponse>(`${this.base}/acompanhar/${numero}`);
   }
 
+  aprovarOrcamentoPorNumero(numero: string) {
+    return this.http.patch<OrdemDeServicoResponse>(`${this.base}/acompanhar/${numero}/aprovar-orcamento`, null);
+  }
+
+  recusarOrcamentoPorNumero(numero: string) {
+    return this.http.patch<OrdemDeServicoResponse>(`${this.base}/acompanhar/${numero}/recusar-orcamento`, null);
+  }
+
   prepararAbertura(documento: string, placa?: string) {
     let params = new HttpParams().set('documento', documento);
     if (placa?.trim()) {

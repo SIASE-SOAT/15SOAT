@@ -8,6 +8,27 @@
 
 ---
 
+## Primeiro uso — Criar usuário do sistema
+
+Antes de executar qualquer cenário, registre um usuário para obter acesso autenticado.
+
+**Requisição:** `Autenticação > Registrar usuário`
+
+`POST /api/auth/registrar`
+
+```json
+{
+  "username": "atendente1",
+  "password": "Atend@2024"
+}
+```
+
+**Resposta esperada:** `201 Created`
+
+> Execute **apenas uma vez**. Se o usuário já existir, vá direto para o Login no Cenário 1.
+
+---
+
 ## Como as variáveis funcionam
 
 A coleção usa variáveis que são **preenchidas automaticamente** pelos scripts de teste. Você não precisa copiar e colar IDs manualmente.
@@ -27,28 +48,14 @@ A coleção usa variáveis que são **preenchidas automaticamente** pelos script
 
 ---
 
-## Cenário 1 — Ciclo de vida completo de uma OS (fluxo feliz)
+## Cenário 1 — Criação da Ordem de Serviço (fluxo completo)
 
-Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento confirmado.
-
-### Passo 1 — Criar usuário do sistema
-
-**Requisição:** `Autenticação > Registrar usuário`
-
-```json
-{
-  "username": "atendente1",
-  "password": "Atend@2024"
-}
-```
-
-**Resposta esperada:** `201 Created`
-
-> Só é necessário registrar uma vez. Se o usuário já existir, vá ao Passo 2.
+Fluxo principal do sistema: da identificação do cliente até a entrega do veículo com pagamento confirmado.  
+Execute os passos **na ordem abaixo** usando a pasta **🔄 Fluxo Principal** da collection.
 
 ---
 
-### Passo 2 — Login e obtenção do token JWT
+### Passo 1 — Autenticação
 
 **Requisição:** `Autenticação > Login`
 
@@ -59,56 +66,38 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 }
 ```
 
+**Resposta esperada:** `200 OK` — token salvo automaticamente em `{{jwtToken}}`.
+
+> Se o usuário ainda não existir, execute `Autenticação > Registrar usuário` antes.
+
+---
+
+### Passo 2 — Identificação do cliente por CPF/CNPJ
+
+**Requisição:** `🔄 Fluxo Principal > Passo 2 — Identificar cliente por CPF/CNPJ`
+
+`GET /api/ordens/preparar-abertura?documento=52998224725&placa=ABC1234`
+
 **Resposta esperada:** `200 OK`
 
 ```json
-{ "token": "eyJhbGciOiJIUzI1NiJ9..." }
-```
-> O token é salvo automaticamente em `{{jwtToken}}` e enviado em todas as requisições seguintes.
-
----
-
-### Passo 3 — Cadastrar uma peça no estoque
-
-**Requisição:** `Peças e Insumos > Criar peça`
-
-```json
 {
-  "codigo": "FILTRO-OLEO-001",
-  "nome": "Filtro de Óleo Motor",
-  "descricao": "Filtro de óleo para motores 1.0 a 2.0",
-  "preco": 45.90,
-  "quantidadeEstoque": 50,
-  "estoqueMinimo": 10,
-  "unidadeMedida": "UN"
+  "cliente": { "id": "...", "nome": "João da Silva", "documento": "52998224725" },
+  "veiculoSelecionado": { "id": "...", "placa": "ABC1234", "modelo": "Corolla", "ano": 2022 },
+  "prontoParaAbertura": true
 }
 ```
 
-**Resposta esperada:** `201 Created` — `{{pecaId}}` salvo automaticamente.
+`{{clienteId}}` e `{{veiculoId}}` salvos automaticamente.
 
-> `estoqueAbaixoMinimo: false` quando `quantidadeEstoque (50) >= estoqueMinimo (10)`.
-
----
-
-### Passo 4 — Cadastrar um serviço
-
-**Requisição:** `Serviços > Criar serviço`
-
-```json
-{
-  "nome": "Troca de Óleo e Filtro",
-  "descricao": "Troca completa do óleo motor com substituição do filtro",
-  "preco": 120.00
-}
-```
-
-**Resposta esperada:** `201 Created` — `{{servicoId}}` salvo automaticamente.
+> Valida que a placa pertence ao cliente identificado pelo CPF/CNPJ antes de abrir a OS.  
+> Se o cliente não existir, execute o **Passo 3**. Se o veículo não existir, execute o **Passo 4**.
 
 ---
 
-### Passo 5 — Cadastrar um cliente
+### Passo 3 — Cadastro do cliente (se não existir)
 
-**Requisição:** `Clientes > Criar cliente (PF)`
+**Requisição:** `🔄 Fluxo Principal > Passo 3 — Criar cliente`
 
 ```json
 {
@@ -125,9 +114,9 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 ---
 
-### Passo 6 — Cadastrar veículo para o cliente
+### Passo 4 — Cadastro do veículo (placa, marca, modelo, ano)
 
-**Requisição:** `Veículos > Criar veículo`
+**Requisição:** `🔄 Fluxo Principal > Passo 4 — Cadastrar veículo`
 
 ```json
 {
@@ -142,53 +131,24 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
 
 **Resposta esperada:** `201 Created` — `{{veiculoId}}` salvo automaticamente.
 
----
-
-### Passo 7 — Preparar abertura da OS por CPF/CNPJ e placa
-
-**Requisição:** `Ordens de Serviço > Preparar abertura da OS (documento + placa)`
-
-`GET /api/ordens/preparar-abertura?documento=52998224725&placa=ABC1234`
-
-**Resposta esperada:** `200 OK`
-
-```json
-{
-  "cliente": {
-    "id": "{{clienteId}}",
-    "nome": "João da Silva",
-    "documento": "52998224725"
-  },
-  "veiculos": [
-    {
-      "id": "{{veiculoId}}",
-      "placa": "ABC1234",
-      "marca": "Toyota",
-      "modelo": "Corolla",
-      "ano": 2022,
-      "ativo": true
-    }
-  ],
-  "veiculoSelecionado": {
-    "id": "{{veiculoId}}",
-    "placa": "ABC1234",
-    "marca": "Toyota",
-    "modelo": "Corolla",
-    "ano": 2022,
-    "ativo": true
-  },
-  "prontoParaAbertura": true
-}
-```
-
-> Esta etapa explicita no backend a identificação do cliente por CPF/CNPJ antes da abertura da OS.  
-> Também valida que a placa informada pertence ao cliente identificado.
+> Aceita placa padrão (`ABC1234`) ou Mercosul (`ABC1D23`).
 
 ---
 
-### Passo 8 — Abrir uma Ordem de Serviço
+### Passo 5 — Preparar catálogo (peças e serviços)
 
-**Requisição:** `Ordens de Serviço > Criar OS (com serviço e peça)`
+Execute **"Passo 5a — Criar peça"** (ex.: Filtro de Óleo Motor, R$ 45,90) e  
+**"Passo 5b — Criar serviço"** (ex.: Troca de Óleo, R$ 120,00 — ou Alinhamento e Balanceamento, R$ 180,00).
+
+`{{pecaId}}` e `{{servicoId}}` salvos automaticamente.
+
+> Pule este passo se os itens já existirem no catálogo.
+
+---
+
+### Passo 6 — Inclusão dos serviços solicitados e peças — orçamento gerado automaticamente
+
+**Requisição:** `🔄 Fluxo Principal > Passo 6 — Criar OS`
 
 ```json
 {
@@ -196,145 +156,143 @@ Fluxo principal do sistema: do cadastro até a entrega do veículo com pagamento
   "veiculoId": "{{veiculoId}}",
   "observacoes": "Cliente relata barulho ao frear e óleo baixo no painel",
   "itensServico": [
-    {
-      "servicoId": "{{servicoId}}",
-      "observacoes": "Usar óleo sintético 5W30"
-    }
+    { "servicoId": "{{servicoId}}", "observacoes": "Usar óleo sintético 5W30" }
   ],
   "itensPeca": [
-    {
-      "pecaId": "{{pecaId}}",
-      "quantidade": 2
-    }
+    { "pecaId": "{{pecaId}}", "quantidade": 1 }
   ]
 }
 ```
 
-**Resposta esperada:** `201 Created` — `{{osId}}` e `{{osNumero}}` salvos automaticamente.
-
-> O estoque da peça é **deduzido automaticamente** (50 → 48 unidades).  
-> Os preços são **snapshot** do catálogo no momento da criação.
-
----
-
-### Passo 9 — Avançar status: RECEBIDA → EM_DIAGNOSTICO
-
-`Ordens de Serviço > Avancar status → EM_DIAGNOSTICO`
-
-`PATCH /api/ordens/{{osId}}/avancar`
-
-**Resposta esperada:** `200 OK` com `"status": "EM_DIAGNOSTICO"`
-
----
-
-### Passo 10 — Avançar status: EM_DIAGNOSTICO → AGUARDANDO_APROVACAO
-
-`Ordens de Serviço > Avancar status → AGUARDANDO_APROVACAO`
-
-`PATCH /api/ordens/{{osId}}/avancar`
-
-**Resposta esperada:** `200 OK` com `"status": "AGUARDANDO_APROVACAO"`
-
-> E-mail de orçamento disparado para o cliente (visível nos logs com prefixo `[EMAIL]`).
-
----
-
-### Passo 11 — Avançar status: AGUARDANDO_APROVACAO → EM_EXECUCAO
-
-`Ordens de Serviço > Avancar status → EM_EXECUCAO (aprovação)`
-
-`PATCH /api/ordens/{{osId}}/avancar`
-
-**Resposta esperada:** `200 OK` com `"status": "EM_EXECUCAO"`
-
-> E-mail de aprovação disparado (visível nos logs).
-
----
-
-### Passo 12 — Iniciar execução do serviço (item)
-
-`Ordens de Serviço > Iniciar execução do serviço (item)`
-
-`PATCH /api/ordens/{{osId}}/itens-servico/{{itemServicoId}}/iniciar`
-
-**Resposta esperada:** `200 OK` com `itensServico[].dataInicioExecucao` preenchido.
-
-> O `{{itemServicoId}}` vem da resposta da criação da OS (`itensServico[0].id`).
-
----
-
-### Passo 13 — Finalizar execução do serviço (item)
-
-`Ordens de Serviço > Finalizar execução do serviço (item)`
-
-`PATCH /api/ordens/{{osId}}/itens-servico/{{itemServicoId}}/finalizar`
-
-**Resposta esperada:** `200 OK` com `itensServico[].dataFimExecucao` preenchido.
-
----
-
-### Passo 14 — Avançar status: EM_EXECUCAO → FINALIZADA
-
-`Ordens de Serviço > Avancar status → FINALIZADA`
-
-`PATCH /api/ordens/{{osId}}/avancar`
-
-**Resposta esperada:** `200 OK` com `"status": "FINALIZADA"`
-
----
-
-### Passo 15 — Registrar pagamento
-
-`Pagamentos > Registrar pagamento da OS`
-
-`POST /api/ordens/{{osId}}/pagamento`
+**Resposta esperada:** `201 Created`
 
 ```json
 {
-  "formaPagamento": "PIX",
-  "valor": 211.80
-}
-```
-
-**Resposta esperada:** `201 Created` — `{{pagamentoId}}` salvo automaticamente.
-
-> Formas aceitas: `DINHEIRO` | `CARTAO_DEBITO` | `CARTAO_CREDITO` | `PIX` | `TRANSFERENCIA`
-
----
-
-### Passo 16 — Confirmar pagamento (OS avança para ENTREGUE)
-
-`Pagamentos > Confirmar pagamento`
-
-`PATCH /api/pagamentos/{{pagamentoId}}/confirmar`
-
-**Resposta esperada:** `200 OK` com `"status": "PAGO"`
-
-> Ao confirmar, a OS avança **automaticamente** para `ENTREGUE` e o e-mail de confirmação é disparado.
-
----
-
-### Passo 17 — Verificar OS entregue
-
-`GET /api/ordens/{{osId}}`
-
-```json
-{
-  "status": "ENTREGUE",
+  "status": "RECEBIDA",
   "totalServicos": 120.00,
-  "totalPecas": 91.80,
-  "total": 211.80,
-  "dataFechamento": "2026-..."
+  "totalPecas": 45.90,
+  "total": 165.90
 }
 ```
 
+`{{osId}}` e `{{osNumero}}` salvos automaticamente.
+
+> O **orçamento é gerado automaticamente** com base nos preços do catálogo no momento da criação.  
+> O estoque das peças é deduzido automaticamente.  
+> Serviços e peças podem ser adicionados até o status `EM_DIAGNOSTICO`.
+
 ---
 
-### Passo 18 — Acompanhar OS pelo número (público, sem token)
+### Passo 7 — (Opcional) Inclusão de peças e insumos adicionais
+
+**Requisição:** `🔄 Fluxo Principal > Passo 7 — Adicionar peça extra`
+
+`POST /api/ordens/{{osId}}/items-peca`
+
+```json
+{ "pecaId": "{{pecaId}}", "quantidade": 1 }
+```
+
+O total é **recalculado automaticamente** após a adição.
+
+---
+
+### Passo 8 — Avançar para EM_DIAGNOSTICO
+
+`PATCH /api/ordens/{{osId}}/avancar`
+
+**Resposta:** `200 OK` com `"status": "EM_DIAGNOSTICO"`
+
+---
+
+### Passo 9 — Envio do orçamento ao cliente para aprovação
+
+`PATCH /api/ordens/{{osId}}/avancar`
+
+**Resposta:** `200 OK` com `"status": "AGUARDANDO_APROVACAO"`
+
+> E-mail disparado ao cliente com o link e o total do orçamento (visível nos logs com prefixo `[EMAIL]`).
+
+---
+
+### Passo 10 — Consulta do cliente via API (sem token)
+
+**Requisição:** `🔄 Fluxo Principal > Passo 10 — Cliente consulta o andamento da OS`
 
 `GET /api/ordens/acompanhar/{{osNumero}}`
 
-> Endpoint **sem autenticação** — simula o cliente consultando o andamento pelo número da OS.
+**Endpoint público — não exige JWT.**
+
+**Resposta:** `200 OK` com todos os detalhes: status, serviços, peças, totais.
+
+> Simula o cliente acompanhando o progresso pelo número recebido no e-mail.
+
+---
+
+### Passo 11 — Cliente aprova o orçamento (sem token)
+
+**Requisição:** `🔄 Fluxo Principal > Passo 11 — Cliente APROVA o orçamento`
+
+`PATCH /api/ordens/acompanhar/{{osNumero}}/aprovar-orcamento`
+
+**Endpoint público — não exige JWT.**
+
+**Resposta:** `200 OK` com `"status": "APROVADO"`
+
+> E-mail de confirmação disparado ao cliente (log no console).
+
+**Alternativa — recusar:**  
+`PATCH /api/ordens/acompanhar/{{osNumero}}/recusar-orcamento`  
+Status muda para `CANCELADA`. Estoque das peças devolvido automaticamente.
+
+---
+
+### Passo 12 — Avançar para EM_EXECUCAO (mecânico inicia)
+
+`PATCH /api/ordens/{{osId}}/avancar`
+
+**Resposta:** `200 OK` com `"status": "EM_EXECUCAO"`
+
+> Requer que o cliente tenha aprovado o orçamento (status `APROVADO`).
+
+---
+
+### Passo 13 — Iniciar e finalizar execução do serviço
+
+**Iniciar:**  
+`PATCH /api/ordens/{{osId}}/itens-servico/{{itemServicoId}}/iniciar`  
+Registra `dataInicioExecucao` no item de serviço.
+
+**Finalizar:**  
+`PATCH /api/ordens/{{osId}}/itens-servico/{{itemServicoId}}/finalizar`  
+Registra `dataFimExecucao` no item de serviço.
+
+---
+
+### Passo 14 — Avançar para FINALIZADA
+
+`PATCH /api/ordens/{{osId}}/avancar`
+
+**Resposta:** `200 OK` com `"status": "FINALIZADA"`
+
+---
+
+### Passo 15 — Registrar e confirmar pagamento (→ ENTREGUE)
+
+**Registrar:**  
+`POST /api/ordens/{{osId}}/pagamento`
+
+```json
+{ "formaPagamento": "PIX", "valor": 165.90 }
+```
+
+`{{pagamentoId}}` salvo automaticamente.  
+Formas aceitas: `DINHEIRO` | `CARTAO_DEBITO` | `CARTAO_CREDITO` | `PIX` | `TRANSFERENCIA`
+
+**Confirmar:**  
+`PATCH /api/pagamentos/{{pagamentoId}}/confirmar`
+
+**Resposta:** `200 OK` — OS avança automaticamente para `ENTREGUE`. E-mail de pagamento disparado. ✅
 
 ---
 
@@ -898,7 +856,7 @@ Status: `PENDENTE ou APROVADO → CANCELADO`
 
 `GET /api/ordens?status=EM_EXECUCAO`
 
-Valores possíveis: `RECEBIDA` | `EM_DIAGNOSTICO` | `AGUARDANDO_APROVACAO` | `EM_EXECUCAO` | `FINALIZADA` | `ENTREGUE` | `CANCELADA`
+Valores possíveis: `RECEBIDA` | `EM_DIAGNOSTICO` | `AGUARDANDO_APROVACAO` | `APROVADO` | `EM_EXECUCAO` | `FINALIZADA` | `ENTREGUE` | `CANCELADA`
 
 ### Buscar OS por ID (detalhamento completo)
 
@@ -989,6 +947,8 @@ Para ter dados no monitoramento, execute o **Cenário 1** completo (até o Passo
 | Ordens | `PATCH` | `/api/ordens/{id}/cancelar` |
 | Ordens | `GET` | `/api/ordens/monitoramento/tempo-medio` |
 | Ordens | `GET` | `/api/ordens/acompanhar/{numero}` *(sem token)* |
+| Ordens | `PATCH` | `/api/ordens/acompanhar/{numero}/aprovar-orcamento` *(sem token)* |
+| Ordens | `PATCH` | `/api/ordens/acompanhar/{numero}/recusar-orcamento` *(sem token)* |
 | Pagamentos | `POST` | `/api/ordens/{id}/pagamento` |
 | Pagamentos | `GET` | `/api/ordens/{id}/pagamento` |
 | Pagamentos | `PATCH` | `/api/pagamentos/{id}/confirmar` |
@@ -1009,14 +969,20 @@ Para ter dados no monitoramento, execute o **Cenário 1** completo (até o Passo
 RECEBIDA
    ↓ /avancar
 EM_DIAGNOSTICO
-   ↓ /avancar                ← /cancelar disponível até aqui
+   ↓ /avancar                        ← /cancelar disponível até aqui (inclui APROVADO)
 AGUARDANDO_APROVACAO
-   ↓ /avancar (cliente aprova)
-EM_EXECUCAO                  ← /cancelar NÃO permitido a partir daqui
+   ↓ /acompanhar/{numero}/aprovar-orcamento   (cliente aprova — sem token)
+APROVADO
+   ↓ /avancar                        (mecânico inicia execução)
+EM_EXECUCAO                           ← /cancelar NÃO permitido a partir daqui
    ↓ /avancar
 FINALIZADA
    ↓ automático ao confirmar pagamento
 ENTREGUE
+
+Alternativa após AGUARDANDO_APROVACAO:
+   ↓ /acompanhar/{numero}/recusar-orcamento   (cliente recusa — sem token)
+CANCELADA
 ```
 
 ## Referência rápida — Códigos HTTP

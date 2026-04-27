@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -35,6 +35,9 @@ export class OrdemDetalheComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
 
+  protected readonly backLink: string = inject(ActivatedRoute).snapshot.data['backLink'] ?? '/ordens';
+  protected readonly isMecanico = this.backLink !== '/ordens';
+
   readonly id = input.required<string>();
 
   protected readonly loading = signal(true);
@@ -45,7 +48,8 @@ export class OrdemDetalheComponent implements OnInit {
   private static readonly PROXIMO_STATUS: Record<StatusOS, { label: string; icon: string } | null> = {
     RECEBIDA:             { label: 'Iniciar Diagnóstico',         icon: 'manage_search'      },
     EM_DIAGNOSTICO:       { label: 'Enviar para Aprovação',       icon: 'send'               },
-    AGUARDANDO_APROVACAO: { label: 'Aprovar e Iniciar Execução',  icon: 'engineering'        },
+    AGUARDANDO_APROVACAO: null,
+    APROVADO:             { label: 'Iniciar Execução',            icon: 'play_circle'        },
     EM_EXECUCAO:          { label: 'Finalizar OS',                icon: 'task_alt'           },
     FINALIZADA:           { label: 'Confirmar Entrega',           icon: 'local_shipping'     },
     ENTREGUE:             null,
@@ -61,9 +65,13 @@ export class OrdemDetalheComponent implements OnInit {
     return !!this.proximoStatusInfo();
   }
 
+  protected aguardandoAprovacaoCliente() {
+    return this.os()?.status === 'AGUARDANDO_APROVACAO';
+  }
+
   protected podeCancelar() {
     const s = this.os()?.status;
-    return s && ['RECEBIDA', 'EM_DIAGNOSTICO', 'AGUARDANDO_APROVACAO'].includes(s);
+    return s && ['RECEBIDA', 'EM_DIAGNOSTICO', 'AGUARDANDO_APROVACAO', 'APROVADO'].includes(s);
   }
 
   protected podeRegistrarPagamento() {
@@ -82,12 +90,12 @@ export class OrdemDetalheComponent implements OnInit {
 
   protected podeAdicionarPeca() {
     const s = this.os()?.status;
-    return s && ['RECEBIDA', 'EM_DIAGNOSTICO', 'AGUARDANDO_APROVACAO', 'EM_EXECUCAO'].includes(s);
+    return s && ['RECEBIDA', 'EM_DIAGNOSTICO', 'EM_EXECUCAO'].includes(s);
   }
 
   protected podeAdicionarServico() {
     const s = this.os()?.status;
-    return s && ['RECEBIDA', 'EM_DIAGNOSTICO', 'AGUARDANDO_APROVACAO', 'EM_EXECUCAO'].includes(s);
+    return s && ['RECEBIDA', 'EM_DIAGNOSTICO', 'EM_EXECUCAO'].includes(s);
   }
 
   protected podeIniciarItem() {

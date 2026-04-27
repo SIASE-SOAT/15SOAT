@@ -549,7 +549,7 @@ class OrdemDeServicoControllerTest {
                     null,
                     List.of(new OrdemDeServicoResponse.ItemServicoResponse(
                             UUID.randomUUID(), servicoId, "Revisão Completa",
-                            new BigDecimal("150.00"), 120, null
+                            new BigDecimal("150.00"), 120, null, null, null
                     )),
                     List.of(),
                     new BigDecimal("150.00"), BigDecimal.ZERO, new BigDecimal("150.00"),

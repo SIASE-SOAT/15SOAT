@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "SIASE - Sistema Integrado de Atendimento e Execução de Serviços",
-    "description": "Coleção completa dos endpoints da API SIASE.\n\nFluxo completo de teste:\n1)  Registrar usuário → Login (salva {{jwtToken}})\n2)  Criar Peça → salva {{pecaId}}\n3)  Criar Serviço → salva {{servicoId}}\n4)  Criar Cliente → salva {{clienteId}}\n5)  Criar Veículo → salva {{veiculoId}}\n6)  Preparar abertura da OS por documento/placa → reforça a identificação do cliente no backend\n7)  Criar OS → salva {{osId}}, {{osNumero}} e {{itemServicoId}}\n8)  Adicionar Peça a OS → testa validações e cálculo de totais\n9)  Adicionar Serviço a OS → testa validações e recálculo de totais\n10) Avançar status: RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → EM_EXECUCAO\n11) Iniciar execução do serviço (item)\n12) Finalizar execução do serviço (item)\n13) Avançar status: EM_EXECUCAO → FINALIZADA\n14) Registrar Pagamento → salva {{pagamentoId}} → Confirmar (avança OS para ENTREGUE)\n15) Acompanhar OS (sem token) pelo {{osNumero}}\n16) Criar Pedido de Compra → salva {{pedidoCompraId}} → Aprovar → Receber",
+    "description": "Coleção de testes da API SIASE.\n\n▶ COMECE PELA PASTA '🔄 Fluxo Principal' — ela guia o teste completo passo a passo.\n\nFluxo completo:\n1)  Login → salva {{jwtToken}}\n2)  Identificar cliente por CPF/CNPJ\n3)  Criar cliente (se não existir)\n4)  Criar veículo (placa, marca, modelo, ano)\n5)  Criar peça (insumo)\n6)  Criar serviço (ex.: troca de óleo)\n7)  Criar OS → orçamento gerado automaticamente\n8)  Avançar → EM_DIAGNOSTICO\n9)  Avançar → AGUARDANDO_APROVACAO → email de orçamento disparado\n10) Cliente consulta OS pelo número (sem token)\n11) Cliente aprova orçamento (sem token) → status APROVADO\n12) Avançar → EM_EXECUCAO (mecânico inicia)\n13) Iniciar e finalizar execução do serviço\n14) Avançar → FINALIZADA\n15) Registrar e confirmar pagamento → ENTREGUE\n\nStatus possíveis: RECEBIDA | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | APROVADO | EM_EXECUCAO | FINALIZADA | ENTREGUE | CANCELADA",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -15,85 +15,435 @@
     ]
   },
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8080/api",
-      "type": "string"
-    },
-    {
-      "key": "jwtToken",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao fazer login"
-    },
-    {
-      "key": "clienteId",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao criar um cliente"
-    },
-    {
-      "key": "veiculoId",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao criar um veículo"
-    },
-    {
-      "key": "clienteDocumento",
-      "value": "52998224725",
-      "type": "string",
-      "description": "Documento usado para preparar a abertura da OS"
-    },
-    {
-      "key": "veiculoPlaca",
-      "value": "ABC1234",
-      "type": "string",
-      "description": "Placa usada para preparar a abertura da OS"
-    },
-    {
-      "key": "pecaId",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao criar uma peça"
-    },
-    {
-      "key": "servicoId",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao criar um serviço"
-    },
-    {
-      "key": "itemServicoId",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao criar a OS ou adicionar um serviço"
-    },
-    {
-      "key": "osId",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao criar uma OS"
-    },
-    {
-      "key": "osNumero",
-      "value": "",
-      "type": "string",
-      "description": "Número da OS (ex: OS-20260412-A3F7C2) — preenchido automaticamente ao criar uma OS"
-    },
-    {
-      "key": "pagamentoId",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao registrar um pagamento"
-    },
-    {
-      "key": "pedidoCompraId",
-      "value": "",
-      "type": "string",
-      "description": "Preenchido automaticamente ao criar um pedido de compra"
-    }
+    { "key": "baseUrl",          "value": "http://localhost:8080/api", "type": "string" },
+    { "key": "jwtToken",         "value": "", "type": "string",  "description": "Preenchido automaticamente ao fazer login" },
+    { "key": "clienteId",        "value": "", "type": "string",  "description": "Preenchido automaticamente ao criar/buscar um cliente" },
+    { "key": "veiculoId",        "value": "", "type": "string",  "description": "Preenchido automaticamente ao criar/buscar um veículo" },
+    { "key": "clienteDocumento", "value": "52998224725", "type": "string", "description": "CPF usado para identificar o cliente" },
+    { "key": "veiculoPlaca",     "value": "ABC1234", "type": "string",     "description": "Placa usada para preparar a abertura da OS" },
+    { "key": "pecaId",           "value": "", "type": "string",  "description": "Preenchido automaticamente ao criar uma peça" },
+    { "key": "servicoId",        "value": "", "type": "string",  "description": "Preenchido automaticamente ao criar um serviço" },
+    { "key": "itemServicoId",    "value": "", "type": "string",  "description": "Preenchido automaticamente ao criar a OS" },
+    { "key": "osId",             "value": "", "type": "string",  "description": "Preenchido automaticamente ao criar uma OS" },
+    { "key": "osNumero",         "value": "", "type": "string",  "description": "Número da OS (ex: OS-20260412-A3F7C2)" },
+    { "key": "pagamentoId",      "value": "", "type": "string",  "description": "Preenchido automaticamente ao registrar um pagamento" },
+    { "key": "pedidoCompraId",   "value": "", "type": "string",  "description": "Preenchido automaticamente ao criar um pedido de compra" }
   ],
   "item": [
+    {
+      "name": "🔄 Fluxo Principal",
+      "description": "Execute os requests NESTA ORDEM para testar o fluxo completo de uma Ordem de Serviço.\n\nCada request salva variáveis automaticamente para o próximo passo — não é necessário copiar IDs manualmente.",
+      "item": [
+        {
+          "name": "Passo 1 — Login (salva token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('jwtToken', body.token);",
+                  "    console.log('✅ JWT salvo');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"atendente1\",\n  \"password\": \"Atend@2024\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Autentica e salva o JWT em {{jwtToken}}. Todos os passos seguintes usam esse token automaticamente."
+          }
+        },
+        {
+          "name": "Passo 2 — Identificar cliente por CPF/CNPJ",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.cliente && body.cliente.id) {",
+                  "        pm.collectionVariables.set('clienteId', body.cliente.id);",
+                  "        console.log('✅ clienteId salvo:', body.cliente.id);",
+                  "    }",
+                  "    if (body.veiculoSelecionado && body.veiculoSelecionado.id) {",
+                  "        pm.collectionVariables.set('veiculoId', body.veiculoSelecionado.id);",
+                  "        console.log('✅ veiculoId salvo:', body.veiculoSelecionado.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/preparar-abertura?documento={{clienteDocumento}}&placa={{veiculoPlaca}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "preparar-abertura"],
+              "query": [
+                { "key": "documento", "value": "{{clienteDocumento}}", "description": "CPF ou CNPJ do cliente (com ou sem pontuação)" },
+                { "key": "placa",     "value": "{{veiculoPlaca}}",     "description": "Placa do veículo" }
+              ]
+            },
+            "description": "Identifica o cliente pelo CPF/CNPJ e valida a placa informada. Se encontrado, salva {{clienteId}} e {{veiculoId}} automaticamente.\n\nSe o cliente ainda não existir, execute o Passo 3. Se o veículo ainda não existir, execute o Passo 4."
+          }
+        },
+        {
+          "name": "Passo 3 — Criar cliente (se não existir)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('clienteId', body.id);",
+                  "    pm.collectionVariables.set('clienteDocumento', body.documento.replace(/\\D/g, ''));",
+                  "    console.log('✅ clienteId salvo:', body.id);",
+                  "    console.log('✅ clienteDocumento salvo:', body.documento);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João da Silva\",\n  \"tipoPessoa\": \"PF\",\n  \"documento\": \"529.982.247-25\",\n  \"email\": \"joao.silva@email.com\",\n  \"telefone\": \"(11) 99999-1234\",\n  \"endereco\": \"Rua das Flores, 123 - São Paulo/SP\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["clientes"]
+            },
+            "description": "Cadastra o cliente Pessoa Física. Execute somente se o Passo 2 não encontrou o cliente. O CPF deve ser o mesmo configurado em {{clienteDocumento}}."
+          }
+        },
+        {
+          "name": "Passo 4 — Cadastrar veículo (placa, marca, modelo, ano)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('veiculoId', body.id);",
+                  "    console.log('✅ veiculoId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placa\": \"ABC1234\",\n  \"marca\": \"Toyota\",\n  \"modelo\": \"Corolla\",\n  \"ano\": 2022,\n  \"cor\": \"Prata\",\n  \"clienteId\": \"{{clienteId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/veiculos",
+              "host": ["{{baseUrl}}"],
+              "path": ["veiculos"]
+            },
+            "description": "Cadastra o veículo com placa, marca, modelo e ano. Requer {{clienteId}} preenchido (Passo 2 ou 3). Execute somente se o Passo 2 não encontrou o veículo."
+          }
+        },
+        {
+          "name": "Passo 5a — Criar peça/insumo no catálogo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('pecaId', body.id);",
+                  "    console.log('✅ pecaId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"FILTRO-OLEO-001\",\n  \"nome\": \"Filtro de Óleo Motor\",\n  \"descricao\": \"Filtro de óleo para motores 1.0 a 2.0\",\n  \"preco\": 45.90,\n  \"quantidadeEstoque\": 50,\n  \"estoqueMinimo\": 10,\n  \"unidadeMedida\": \"UN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pecas",
+              "host": ["{{baseUrl}}"],
+              "path": ["pecas"]
+            },
+            "description": "Cadastra a peça/insumo no catálogo. Salva {{pecaId}} automaticamente. Execute somente se a peça ainda não existir."
+          }
+        },
+        {
+          "name": "Passo 5b — Criar serviço no catálogo (ex.: troca de óleo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('servicoId', body.id);",
+                  "    console.log('✅ servicoId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Troca de Óleo e Filtro\",\n  \"descricao\": \"Troca completa do óleo motor com substituição do filtro\",\n  \"preco\": 120.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/servicos",
+              "host": ["{{baseUrl}}"],
+              "path": ["servicos"]
+            },
+            "description": "Cadastra o serviço no catálogo. Salva {{servicoId}} automaticamente. Execute somente se o serviço ainda não existir."
+          }
+        },
+        {
+          "name": "Passo 6 — Criar OS (serviços + peças → orçamento automático)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('osId', body.id);",
+                  "    pm.collectionVariables.set('osNumero', body.numero);",
+                  "    if (body.itensServico && body.itensServico.length > 0) {",
+                  "        pm.collectionVariables.set('itemServicoId', body.itensServico[0].id);",
+                  "    }",
+                  "    console.log('✅ OS criada:', body.numero, '| Total: R$', body.total);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"observacoes\": \"Cliente relata barulho ao frear e óleo baixo no painel\",\n  \"itensServico\": [\n    {\n      \"servicoId\": \"{{servicoId}}\",\n      \"observacoes\": \"Usar óleo sintético 5W30\"\n    }\n  ],\n  \"itensPeca\": [\n    {\n      \"pecaId\": \"{{pecaId}}\",\n      \"quantidade\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ordens",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens"]
+            },
+            "description": "Cria a OS vinculando cliente, veículo, serviços e peças. O orçamento (total) é calculado automaticamente com base nos preços do catálogo. O estoque das peças é deduzido. Salva {{osId}}, {{osNumero}} e {{itemServicoId}}."
+          }
+        },
+        {
+          "name": "Passo 7 — (Opcional) Adicionar peça extra à OS",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidade\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/items-peca",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "items-peca"]
+            },
+            "description": "Adiciona uma peça/insumo à OS após a criação. Só é permitido nos status RECEBIDA e EM_DIAGNOSTICO. O total é recalculado automaticamente."
+          }
+        },
+        {
+          "name": "Passo 8 — Avançar → EM_DIAGNOSTICO (mecânico inicia diagnóstico)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "avancar"]
+            },
+            "description": "RECEBIDA → EM_DIAGNOSTICO. O mecânico começa a inspecionar o veículo."
+          }
+        },
+        {
+          "name": "Passo 9 — Avançar → AGUARDANDO_APROVACAO (enviar orçamento ao cliente)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "avancar"]
+            },
+            "description": "EM_DIAGNOSTICO → AGUARDANDO_APROVACAO. O orçamento é enviado ao cliente por e-mail (log no console). A partir daqui somente o cliente pode aprovar ou recusar."
+          }
+        },
+        {
+          "name": "Passo 10 — Cliente consulta o andamento da OS (sem token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/acompanhar/{{osNumero}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "acompanhar", "{{osNumero}}"]
+            },
+            "description": "Endpoint público — não exige JWT. O cliente consulta o status da OS pelo número recebido no e-mail (ex: OS-20260412-A3F7C2). Retorna todos os detalhes: serviços, peças, totais e status atual."
+          }
+        },
+        {
+          "name": "Passo 11 — Cliente APROVA o orçamento (sem token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/acompanhar/{{osNumero}}/aprovar-orcamento",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "acompanhar", "{{osNumero}}", "aprovar-orcamento"]
+            },
+            "description": "Endpoint público — não exige JWT. O cliente aprova o orçamento pelo número da OS. Status muda: AGUARDANDO_APROVACAO → APROVADO. E-mail de confirmação é disparado (log).\n\nAlternativa: use o Passo 11b para recusar."
+          }
+        },
+        {
+          "name": "Passo 11b — (Alternativa) Cliente RECUSA o orçamento (sem token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/acompanhar/{{osNumero}}/recusar-orcamento",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "acompanhar", "{{osNumero}}", "recusar-orcamento"]
+            },
+            "description": "Endpoint público — não exige JWT. O cliente recusa o orçamento. Status muda: AGUARDANDO_APROVACAO → CANCELADA. Estoque das peças é devolvido automaticamente. E-mail de cancelamento é disparado (log)."
+          }
+        },
+        {
+          "name": "Passo 12 — Avançar → EM_EXECUCAO (mecânico inicia o serviço)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "avancar"]
+            },
+            "description": "APROVADO → EM_EXECUCAO. O mecânico confirma o início da execução dos serviços. Requer que o cliente tenha aprovado (Passo 11)."
+          }
+        },
+        {
+          "name": "Passo 13a — Iniciar execução do serviço (item)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/itens-servico/{{itemServicoId}}/iniciar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "itens-servico", "{{itemServicoId}}", "iniciar"]
+            },
+            "description": "Registra data e hora de início da execução do item de serviço. Requer OS em EM_EXECUCAO."
+          }
+        },
+        {
+          "name": "Passo 13b — Finalizar execução do serviço (item)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/itens-servico/{{itemServicoId}}/finalizar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "itens-servico", "{{itemServicoId}}", "finalizar"]
+            },
+            "description": "Registra data e hora de conclusão do item de serviço. Requer OS em EM_EXECUCAO."
+          }
+        },
+        {
+          "name": "Passo 14 — Avançar → FINALIZADA",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "avancar"]
+            },
+            "description": "EM_EXECUCAO → FINALIZADA. Todos os serviços concluídos. OS aguarda pagamento e entrega do veículo."
+          }
+        },
+        {
+          "name": "Passo 15a — Registrar pagamento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('pagamentoId', body.id);",
+                  "    console.log('✅ pagamentoId salvo:', body.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formaPagamento\": \"PIX\",\n  \"valor\": 165.90\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ordens/{{osId}}/pagamento",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "{{osId}}", "pagamento"]
+            },
+            "description": "Registra o pagamento da OS. Requer status FINALIZADA. Formas: DINHEIRO | CARTAO_DEBITO | CARTAO_CREDITO | PIX | TRANSFERENCIA. Salva {{pagamentoId}}."
+          }
+        },
+        {
+          "name": "Passo 15b — Confirmar pagamento (→ ENTREGUE)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/pagamentos/{{pagamentoId}}/confirmar",
+              "host": ["{{baseUrl}}"],
+              "path": ["pagamentos", "{{pagamentoId}}", "confirmar"]
+            },
+            "description": "Confirma o pagamento: PENDENTE → PAGO. A OS avança automaticamente para ENTREGUE. E-mail de confirmação de pagamento é disparado (log). Fluxo completo encerrado ✅"
+          }
+        }
+      ]
+    },
     {
       "name": "Autenticação",
       "description": "Registro e login de usuários",
@@ -103,9 +453,7 @@
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"atendente1\",\n  \"password\": \"Atend@2024\"\n}"
@@ -115,7 +463,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["auth", "registrar"]
             },
-            "description": "Cadastra um novo usuário. Senha mínima de 8 caracteres. Retorna 201 com id, username e criadoEm."
+            "description": "Cadastra um novo usuário. Senha mínima de 8 caracteres."
           }
         },
         {
@@ -138,9 +486,7 @@
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"atendente1\",\n  \"password\": \"Atend@2024\"\n}"
@@ -169,7 +515,9 @@
                   "if (pm.response.code === 201) {",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('clienteId', body.id);",
+                  "    pm.collectionVariables.set('clienteDocumento', body.documento.replace(/\\D/g, ''));",
                   "    console.log('clienteId salvo:', body.id);",
+                  "    console.log('clienteDocumento salvo:', body.documento);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -178,9 +526,7 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"João da Silva\",\n  \"tipoPessoa\": \"PF\",\n  \"documento\": \"529.982.247-25\",\n  \"email\": \"joao.silva@email.com\",\n  \"telefone\": \"(11) 99999-1234\",\n  \"endereco\": \"Rua das Flores, 123 - São Paulo/SP\"\n}"
@@ -189,17 +535,14 @@
               "raw": "{{baseUrl}}/clientes",
               "host": ["{{baseUrl}}"],
               "path": ["clientes"]
-            },
-            "description": "Cadastra um cliente Pessoa Física. O ID é salvo automaticamente em {{clienteId}}."
+            }
           }
         },
         {
           "name": "Criar cliente (PJ)",
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"Transportes Silva LTDA\",\n  \"tipoPessoa\": \"PJ\",\n  \"documento\": \"11.222.333/0001-81\",\n  \"email\": \"contato@transportes-silva.com.br\",\n  \"telefone\": \"(11) 3333-4444\",\n  \"endereco\": \"Av. Industrial, 500 - Guarulhos/SP\"\n}"
@@ -215,22 +558,14 @@
           "name": "Listar clientes",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/clientes",
-              "host": ["{{baseUrl}}"],
-              "path": ["clientes"]
-            }
+            "url": { "raw": "{{baseUrl}}/clientes", "host": ["{{baseUrl}}"], "path": ["clientes"] }
           }
         },
         {
           "name": "Buscar cliente por ID",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["clientes", "{{clienteId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/clientes/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["clientes", "{{clienteId}}"] }
           }
         },
         {
@@ -243,7 +578,6 @@
                   "if (pm.response.code === 200) {",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('clienteId', body.id);",
-                  "    console.log('clienteId salvo:', body.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -257,37 +591,26 @@
               "host": ["{{baseUrl}}"],
               "path": ["clientes", "documento", "52998224725"]
             },
-            "description": "Aceita documento com ou sem pontuação. Salva {{clienteId}} automaticamente."
+            "description": "Aceita documento com ou sem pontuação. Salva {{clienteId}}."
           }
         },
         {
           "name": "Atualizar cliente",
           "request": {
             "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"João da Silva Atualizado\",\n  \"tipoPessoa\": \"PF\",\n  \"documento\": \"529.982.247-25\",\n  \"email\": \"joao.novo@email.com\",\n  \"telefone\": \"(11) 98888-5678\",\n  \"endereco\": \"Rua Nova, 456 - São Paulo/SP\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["clientes", "{{clienteId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/clientes/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["clientes", "{{clienteId}}"] }
           }
         },
         {
           "name": "Desativar cliente",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/clientes/{{clienteId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["clientes", "{{clienteId}}"]
-            },
-            "description": "Soft delete — o registro permanece no banco com ativo=false."
+            "url": { "raw": "{{baseUrl}}/clientes/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["clientes", "{{clienteId}}"] }
           }
         }
       ]
@@ -306,7 +629,6 @@
                   "if (pm.response.code === 201) {",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('veiculoId', body.id);",
-                  "    console.log('veiculoId salvo:', body.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -315,59 +637,38 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"placa\": \"ABC1234\",\n  \"marca\": \"Toyota\",\n  \"modelo\": \"Corolla\",\n  \"ano\": 2022,\n  \"cor\": \"Prata\",\n  \"clienteId\": \"{{clienteId}}\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/veiculos",
-              "host": ["{{baseUrl}}"],
-              "path": ["veiculos"]
-            },
-            "description": "Placa no formato antigo (ABC1234) ou Mercosul (ABC1D23). Requer {{clienteId}} preenchido."
+            "url": { "raw": "{{baseUrl}}/veiculos", "host": ["{{baseUrl}}"], "path": ["veiculos"] }
           }
         },
         {
           "name": "Criar veículo (placa Mercosul)",
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"placa\": \"BRA2E19\",\n  \"marca\": \"Honda\",\n  \"modelo\": \"Civic\",\n  \"ano\": 2023,\n  \"cor\": \"Preto\",\n  \"clienteId\": \"{{clienteId}}\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/veiculos",
-              "host": ["{{baseUrl}}"],
-              "path": ["veiculos"]
-            }
+            "url": { "raw": "{{baseUrl}}/veiculos", "host": ["{{baseUrl}}"], "path": ["veiculos"] }
           }
         },
         {
           "name": "Listar veículos",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/veiculos",
-              "host": ["{{baseUrl}}"],
-              "path": ["veiculos"]
-            }
+            "url": { "raw": "{{baseUrl}}/veiculos", "host": ["{{baseUrl}}"], "path": ["veiculos"] }
           }
         },
         {
           "name": "Buscar veículo por ID",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["veiculos", "{{veiculoId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/veiculos/{{veiculoId}}", "host": ["{{baseUrl}}"], "path": ["veiculos", "{{veiculoId}}"] }
           }
         },
         {
@@ -380,7 +681,6 @@
                   "if (pm.response.code === 200) {",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('veiculoId', body.id);",
-                  "    console.log('veiculoId salvo:', body.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -389,52 +689,33 @@
           ],
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/veiculos/placa/ABC1234",
-              "host": ["{{baseUrl}}"],
-              "path": ["veiculos", "placa", "ABC1234"]
-            },
-            "description": "Salva {{veiculoId}} automaticamente."
+            "url": { "raw": "{{baseUrl}}/veiculos/placa/ABC1234", "host": ["{{baseUrl}}"], "path": ["veiculos", "placa", "ABC1234"] }
           }
         },
         {
           "name": "Listar veículos por cliente",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/veiculos/cliente/{{clienteId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["veiculos", "cliente", "{{clienteId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/veiculos/cliente/{{clienteId}}", "host": ["{{baseUrl}}"], "path": ["veiculos", "cliente", "{{clienteId}}"] }
           }
         },
         {
           "name": "Atualizar veículo",
           "request": {
             "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"placa\": \"ABC1234\",\n  \"marca\": \"Toyota\",\n  \"modelo\": \"Corolla XEi\",\n  \"ano\": 2022,\n  \"cor\": \"Branco\",\n  \"clienteId\": \"{{clienteId}}\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["veiculos", "{{veiculoId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/veiculos/{{veiculoId}}", "host": ["{{baseUrl}}"], "path": ["veiculos", "{{veiculoId}}"] }
           }
         },
         {
           "name": "Desativar veículo",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/veiculos/{{veiculoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["veiculos", "{{veiculoId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/veiculos/{{veiculoId}}", "host": ["{{baseUrl}}"], "path": ["veiculos", "{{veiculoId}}"] }
           }
         }
       ]
@@ -453,7 +734,6 @@
                   "if (pm.response.code === 201) {",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('pecaId', body.id);",
-                  "    console.log('pecaId salvo:', body.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -462,146 +742,89 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"codigo\": \"FILTRO-OLEO-001\",\n  \"nome\": \"Filtro de Óleo Motor\",\n  \"descricao\": \"Filtro de óleo para motores 1.0 a 2.0, compatível com Toyota e Honda\",\n  \"preco\": 45.90,\n  \"quantidadeEstoque\": 50,\n  \"estoqueMinimo\": 10,\n  \"unidadeMedida\": \"UN\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/pecas",
-              "host": ["{{baseUrl}}"],
-              "path": ["pecas"]
-            },
-            "description": "O código é normalizado para MAIÚSCULAS automaticamente. O ID é salvo em {{pecaId}}."
+            "url": { "raw": "{{baseUrl}}/pecas", "host": ["{{baseUrl}}"], "path": ["pecas"] }
           }
         },
         {
           "name": "Criar peça (fluido)",
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"codigo\": \"OLEO-5W30-SYN\",\n  \"nome\": \"Óleo Motor Sintético 5W30\",\n  \"descricao\": \"Óleo motor sintético API SN/SP, ideal para motores flex\",\n  \"preco\": 38.50,\n  \"quantidadeEstoque\": 100,\n  \"estoqueMinimo\": 20,\n  \"unidadeMedida\": \"LT\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/pecas",
-              "host": ["{{baseUrl}}"],
-              "path": ["pecas"]
-            }
+            "url": { "raw": "{{baseUrl}}/pecas", "host": ["{{baseUrl}}"], "path": ["pecas"] }
           }
         },
         {
           "name": "Listar peças ativas",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/pecas",
-              "host": ["{{baseUrl}}"],
-              "path": ["pecas"]
-            }
+            "url": { "raw": "{{baseUrl}}/pecas", "host": ["{{baseUrl}}"], "path": ["pecas"] }
           }
         },
         {
           "name": "Listar todas as peças",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/pecas/todas",
-              "host": ["{{baseUrl}}"],
-              "path": ["pecas", "todas"]
-            },
-            "description": "Inclui peças com ativo=false."
+            "url": { "raw": "{{baseUrl}}/pecas/todas", "host": ["{{baseUrl}}"], "path": ["pecas", "todas"] }
           }
         },
         {
           "name": "Buscar peça por ID",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/pecas/{{pecaId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["pecas", "{{pecaId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/pecas/{{pecaId}}", "host": ["{{baseUrl}}"], "path": ["pecas", "{{pecaId}}"] }
           }
         },
         {
           "name": "Atualizar peça",
           "request": {
             "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"codigo\": \"FILTRO-OLEO-001\",\n  \"nome\": \"Filtro de Óleo Motor Premium\",\n  \"descricao\": \"Filtro de óleo premium para motores 1.0 a 2.0\",\n  \"preco\": 52.90,\n  \"estoqueMinimo\": 15,\n  \"unidadeMedida\": \"UN\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/pecas/{{pecaId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["pecas", "{{pecaId}}"]
-            },
-            "description": "O campo quantidadeEstoque não é atualizado por aqui — use o endpoint de movimentação de estoque."
+            "url": { "raw": "{{baseUrl}}/pecas/{{pecaId}}", "host": ["{{baseUrl}}"], "path": ["pecas", "{{pecaId}}"] }
           }
         },
         {
           "name": "Entrada de estoque",
           "request": {
             "method": "PATCH",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"operacao\": \"ENTRADA\",\n  \"quantidade\": 30\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/pecas/{{pecaId}}/estoque",
-              "host": ["{{baseUrl}}"],
-              "path": ["pecas", "{{pecaId}}", "estoque"]
-            },
-            "description": "Registra recebimento de mercadoria — adiciona ao estoque atual."
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"operacao\": \"ENTRADA\",\n  \"quantidade\": 30\n}" },
+            "url": { "raw": "{{baseUrl}}/pecas/{{pecaId}}/estoque", "host": ["{{baseUrl}}"], "path": ["pecas", "{{pecaId}}", "estoque"] }
           }
         },
         {
           "name": "Saída de estoque",
           "request": {
             "method": "PATCH",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"operacao\": \"SAIDA\",\n  \"quantidade\": 5\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/pecas/{{pecaId}}/estoque",
-              "host": ["{{baseUrl}}"],
-              "path": ["pecas", "{{pecaId}}", "estoque"]
-            },
-            "description": "Registra consumo — subtrai do estoque atual. Retorna 422 se estoque insuficiente."
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"operacao\": \"SAIDA\",\n  \"quantidade\": 5\n}" },
+            "url": { "raw": "{{baseUrl}}/pecas/{{pecaId}}/estoque", "host": ["{{baseUrl}}"], "path": ["pecas", "{{pecaId}}", "estoque"] }
           }
         },
         {
           "name": "Desativar peça",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/pecas/{{pecaId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["pecas", "{{pecaId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/pecas/{{pecaId}}", "host": ["{{baseUrl}}"], "path": ["pecas", "{{pecaId}}"] }
           }
         }
       ]
     },
     {
       "name": "Serviços",
-      "description": "Catálogo de serviços da oficina com seus insumos",
+      "description": "Catálogo de serviços da oficina",
       "item": [
         {
           "name": "Criar serviço",
@@ -613,7 +836,6 @@
                   "if (pm.response.code === 201) {",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('servicoId', body.id);",
-                  "    console.log('servicoId salvo:', body.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -622,158 +844,83 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"Troca de Óleo e Filtro\",\n  \"descricao\": \"Troca completa do óleo motor com substituição do filtro de óleo\",\n  \"preco\": 120.00\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/servicos",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos"]
-            },
-            "description": "O ID é salvo automaticamente em {{servicoId}}."
+            "url": { "raw": "{{baseUrl}}/servicos", "host": ["{{baseUrl}}"], "path": ["servicos"] }
           }
         },
         {
           "name": "Criar serviço (alinhamento)",
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"Alinhamento e Balanceamento\",\n  \"descricao\": \"Alinhamento da direção e balanceamento dos quatro pneus\",\n  \"preco\": 180.00\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/servicos",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos"]
-            }
+            "url": { "raw": "{{baseUrl}}/servicos", "host": ["{{baseUrl}}"], "path": ["servicos"] }
           }
         },
         {
           "name": "Listar serviços ativos",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/servicos",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos"]
-            }
+            "url": { "raw": "{{baseUrl}}/servicos", "host": ["{{baseUrl}}"], "path": ["servicos"] }
           }
         },
         {
           "name": "Listar todos os serviços",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/servicos/todos",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos", "todos"]
-            },
-            "description": "Inclui serviços com ativo=false."
+            "url": { "raw": "{{baseUrl}}/servicos/todos", "host": ["{{baseUrl}}"], "path": ["servicos", "todos"] }
           }
         },
         {
           "name": "Buscar serviço por ID",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/servicos/{{servicoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos", "{{servicoId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/servicos/{{servicoId}}", "host": ["{{baseUrl}}"], "path": ["servicos", "{{servicoId}}"] }
           }
         },
         {
           "name": "Atualizar serviço",
           "request": {
             "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nome\": \"Troca de Óleo e Filtro Completo\",\n  \"descricao\": \"Troca completa do óleo motor e filtro, com inspeção do sistema de arrefecimento\",\n  \"preco\": 145.00\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/servicos/{{servicoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos", "{{servicoId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/servicos/{{servicoId}}", "host": ["{{baseUrl}}"], "path": ["servicos", "{{servicoId}}"] }
           }
         },
         {
           "name": "Vincular insumo ao serviço",
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidade\": 1\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos", "{{servicoId}}", "insumos"]
-            },
-            "description": "Vincula uma peça ao serviço com quantidade necessária. Requer {{servicoId}} e {{pecaId}} preenchidos."
-          }
-        },
-        {
-          "name": "Atualizar quantidade do insumo",
-          "request": {
-            "method": "PUT",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidade\": 2\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos/{{pecaId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos", "{{servicoId}}", "insumos", "{{pecaId}}"]
-            }
-          }
-        },
-        {
-          "name": "Remover insumo do serviço",
-          "request": {
-            "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos/{{pecaId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos", "{{servicoId}}", "insumos", "{{pecaId}}"]
-            }
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidade\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/servicos/{{servicoId}}/insumos", "host": ["{{baseUrl}}"], "path": ["servicos", "{{servicoId}}", "insumos"] }
           }
         },
         {
           "name": "Desativar serviço",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/servicos/{{servicoId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["servicos", "{{servicoId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/servicos/{{servicoId}}", "host": ["{{baseUrl}}"], "path": ["servicos", "{{servicoId}}"] }
           }
         }
       ]
     },
     {
       "name": "Ordens de Serviço",
-      "description": "Fluxo completo de OS: preparação da abertura por documento/placa → criação → diagnóstico → aprovação → execução → finalização → pagamento → entrega.\n\nNOVO: endpoint GET /ordens/preparar-abertura para identificar o cliente por CPF/CNPJ e validar a placa antes da criação da OS.\n\nStatus possíveis: RECEBIDA | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | EM_EXECUCAO | FINALIZADA | ENTREGUE | CANCELADA\n\nO endpoint GET /ordens/acompanhar/{numero} é público (sem token).",
+      "description": "Fluxo completo de OS.\n\nStatus: RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → APROVADO → EM_EXECUCAO → FINALIZADA → ENTREGUE\n\nAprovação/recusa do orçamento é feita pelo cliente via endpoints públicos (sem token).",
       "item": [
         {
-          "name": "Preparar abertura da OS (somente documento)",
+          "name": "Preparar abertura (somente documento)",
           "event": [
             {
               "listen": "test",
@@ -796,19 +943,12 @@
               "raw": "{{baseUrl}}/ordens/preparar-abertura?documento={{clienteDocumento}}",
               "host": ["{{baseUrl}}"],
               "path": ["ordens", "preparar-abertura"],
-              "query": [
-                {
-                  "key": "documento",
-                  "value": "{{clienteDocumento}}",
-                  "description": "CPF/CNPJ do cliente a ser identificado"
-                }
-              ]
-            },
-            "description": "Identifica o cliente por CPF/CNPJ e retorna os veículos ativos dele. Salva {{clienteId}} automaticamente quando encontrado."
+              "query": [{ "key": "documento", "value": "{{clienteDocumento}}" }]
+            }
           }
         },
         {
-          "name": "Preparar abertura da OS (documento + placa)",
+          "name": "Preparar abertura (documento + placa)",
           "event": [
             {
               "listen": "test",
@@ -816,12 +956,8 @@
                 "exec": [
                   "if (pm.response.code === 200) {",
                   "    const body = pm.response.json();",
-                  "    if (body.cliente && body.cliente.id) {",
-                  "        pm.collectionVariables.set('clienteId', body.cliente.id);",
-                  "    }",
-                  "    if (body.veiculoSelecionado && body.veiculoSelecionado.id) {",
-                  "        pm.collectionVariables.set('veiculoId', body.veiculoSelecionado.id);",
-                  "    }",
+                  "    if (body.cliente && body.cliente.id) pm.collectionVariables.set('clienteId', body.cliente.id);",
+                  "    if (body.veiculoSelecionado && body.veiculoSelecionado.id) pm.collectionVariables.set('veiculoId', body.veiculoSelecionado.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -835,19 +971,10 @@
               "host": ["{{baseUrl}}"],
               "path": ["ordens", "preparar-abertura"],
               "query": [
-                {
-                  "key": "documento",
-                  "value": "{{clienteDocumento}}",
-                  "description": "CPF/CNPJ do cliente a ser identificado"
-                },
-                {
-                  "key": "placa",
-                  "value": "{{veiculoPlaca}}",
-                  "description": "Placa validada contra o cliente identificado"
-                }
+                { "key": "documento", "value": "{{clienteDocumento}}" },
+                { "key": "placa",     "value": "{{veiculoPlaca}}" }
               ]
-            },
-            "description": "Identifica o cliente por CPF/CNPJ, valida a placa informada e salva {{clienteId}} e {{veiculoId}} quando a abertura já estiver pronta."
+            }
           }
         },
         {
@@ -863,10 +990,7 @@
                   "    pm.collectionVariables.set('osNumero', body.numero);",
                   "    if (body.itensServico && body.itensServico.length > 0) {",
                   "        pm.collectionVariables.set('itemServicoId', body.itensServico[0].id);",
-                  "        console.log('itemServicoId salvo:', body.itensServico[0].id);",
                   "    }",
-                  "    console.log('osId salvo:', body.id);",
-                  "    console.log('osNumero salvo:', body.numero);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -875,19 +999,13 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"observacoes\": \"Cliente relata barulho ao frear e óleo baixo no painel\",\n  \"itensServico\": [\n    {\n      \"servicoId\": \"{{servicoId}}\",\n      \"observacoes\": \"Usar óleo sintético 5W30\"\n    }\n  ],\n  \"itensPeca\": [\n    {\n      \"pecaId\": \"{{pecaId}}\",\n      \"quantidade\": 2\n    }\n  ]\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/ordens",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens"]
-            },
-            "description": "Cria uma OS vinculando cliente, veículo, serviços e peças. Recomenda-se executar antes o endpoint de preparação da abertura para identificar o cliente por documento e validar a placa. O preço é snapshot do catálogo no momento da criação. O estoque das peças é deduzido automaticamente. Salva {{osId}} e {{osNumero}}."
+            "url": { "raw": "{{baseUrl}}/ordens", "host": ["{{baseUrl}}"], "path": ["ordens"] },
+            "description": "O orçamento total é calculado automaticamente. Salva {{osId}}, {{osNumero}} e {{itemServicoId}}."
           }
         },
         {
@@ -903,7 +1021,6 @@
                   "    pm.collectionVariables.set('osNumero', body.numero);",
                   "    if (body.itensServico && body.itensServico.length > 0) {",
                   "        pm.collectionVariables.set('itemServicoId', body.itensServico[0].id);",
-                  "        console.log('itemServicoId salvo:', body.itensServico[0].id);",
                   "    }",
                   "}"
                 ],
@@ -913,30 +1030,19 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"clienteId\": \"{{clienteId}}\",\n  \"veiculoId\": \"{{veiculoId}}\",\n  \"observacoes\": \"Alinhamento solicitado pelo cliente\",\n  \"itensServico\": [\n    {\n      \"servicoId\": \"{{servicoId}}\"\n    }\n  ]\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/ordens",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens"]
-            },
-            "description": "Cria OS sem peças — itensPeca é opcional."
+            "url": { "raw": "{{baseUrl}}/ordens", "host": ["{{baseUrl}}"], "path": ["ordens"] }
           }
         },
         {
           "name": "Listar todas as OS",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/ordens",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens"]
-            }
+            "url": { "raw": "{{baseUrl}}/ordens", "host": ["{{baseUrl}}"], "path": ["ordens"] }
           }
         },
         {
@@ -947,45 +1053,25 @@
               "raw": "{{baseUrl}}/ordens?status=RECEBIDA",
               "host": ["{{baseUrl}}"],
               "path": ["ordens"],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "RECEBIDA",
-                  "description": "Valores: RECEBIDA | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | EM_EXECUCAO | FINALIZADA | ENTREGUE | CANCELADA"
-                }
-              ]
-            },
-            "description": "Filtra OS pelo status. Troque o valor do parâmetro para filtrar por outros status."
+              "query": [{ "key": "status", "value": "RECEBIDA", "description": "RECEBIDA | EM_DIAGNOSTICO | AGUARDANDO_APROVACAO | APROVADO | EM_EXECUCAO | FINALIZADA | ENTREGUE | CANCELADA" }]
+            }
           }
         },
         {
           "name": "Buscar OS por ID",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}"] }
           }
         },
         {
           "name": "Adicionar peça a OS existente",
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidade\": 1\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/items-peca",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "items-peca"]
-            },
-            "description": "Adiciona uma peça a uma OS já criada. Apenas permitido nos status: RECEBIDA, EM_DIAGNOSTICO, AGUARDANDO_APROVACAO e EM_EXECUCAO.\n\nValidações:\n- Peça deve existir e estar ativa\n- Estoque deve ser suficiente\n- Peça não pode estar duplicada na OS\n- Status deve ser um dos permitidos\n\nO preço é snapshot do catálogo no momento da adição."
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidade\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/items-peca", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "items-peca"] },
+            "description": "Permitido nos status RECEBIDA e EM_DIAGNOSTICO."
           }
         },
         {
@@ -1000,7 +1086,6 @@
                   "    if (body.itensServico && body.itensServico.length > 0) {",
                   "        const ultimo = body.itensServico[body.itensServico.length - 1];",
                   "        pm.collectionVariables.set('itemServicoId', ultimo.id);",
-                  "        console.log('itemServicoId salvo:', ultimo.id);",
                   "    }",
                   "}"
                 ],
@@ -1010,115 +1095,26 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"servicoId\": \"{{servicoId}}\",\n  \"observacoes\": \"Serviço adicional\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/items-servico",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "items-servico"]
-            },
-            "description": "Adiciona um serviço a uma OS já criada. Apenas permitido nos status: RECEBIDA, EM_DIAGNOSTICO, AGUARDANDO_APROVACAO e EM_EXECUCAO.\n\nValidações:\n- Serviço deve existir e estar ativo\n- Serviço não pode estar duplicado na OS\n- Status deve ser um dos permitidos\n\nO preço é snapshot do catálogo no momento da adição."
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"servicoId\": \"{{servicoId}}\",\n  \"observacoes\": \"Serviço adicional\"\n}" },
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/items-servico", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "items-servico"] },
+            "description": "Permitido nos status RECEBIDA e EM_DIAGNOSTICO."
           }
         },
         {
-          "name": "Avancar status → EM_DIAGNOSTICO",
+          "name": "Avançar → EM_DIAGNOSTICO",
           "request": {
             "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "avancar"]
-            },
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/avancar", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "avancar"] },
             "description": "RECEBIDA → EM_DIAGNOSTICO."
           }
         },
         {
-          "name": "Avancar status → AGUARDANDO_APROVACAO",
+          "name": "Avançar → AGUARDANDO_APROVACAO",
           "request": {
             "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "avancar"]
-            },
-            "description": "EM_DIAGNOSTICO → AGUARDANDO_APROVACAO. Email de orçamento é disparado (log)."
-          }
-        },
-        {
-          "name": "Avancar status → EM_EXECUCAO (aprovação)",
-          "request": {
-            "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "avancar"]
-            },
-            "description": "AGUARDANDO_APROVACAO → EM_EXECUCAO. Simula a aprovação do orçamento pelo cliente. Email de aprovação é disparado (log)."
-          }
-        },
-        {
-          "name": "Iniciar execução do serviço (item)",
-          "request": {
-            "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/itens-servico/{{itemServicoId}}/iniciar",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "itens-servico", "{{itemServicoId}}", "iniciar"]
-            },
-            "description": "Marca data_inicio_execucao do item de serviço. Requer OS em EM_EXECUCAO."
-          }
-        },
-        {
-          "name": "Finalizar execução do serviço (item)",
-          "request": {
-            "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/itens-servico/{{itemServicoId}}/finalizar",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "itens-servico", "{{itemServicoId}}", "finalizar"]
-            },
-            "description": "Marca data_fim_execucao do item de serviço. Requer OS em EM_EXECUCAO."
-          }
-        },
-        {
-          "name": "Avancar status → FINALIZADA",
-          "request": {
-            "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/avancar",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "avancar"]
-            },
-            "description": "EM_EXECUCAO → FINALIZADA. Serviço concluído, aguardando pagamento."
-          }
-        },
-        {
-          "name": "Monitoramento — tempo médio de execução",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/monitoramento/tempo-medio",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "monitoramento", "tempo-medio"]
-            },
-            "description": "Retorna o tempo médio (em minutos e horas) de execução dos serviços finalizados. Retorna 0.0 se ainda não houver itens de serviço finalizados."
-          }
-        },
-        {
-          "name": "Cancelar OS",
-          "request": {
-            "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/cancelar",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "cancelar"]
-            },
-            "description": "Cancela a OS. Permitido nos status RECEBIDA, EM_DIAGNOSTICO e AGUARDANDO_APROVACAO.\nRetorna 422 se EM_EXECUCAO, FINALIZADA ou ENTREGUE. Email de cancelamento é disparado (log)."
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/avancar", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "avancar"] },
+            "description": "EM_DIAGNOSTICO → AGUARDANDO_APROVACAO. E-mail de orçamento é disparado (log)."
           }
         },
         {
@@ -1126,19 +1122,80 @@
           "request": {
             "auth": { "type": "noauth" },
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/acompanhar/{{osNumero}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "acompanhar", "{{osNumero}}"]
-            },
-            "description": "Endpoint público — não exige JWT. O cliente consulta o andamento da OS pelo número (ex: OS-20260412-A3F7C2)."
+            "url": { "raw": "{{baseUrl}}/ordens/acompanhar/{{osNumero}}", "host": ["{{baseUrl}}"], "path": ["ordens", "acompanhar", "{{osNumero}}"] },
+            "description": "Endpoint público — não exige JWT. O cliente consulta o status da OS pelo número recebido no e-mail."
+          }
+        },
+        {
+          "name": "Aprovar orçamento (cliente — público, sem token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/ordens/acompanhar/{{osNumero}}/aprovar-orcamento", "host": ["{{baseUrl}}"], "path": ["ordens", "acompanhar", "{{osNumero}}", "aprovar-orcamento"] },
+            "description": "Endpoint público — não exige JWT. AGUARDANDO_APROVACAO → APROVADO. E-mail de confirmação é disparado (log)."
+          }
+        },
+        {
+          "name": "Recusar orçamento (cliente — público, sem token)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/ordens/acompanhar/{{osNumero}}/recusar-orcamento", "host": ["{{baseUrl}}"], "path": ["ordens", "acompanhar", "{{osNumero}}", "recusar-orcamento"] },
+            "description": "Endpoint público — não exige JWT. AGUARDANDO_APROVACAO → CANCELADA. Estoque devolvido automaticamente."
+          }
+        },
+        {
+          "name": "Avançar → EM_EXECUCAO (mecânico inicia após aprovação)",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/avancar", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "avancar"] },
+            "description": "APROVADO → EM_EXECUCAO. Requer que o cliente tenha aprovado o orçamento (status APROVADO)."
+          }
+        },
+        {
+          "name": "Iniciar execução do serviço (item)",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/itens-servico/{{itemServicoId}}/iniciar", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "itens-servico", "{{itemServicoId}}", "iniciar"] },
+            "description": "Registra data/hora de início. Requer OS em EM_EXECUCAO."
+          }
+        },
+        {
+          "name": "Finalizar execução do serviço (item)",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/itens-servico/{{itemServicoId}}/finalizar", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "itens-servico", "{{itemServicoId}}", "finalizar"] },
+            "description": "Registra data/hora de conclusão. Requer OS em EM_EXECUCAO."
+          }
+        },
+        {
+          "name": "Avançar → FINALIZADA",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/avancar", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "avancar"] },
+            "description": "EM_EXECUCAO → FINALIZADA."
+          }
+        },
+        {
+          "name": "Monitoramento — tempo médio de execução",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/ordens/monitoramento/tempo-medio", "host": ["{{baseUrl}}"], "path": ["ordens", "monitoramento", "tempo-medio"] }
+          }
+        },
+        {
+          "name": "Cancelar OS",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/cancelar", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "cancelar"] },
+            "description": "Permitido nos status RECEBIDA, EM_DIAGNOSTICO, AGUARDANDO_APROVACAO e APROVADO. E-mail de cancelamento é disparado (log)."
           }
         }
       ]
     },
     {
       "name": "Pagamentos",
-      "description": "Registro e confirmação de pagamentos.\n\nFluxo: OS deve estar FINALIZADA → Registrar Pagamento → Confirmar (OS avança para ENTREGUE automaticamente).\n\nFormas de pagamento: DINHEIRO | CARTAO_DEBITO | CARTAO_CREDITO | PIX | TRANSFERENCIA",
+      "description": "Registro e confirmação de pagamentos.\n\nFluxo: OS FINALIZADA → Registrar → Confirmar (OS → ENTREGUE).\n\nFormas: DINHEIRO | CARTAO_DEBITO | CARTAO_CREDITO | PIX | TRANSFERENCIA",
       "item": [
         {
           "name": "Registrar pagamento da OS",
@@ -1150,7 +1207,6 @@
                   "if (pm.response.code === 201) {",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('pagamentoId', body.id);",
-                  "    console.log('pagamentoId salvo:', body.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1159,61 +1215,38 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"formaPagamento\": \"PIX\",\n  \"valor\": 165.80\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/pagamento",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "pagamento"]
-            },
-            "description": "A OS deve estar com status FINALIZADA. Retorna 422 se status diferente ou se já houver pagamento registrado. O ID é salvo em {{pagamentoId}}.\n\nFormas: DINHEIRO | CARTAO_DEBITO | CARTAO_CREDITO | PIX | TRANSFERENCIA"
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"formaPagamento\": \"PIX\",\n  \"valor\": 165.80\n}" },
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/pagamento", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "pagamento"] }
           }
         },
         {
           "name": "Consultar pagamento da OS",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/ordens/{{osId}}/pagamento",
-              "host": ["{{baseUrl}}"],
-              "path": ["ordens", "{{osId}}", "pagamento"]
-            }
+            "url": { "raw": "{{baseUrl}}/ordens/{{osId}}/pagamento", "host": ["{{baseUrl}}"], "path": ["ordens", "{{osId}}", "pagamento"] }
           }
         },
         {
-          "name": "Confirmar pagamento",
+          "name": "Confirmar pagamento (→ ENTREGUE)",
           "request": {
             "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/pagamentos/{{pagamentoId}}/confirmar",
-              "host": ["{{baseUrl}}"],
-              "path": ["pagamentos", "{{pagamentoId}}", "confirmar"]
-            },
-            "description": "PENDENTE → PAGO. Após confirmar: envia email de confirmação (log) e avança OS automaticamente para ENTREGUE."
+            "url": { "raw": "{{baseUrl}}/pagamentos/{{pagamentoId}}/confirmar", "host": ["{{baseUrl}}"], "path": ["pagamentos", "{{pagamentoId}}", "confirmar"] },
+            "description": "PENDENTE → PAGO. OS avança automaticamente para ENTREGUE."
           }
         },
         {
           "name": "Cancelar pagamento",
           "request": {
             "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/pagamentos/{{pagamentoId}}/cancelar",
-              "host": ["{{baseUrl}}"],
-              "path": ["pagamentos", "{{pagamentoId}}", "cancelar"]
-            },
-            "description": "PENDENTE → CANCELADO. Retorna 422 se já PAGO."
+            "url": { "raw": "{{baseUrl}}/pagamentos/{{pagamentoId}}/cancelar", "host": ["{{baseUrl}}"], "path": ["pagamentos", "{{pagamentoId}}", "cancelar"] }
           }
         }
       ]
     },
     {
       "name": "Pedidos de Compra",
-      "description": "Gestão de reposição de estoque.\n\nFluxo: Criar → Aprovar → Receber (estoque é atualizado automaticamente)\n\nStatus: PENDENTE | APROVADO | RECEBIDO | CANCELADO",
+      "description": "Reposição de estoque. Fluxo: Criar → Aprovar → Receber (estoque atualizado automaticamente).\n\nStatus: PENDENTE | APROVADO | RECEBIDO | CANCELADO",
       "item": [
         {
           "name": "Criar pedido de compra",
@@ -1225,7 +1258,6 @@
                   "if (pm.response.code === 201) {",
                   "    const body = pm.response.json();",
                   "    pm.collectionVariables.set('pedidoCompraId', body.id);",
-                  "    console.log('pedidoCompraId salvo:', body.id);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -1234,30 +1266,16 @@
           ],
           "request": {
             "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidadeSolicitada\": 20,\n  \"observacoes\": \"Estoque crítico — repor urgente\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/pedidos-compra",
-              "host": ["{{baseUrl}}"],
-              "path": ["pedidos-compra"]
-            },
-            "description": "Cria um pedido de reposição para a peça. O ID é salvo em {{pedidoCompraId}}."
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pecaId\": \"{{pecaId}}\",\n  \"quantidadeSolicitada\": 20,\n  \"observacoes\": \"Estoque crítico — repor urgente\"\n}" },
+            "url": { "raw": "{{baseUrl}}/pedidos-compra", "host": ["{{baseUrl}}"], "path": ["pedidos-compra"] }
           }
         },
         {
           "name": "Listar pedidos de compra",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/pedidos-compra",
-              "host": ["{{baseUrl}}"],
-              "path": ["pedidos-compra"]
-            }
+            "url": { "raw": "{{baseUrl}}/pedidos-compra", "host": ["{{baseUrl}}"], "path": ["pedidos-compra"] }
           }
         },
         {
@@ -1268,13 +1286,7 @@
               "raw": "{{baseUrl}}/pedidos-compra?status=PENDENTE",
               "host": ["{{baseUrl}}"],
               "path": ["pedidos-compra"],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "PENDENTE",
-                  "description": "Valores: PENDENTE | APROVADO | RECEBIDO | CANCELADO"
-                }
-              ]
+              "query": [{ "key": "status", "value": "PENDENTE", "description": "PENDENTE | APROVADO | RECEBIDO | CANCELADO" }]
             }
           }
         },
@@ -1282,23 +1294,14 @@
           "name": "Buscar pedido por ID",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["pedidos-compra", "{{pedidoCompraId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}", "host": ["{{baseUrl}}"], "path": ["pedidos-compra", "{{pedidoCompraId}}"] }
           }
         },
         {
           "name": "Aprovar pedido de compra",
           "request": {
             "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}/aprovar",
-              "host": ["{{baseUrl}}"],
-              "path": ["pedidos-compra", "{{pedidoCompraId}}", "aprovar"]
-            },
-            "description": "PENDENTE → APROVADO. Retorna 422 se status diferente."
+            "url": { "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}/aprovar", "host": ["{{baseUrl}}"], "path": ["pedidos-compra", "{{pedidoCompraId}}", "aprovar"] }
           }
         },
         {
@@ -1309,27 +1312,16 @@
               "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}/receber?quantidade=20",
               "host": ["{{baseUrl}}"],
               "path": ["pedidos-compra", "{{pedidoCompraId}}", "receber"],
-              "query": [
-                {
-                  "key": "quantidade",
-                  "value": "20",
-                  "description": "Quantidade efetivamente recebida (pode ser diferente da solicitada)"
-                }
-              ]
+              "query": [{ "key": "quantidade", "value": "20" }]
             },
-            "description": "APROVADO → RECEBIDO. O estoque da peça é incrementado automaticamente pela quantidade recebida. Retorna 422 se não estiver APROVADO."
+            "description": "Estoque da peça é incrementado automaticamente."
           }
         },
         {
           "name": "Cancelar pedido de compra",
           "request": {
             "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}/cancelar",
-              "host": ["{{baseUrl}}"],
-              "path": ["pedidos-compra", "{{pedidoCompraId}}", "cancelar"]
-            },
-            "description": "PENDENTE ou APROVADO → CANCELADO. Retorna 422 se já RECEBIDO."
+            "url": { "raw": "{{baseUrl}}/pedidos-compra/{{pedidoCompraId}}/cancelar", "host": ["{{baseUrl}}"], "path": ["pedidos-compra", "{{pedidoCompraId}}", "cancelar"] }
           }
         }
       ]
