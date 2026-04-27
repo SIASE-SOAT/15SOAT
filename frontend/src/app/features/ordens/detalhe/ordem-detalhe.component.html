@@ -111,7 +111,7 @@
       </div>
 
       <!-- Ações -->
-      @if (!isMecanico && (podeAvancar() || podeCancelar() || podeAdicionarPeca() || podeAdicionarServico())) {
+      @if (podeAvancar() || aguardandoAprovacaoCliente() || (!isMecanico && (podeCancelar() || podeAdicionarPeca() || podeAdicionarServico()))) {
         <div class="section-card">
           <div class="section-header">
             <mat-icon>settings</mat-icon>
@@ -131,7 +131,7 @@
             @if (proximoStatusInfo(); as prox) {
               <button mat-flat-button class="btn-avancar" (click)="avancar()" [disabled]="actionLoading()">
                 <mat-icon>{{ prox.icon }}</mat-icon>
-                {{ prox.label }}   
+                {{ prox.label }}
               </button>
             }
             @if (aguardandoAprovacaoCliente()) {
@@ -139,7 +139,7 @@
                 Aguardando aprovação do cliente no portal.
               </p>
             }
-            @if (podeCancelar()) {
+            @if (!isMecanico && podeCancelar()) {
               <button mat-stroked-button color="warn" (click)="cancelar()" [disabled]="actionLoading()">
                 <mat-icon>cancel</mat-icon> Cancelar OS
               </button>
