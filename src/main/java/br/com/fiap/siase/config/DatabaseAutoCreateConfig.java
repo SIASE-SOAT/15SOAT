@@ -52,7 +52,15 @@ public class DatabaseAutoCreateConfig {
         return new HikariDataSource(config);
     }
 
+    private static final java.util.regex.Pattern SAFE_IDENTIFIER =
+            java.util.regex.Pattern.compile("^[a-zA-Z0-9_\\-]+$");
+
     private void criarBancoSeNaoExistir() {
+        if (!SAFE_IDENTIFIER.matcher(dbName).matches() || !SAFE_IDENTIFIER.matcher(user).matches()) {
+            log.warn("[DatabaseAutoCreate] Nome do banco ou usuário contém caracteres inválidos — criação abortada.");
+            return;
+        }
+
         String postgresUrl = String.format("jdbc:postgresql://%s:%s/postgres", host, port);
         try (Connection conn = DriverManager.getConnection(postgresUrl, user, password)) {
 
@@ -61,6 +69,7 @@ public class DatabaseAutoCreateConfig {
             check.setString(1, dbName);
 
             if (!check.executeQuery().next()) {
+               
                 conn.createStatement().execute(
                         "CREATE DATABASE \"" + dbName + "\" OWNER \"" + user + "\"");
                 log.info("[DatabaseAutoCreate] Banco '{}' criado com sucesso.", dbName);

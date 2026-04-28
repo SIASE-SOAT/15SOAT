@@ -17,6 +17,7 @@ import br.com.fiap.siase.repository.PecaRepository;
 import br.com.fiap.siase.repository.ServicoRepository;
 import br.com.fiap.siase.repository.VeiculoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,12 +33,16 @@ import static br.com.fiap.siase.model.enums.StatusOS.ENTREGUE;
 @RequiredArgsConstructor
 public class OrdemDeServicoService {
 
+    private static final String OS_NAO_ENCONTRADA_MSG = "OS não encontrada: ";
+    private static final String EMAIL_FALLBACK = "sem-email@siase.com";
+
     private final OrdemDeServicoRepository repository;
     private final ClienteRepository clienteRepository;
     private final VeiculoRepository veiculoRepository;
     private final ServicoRepository servicoRepository;
     private final PecaRepository pecaRepository;
     private final EmailService emailService;
+    private final ObjectProvider<OrdemDeServicoService> selfProvider;
 
     @Transactional
     public OrdemDeServicoResponse criar(OrdemDeServicoRequest request) {
@@ -123,14 +128,14 @@ public class OrdemDeServicoService {
     public OrdemDeServicoResponse buscarPorNumero(String numero) {
         return OrdemDeServicoResponse.from(
                 repository.findByNumero(numero)
-                        .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + numero))
+                        .orElseThrow(() -> new ResourceNotFoundException(OS_NAO_ENCONTRADA_MSG + numero))
         );
     }
 
     @Transactional
     public OrdemDeServicoResponse aprovarOrcamentoPorNumero(String numero) {
         var os = repository.findByNumero(numero)
-                .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + numero));
+                .orElseThrow(() -> new ResourceNotFoundException(OS_NAO_ENCONTRADA_MSG + numero));
 
         if (os.getStatus() != StatusOS.AGUARDANDO_APROVACAO) {
             throw new BusinessException("A OS " + numero + " não está aguardando aprovação no momento.");
@@ -142,13 +147,13 @@ public class OrdemDeServicoService {
     @Transactional
     public OrdemDeServicoResponse recusarOrcamentoPorNumero(String numero) {
         var os = repository.findByNumero(numero)
-                .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + numero));
+                .orElseThrow(() -> new ResourceNotFoundException(OS_NAO_ENCONTRADA_MSG + numero));
 
         if (os.getStatus() != StatusOS.AGUARDANDO_APROVACAO) {
             throw new BusinessException("A OS " + numero + " não está aguardando aprovação no momento.");
         }
 
-        return cancelar(os.getId());
+        return selfProvider.getObject().cancelar(os.getId());
     }
 
     @Transactional(readOnly = true)
@@ -218,7 +223,7 @@ public class OrdemDeServicoService {
         // Dispara email quando orçamento é enviado para aprovação
         if (os.getStatus() == StatusOS.AGUARDANDO_APROVACAO) {
             String email = os.getCliente().getEmail() != null
-                    ? os.getCliente().getEmail() : "sem-email@siase.com";
+                    ? os.getCliente().getEmail() : EMAIL_FALLBACK;
             emailService.enviarOrcamentoParaAprovacao(
                     email,
                     os.getCliente().getNome(),
@@ -230,7 +235,7 @@ public class OrdemDeServicoService {
         // Dispara email quando cliente aprova o orçamento
         if (statusAnterior == StatusOS.AGUARDANDO_APROVACAO && os.getStatus() == StatusOS.APROVADO) {
             String email = os.getCliente().getEmail() != null
-                    ? os.getCliente().getEmail() : "sem-email@siase.com";
+                    ? os.getCliente().getEmail() : EMAIL_FALLBACK;
             emailService.enviarOrcamentoAprovado(email, os.getCliente().getNome(), os.getNumero());
         }
 
@@ -353,7 +358,7 @@ public class OrdemDeServicoService {
         var salvo = repository.save(os);
 
         String email = os.getCliente().getEmail() != null
-                ? os.getCliente().getEmail() : "sem-email@siase.com";
+                ? os.getCliente().getEmail() : EMAIL_FALLBACK;
         emailService.enviarOrcamentoCancelado(email, os.getCliente().getNome(), os.getNumero());
 
         return OrdemDeServicoResponse.from(salvo);
@@ -361,7 +366,7 @@ public class OrdemDeServicoService {
 
     private OrdemDeServico findOrThrow(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(OS_NAO_ENCONTRADA_MSG + id));
     }
 
     private boolean jaTemPeca(OrdemDeServico os, UUID pecaId) {

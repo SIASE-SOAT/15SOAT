@@ -24,6 +24,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final String VALIDATION_FAILED = "Validation failed";
+
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
         log.warn("Bad credentials attempt for path: {}", request.getRequestURI());
@@ -73,7 +75,7 @@ public class GlobalExceptionHandler {
             String field = ((FieldError) error).getField();
             errors.put(field, error.getDefaultMessage());
         });
-        ErrorResponse response = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Validation failed", request.getRequestURI());
+        ErrorResponse response = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), VALIDATION_FAILED, request.getRequestURI());
         response.setFieldErrors(errors);
         return ResponseEntity.badRequest().body(response);
     }
@@ -82,14 +84,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
         log.warn("Constraint violation: {}", ex.getMessage());
         return ResponseEntity.badRequest()
-                .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Validation failed", request.getRequestURI()));
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), VALIDATION_FAILED, request.getRequestURI()));
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException ex, HttpServletRequest request) {
         log.warn("Handler method validation failed: {}", ex.getMessage());
         return ResponseEntity.badRequest()
-                .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Validation failed", request.getRequestURI()));
+                .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(), VALIDATION_FAILED, request.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)

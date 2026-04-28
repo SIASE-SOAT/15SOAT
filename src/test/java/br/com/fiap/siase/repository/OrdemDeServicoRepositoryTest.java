@@ -251,7 +251,7 @@ class OrdemDeServicoRepositoryTest {
         assertThat(tempoMedio)
                 .isNotNull()
                 .isGreaterThan(0)
-                .isLessThanOrEqualTo(60);
+                .isCloseTo(60.0, org.assertj.core.data.Offset.offset(1.0));
     }
 
     @Test

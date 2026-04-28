@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-  @Value("${cliente.portal-url:http://localhost:4200}")
+  @Value("${cliente.portal-url}")
   private String portalClienteUrl;
 
     public void enviarConfirmacaoAgendamento(String emailCliente, String nomeCliente,

@@ -13,7 +13,7 @@
 
     <groupId>br.com.fiap</groupId>
     <artifactId>siase</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.5</version>
     <name>siase</name>
     <description>Sistema Integrado de Atendimento e Execução de Serviços</description>
 
@@ -199,6 +199,11 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>4.0.0.4121</version>
             </plugin>
         </plugins>
     </build>
