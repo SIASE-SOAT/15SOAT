@@ -387,6 +387,18 @@
           }
         },
         {
+          "name": "Passo 13c — Consultar tempo médio de execução",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ordens/monitoramento/tempo-medio",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "monitoramento", "tempo-medio"]
+            },
+            "description": "Retorna o tempo médio de execução dos serviços finalizados em minutos e horas. Execute após finalizar o item de serviço para ver o tempo registrado nesta OS."
+          }
+        },
+        {
           "name": "Passo 14 — Avançar → FINALIZADA",
           "request": {
             "method": "PATCH",
@@ -1177,10 +1189,15 @@
           }
         },
         {
-          "name": "Monitoramento — tempo médio de execução",
+          "name": "Monitoramento — tempo médio de execução (principal)",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/ordens/monitoramento/tempo-medio", "host": ["{{baseUrl}}"], "path": ["ordens", "monitoramento", "tempo-medio"] }
+            "url": {
+              "raw": "{{baseUrl}}/ordens/monitoramento/tempo-medio",
+              "host": ["{{baseUrl}}"],
+              "path": ["ordens", "monitoramento", "tempo-medio"]
+            },
+            "description": "Consulta o tempo médio de execução das ordens de serviço. Endpoint principal para monitoramento do fluxo."
           }
         },
         {
