@@ -13,7 +13,7 @@
 
     <groupId>br.com.fiap</groupId>
     <artifactId>siase</artifactId>
-    <version>1.0.5</version>
+    <version>1.0.6</version>
     <name>siase</name>
     <description>Sistema Integrado de Atendimento e Execução de Serviços</description>
 
