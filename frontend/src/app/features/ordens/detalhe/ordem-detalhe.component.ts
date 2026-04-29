@@ -62,6 +62,7 @@ export class OrdemDetalheComponent implements OnInit {
   }
 
   protected podeAvancar() {
+    if (this.isMecanico && this.os()?.status === 'FINALIZADA') return false;
     return !!this.proximoStatusInfo();
   }
 
