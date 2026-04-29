@@ -148,6 +148,35 @@ Com a aplicação rodando, acesse:
 - **Swagger UI:** `http://localhost:8080/api/swagger-ui.html`
 - **OpenAPI JSON:** `http://localhost:8080/api/v3/api-docs`
 
+## Relatório SonarQube
+
+O script `scripts/sonar_pdf_report.py` gera um relatório PDF com as métricas do SonarQube. O arquivo gerado é salvo em:
+
+```
+scripts/target/sonar/relatorio_sonarqube.pdf
+```
+
+### Pré-requisitos
+
+- Python 3.x com as dependências: `fpdf2`, `matplotlib`, `requests`
+- SonarQube rodando em `http://localhost:9000` com o projeto `br.com.fiap:siase` já analisado
+
+### Como gerar
+
+```bash
+# 1. Suba o SonarQube
+docker compose -f docker-compose.sonarqube.yml up -d
+
+# 2. Execute o scan Maven
+./mvnw sonar:sonar -Dsonar.token=SEU_TOKEN
+
+# 3. Gere o PDF
+cd scripts
+python sonar_pdf_report.py
+```
+
+O PDF será criado automaticamente em `scripts/target/sonar/` (o diretório é criado se não existir).
+
 ## Testes
 
 ```bash
