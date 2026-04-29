@@ -66,7 +66,7 @@ class PecaEntityTest {
         @DisplayName("Deve zerar estoque ao reservar quantidade total")
         void deveReservarEstoqueTotal() {
             peca.reservarEstoque(10);
-            assertThat(peca.getQuantidadeEstoque()).isEqualTo(0);
+            assertThat(peca.getQuantidadeEstoque()).isZero();
         }
 
         @Test

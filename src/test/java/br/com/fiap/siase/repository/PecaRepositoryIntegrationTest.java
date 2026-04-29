@@ -93,7 +93,7 @@ class PecaRepositoryIntegrationTest {
             assertThatThrownBy(() -> {
                 repository.save(duplicado);
                 entityManager.flush();
-            });
+            }).isInstanceOf(Exception.class);
         }
     }
 

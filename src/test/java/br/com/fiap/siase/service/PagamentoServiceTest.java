@@ -111,8 +111,8 @@ class PagamentoServiceTest {
         void deveLancarExcecaoQuandoOsNaoEncontrada() {
             when(osRepository.findById(osId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> pagamentoService.registrar(osId,
-                    new PagamentoRequest(FormaPagamento.PIX, new BigDecimal("500.00"))))
+            var pagRequest = new PagamentoRequest(FormaPagamento.PIX, new BigDecimal("500.00"));
+            assertThatThrownBy(() -> pagamentoService.registrar(osId, pagRequest))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
 
@@ -122,8 +122,8 @@ class PagamentoServiceTest {
             os.setStatus(StatusOS.EM_EXECUCAO);
             when(osRepository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> pagamentoService.registrar(osId,
-                    new PagamentoRequest(FormaPagamento.PIX, new BigDecimal("500.00"))))
+            var pagRequest = new PagamentoRequest(FormaPagamento.PIX, new BigDecimal("500.00"));
+            assertThatThrownBy(() -> pagamentoService.registrar(osId, pagRequest))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("FINALIZADA");
         }
@@ -134,8 +134,8 @@ class PagamentoServiceTest {
             when(osRepository.findById(osId)).thenReturn(Optional.of(os));
             when(repository.existsByOrdemDeServicoId(osId)).thenReturn(true);
 
-            assertThatThrownBy(() -> pagamentoService.registrar(osId,
-                    new PagamentoRequest(FormaPagamento.PIX, new BigDecimal("500.00"))))
+            var pagRequest = new PagamentoRequest(FormaPagamento.PIX, new BigDecimal("500.00"));
+            assertThatThrownBy(() -> pagamentoService.registrar(osId, pagRequest))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("já possui um pagamento");
         }
@@ -208,7 +208,8 @@ class PagamentoServiceTest {
         void deveLancarExcecaoQuandoNaoEncontrado() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> pagamentoService.confirmar(UUID.randomUUID()))
+            var id = UUID.randomUUID();
+            assertThatThrownBy(() -> pagamentoService.confirmar(id))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
@@ -249,7 +250,8 @@ class PagamentoServiceTest {
         void deveLancarExcecaoQuandoNaoEncontrado() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> pagamentoService.cancelar(UUID.randomUUID()))
+            var id = UUID.randomUUID();
+            assertThatThrownBy(() -> pagamentoService.cancelar(id))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }

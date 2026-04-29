@@ -405,6 +405,6 @@ public class OrdemDeServicoService {
     }
 
     private String limparDocumento(String documento) {
-        return documento.replaceAll("[^0-9]", "");
+        return documento.replaceAll("\\D", "");
     }
 }

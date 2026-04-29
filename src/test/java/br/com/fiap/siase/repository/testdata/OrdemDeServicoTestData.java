@@ -8,7 +8,6 @@ import br.com.fiap.siase.model.enums.TipoPessoa;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class OrdemDeServicoTestData {
 

@@ -2,7 +2,6 @@ package br.com.fiap.siase.controller;
 
 import br.com.fiap.siase.config.SecurityConfig;
 import br.com.fiap.siase.dto.response.VeiculoResponse;
-import br.com.fiap.siase.exception.BusinessException;
 import br.com.fiap.siase.exception.DuplicateResourceException;
 import br.com.fiap.siase.exception.GlobalExceptionHandler;
 import br.com.fiap.siase.exception.ResourceNotFoundException;

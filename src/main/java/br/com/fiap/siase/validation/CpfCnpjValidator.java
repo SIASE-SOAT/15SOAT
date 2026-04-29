@@ -12,7 +12,7 @@ public class CpfCnpjValidator implements ConstraintValidator<CpfCnpj, String> {
   public boolean isValid(String valor, ConstraintValidatorContext context) {
     if (valor == null || valor.isBlank()) return false;
 
-    String numeros = valor.replaceAll("[^0-9]", "");
+    String numeros = valor.replaceAll("\\D", "");
 
     try {
       if (numeros.length() <= 11) {

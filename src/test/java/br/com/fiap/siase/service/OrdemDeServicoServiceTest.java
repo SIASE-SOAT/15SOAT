@@ -243,7 +243,8 @@ class OrdemDeServicoServiceTest {
         void deveLancarExcecaoQuandoClienteNaoExiste() {
             when(clienteRepository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.criar(requestSomenteServico()))
+            var req = requestSomenteServico();
+            assertThatThrownBy(() -> service.criar(req))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Cliente não encontrado");
 
@@ -256,7 +257,8 @@ class OrdemDeServicoServiceTest {
             when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
             when(veiculoRepository.findById(veiculoId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.criar(requestSomenteServico()))
+            var req = requestSomenteServico();
+            assertThatThrownBy(() -> service.criar(req))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Veículo não encontrado");
 
@@ -273,7 +275,8 @@ class OrdemDeServicoServiceTest {
             when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
             when(veiculoRepository.findById(veiculoId)).thenReturn(Optional.of(veiculo));
 
-            assertThatThrownBy(() -> service.criar(requestSomenteServico()))
+            var req = requestSomenteServico();
+            assertThatThrownBy(() -> service.criar(req))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("veículo informado não pertence ao cliente");
 
@@ -287,7 +290,8 @@ class OrdemDeServicoServiceTest {
             when(veiculoRepository.findById(veiculoId)).thenReturn(Optional.of(veiculo));
             when(repository.existsByVeiculoIdAndStatusNotIn(eq(veiculoId), anyList())).thenReturn(true);
 
-            assertThatThrownBy(() -> service.criar(requestSomenteServico()))
+            var req = requestSomenteServico();
+            assertThatThrownBy(() -> service.criar(req))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("já possui uma ordem de serviço em andamento");
 
@@ -302,7 +306,8 @@ class OrdemDeServicoServiceTest {
             when(repository.existsByVeiculoIdAndStatusNotIn(eq(veiculoId), anyList())).thenReturn(false);
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.criar(requestSomenteServico()))
+            var req = requestSomenteServico();
+            assertThatThrownBy(() -> service.criar(req))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Serviço não encontrado");
 
@@ -317,7 +322,8 @@ class OrdemDeServicoServiceTest {
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
             when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.criar(requestComPeca(1)))
+            var req = requestComPeca(1);
+            assertThatThrownBy(() -> service.criar(req))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Peça não encontrada");
 
@@ -334,7 +340,8 @@ class OrdemDeServicoServiceTest {
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
             when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
 
-            assertThatThrownBy(() -> service.criar(requestComPeca(5)))
+            var req = requestComPeca(5);
+            assertThatThrownBy(() -> service.criar(req))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("Estoque insuficiente");
 
@@ -351,7 +358,8 @@ class OrdemDeServicoServiceTest {
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
             when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
 
-            assertThatThrownBy(() -> service.criar(requestComPeca(10)))
+            var req = requestComPeca(10);
+            assertThatThrownBy(() -> service.criar(req))
                     .isInstanceOf(BusinessException.class);
 
             verify(repository, never()).save(any());
@@ -442,7 +450,8 @@ class OrdemDeServicoServiceTest {
         void deveLancarExcecaoQuandoOSNaoExiste() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.avancarStatus(UUID.randomUUID()))
+            var randomId = UUID.randomUUID();
+            assertThatThrownBy(() -> service.avancarStatus(randomId))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("OS não encontrada");
         }
@@ -472,7 +481,8 @@ class OrdemDeServicoServiceTest {
         void deveLancarExcecaoQuandoIdNaoExiste() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.buscarPorId(UUID.randomUUID()))
+            var randomId = UUID.randomUUID();
+            assertThatThrownBy(() -> service.buscarPorId(randomId))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("OS não encontrada");
         }
@@ -689,7 +699,8 @@ class OrdemDeServicoServiceTest {
             os.setStatus(StatusOS.AGUARDANDO_APROVACAO);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+            var pecaReq = new ItemPecaRequest(pecaId, 1);
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, pecaReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("status");
 
@@ -716,7 +727,8 @@ class OrdemDeServicoServiceTest {
             os.setStatus(StatusOS.FINALIZADA);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+            var pecaReq = new ItemPecaRequest(pecaId, 1);
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, pecaReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("status");
 
@@ -729,7 +741,8 @@ class OrdemDeServicoServiceTest {
             os.setStatus(StatusOS.ENTREGUE);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+            var pecaReq = new ItemPecaRequest(pecaId, 1);
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, pecaReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("status");
 
@@ -742,7 +755,8 @@ class OrdemDeServicoServiceTest {
             os.setStatus(StatusOS.CANCELADA);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+            var pecaReq = new ItemPecaRequest(pecaId, 1);
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, pecaReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("status");
 
@@ -754,7 +768,9 @@ class OrdemDeServicoServiceTest {
         void deveLancarExcecaoQuandoOSNaoExiste() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.adicionarPecaAOrdem(UUID.randomUUID(), new ItemPecaRequest(pecaId, 1)))
+            var randomId = UUID.randomUUID();
+            var pecaReq = new ItemPecaRequest(pecaId, 1);
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(randomId, pecaReq))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("OS não encontrada");
 
@@ -768,7 +784,8 @@ class OrdemDeServicoServiceTest {
             when(repository.findById(osId)).thenReturn(Optional.of(os));
             when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+            var pecaReq = new ItemPecaRequest(pecaId, 1);
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, pecaReq))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Peça não encontrada");
 
@@ -783,7 +800,8 @@ class OrdemDeServicoServiceTest {
             when(repository.findById(osId)).thenReturn(Optional.of(os));
             when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
 
-            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+            var pecaReq = new ItemPecaRequest(pecaId, 1);
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, pecaReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("desativada");
 
@@ -798,7 +816,8 @@ class OrdemDeServicoServiceTest {
             when(repository.findById(osId)).thenReturn(Optional.of(os));
             when(pecaRepository.findByIdParaAtualizacao(pecaId)).thenReturn(Optional.of(peca));
 
-            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 5)))
+            var pecaReq = new ItemPecaRequest(pecaId, 5);
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, pecaReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("Estoque insuficiente");
 
@@ -817,7 +836,8 @@ class OrdemDeServicoServiceTest {
 
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, new ItemPecaRequest(pecaId, 1)))
+            var pecaReq = new ItemPecaRequest(pecaId, 1);
+            assertThatThrownBy(() -> service.adicionarPecaAOrdem(osId, pecaReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("já foi adicionada");
 
@@ -906,7 +926,8 @@ class OrdemDeServicoServiceTest {
             os.setStatus(StatusOS.AGUARDANDO_APROVACAO);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+            var servicoReq = new ItemServicoRequest(servicoId, null);
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, servicoReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("status");
 
@@ -933,7 +954,8 @@ class OrdemDeServicoServiceTest {
             os.setStatus(StatusOS.FINALIZADA);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+            var servicoReq = new ItemServicoRequest(servicoId, null);
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, servicoReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("status");
 
@@ -946,7 +968,8 @@ class OrdemDeServicoServiceTest {
             os.setStatus(StatusOS.ENTREGUE);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+            var servicoReq = new ItemServicoRequest(servicoId, null);
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, servicoReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("status");
 
@@ -959,7 +982,8 @@ class OrdemDeServicoServiceTest {
             os.setStatus(StatusOS.CANCELADA);
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+            var servicoReq = new ItemServicoRequest(servicoId, null);
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, servicoReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("status");
 
@@ -971,7 +995,9 @@ class OrdemDeServicoServiceTest {
         void deveLancarExcecaoQuandoOSNaoExiste() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.adicionarServicoAOrdem(UUID.randomUUID(), new ItemServicoRequest(servicoId, null)))
+            var randomId = UUID.randomUUID();
+            var servicoReq = new ItemServicoRequest(servicoId, null);
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(randomId, servicoReq))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("OS não encontrada");
 
@@ -985,7 +1011,8 @@ class OrdemDeServicoServiceTest {
             when(repository.findById(osId)).thenReturn(Optional.of(os));
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+            var servicoReq = new ItemServicoRequest(servicoId, null);
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, servicoReq))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Serviço não encontrado");
 
@@ -1000,7 +1027,8 @@ class OrdemDeServicoServiceTest {
             when(repository.findById(osId)).thenReturn(Optional.of(os));
             when(servicoRepository.findById(servicoId)).thenReturn(Optional.of(servico));
 
-            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+            var servicoReq = new ItemServicoRequest(servicoId, null);
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, servicoReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("desativado");
 
@@ -1019,7 +1047,8 @@ class OrdemDeServicoServiceTest {
 
             when(repository.findById(osId)).thenReturn(Optional.of(os));
 
-            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, new ItemServicoRequest(servicoId, null)))
+            var servicoReq = new ItemServicoRequest(servicoId, null);
+            assertThatThrownBy(() -> service.adicionarServicoAOrdem(osId, servicoReq))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("já foi adicionado");
 

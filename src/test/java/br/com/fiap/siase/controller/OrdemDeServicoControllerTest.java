@@ -15,6 +15,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -621,30 +626,20 @@ class OrdemDeServicoControllerTest {
                     .andExpect(status().isNotFound());
         }
 
-        @Test
-        @DisplayName("Deve retornar 422 quando serviço já foi adicionado")
-        void deveRetornar422QuandoServicoJaAdicionado() throws Exception {
-            when(service.adicionarServicoAOrdem(any(), any()))
-                    .thenThrow(new BusinessException("Este serviço já foi adicionado a esta ordem de serviço."));
-
-            String body = """
-                    {
-                      "servicoId": "%s"
-                    }
-                    """.formatted(servicoId);
-
-            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(body))
-                    .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.message", containsString("já foi adicionado")));
+        static Stream<Arguments> businessExceptions422() {
+            return Stream.of(
+                Arguments.of("Este serviço já foi adicionado a esta ordem de serviço.", "já foi adicionado"),
+                Arguments.of("Não é possível adicionar serviços em uma ordem com status Entregue", "status"),
+                Arguments.of("Serviço desativado não pode ser adicionado", "desativado")
+            );
         }
 
-        @Test
-        @DisplayName("Deve retornar 422 quando status não permite adicionar serviço")
-        void deveRetornar422QuandoStatusNaoPermite() throws Exception {
+        @ParameterizedTest(name = "mensagem contém \"{1}\"")
+        @MethodSource("businessExceptions422")
+        @DisplayName("Deve retornar 422 quando BusinessException é lançada ao adicionar serviço")
+        void deveRetornar422QuandoBusinessException(String exceptionMessage, String expectedFragment) throws Exception {
             when(service.adicionarServicoAOrdem(any(), any()))
-                    .thenThrow(new BusinessException("Não é possível adicionar serviços em uma ordem com status Entregue"));
+                    .thenThrow(new BusinessException(exceptionMessage));
 
             String body = """
                     {
@@ -656,26 +651,7 @@ class OrdemDeServicoControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
                     .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.message", containsString("status")));
-        }
-
-        @Test
-        @DisplayName("Deve retornar 422 quando serviço está desativado")
-        void deveRetornar422QuandoServicoDesativado() throws Exception {
-            when(service.adicionarServicoAOrdem(any(), any()))
-                    .thenThrow(new BusinessException("Serviço desativado não pode ser adicionado"));
-
-            String body = """
-                    {
-                      "servicoId": "%s"
-                    }
-                    """.formatted(servicoId);
-
-            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(body))
-                    .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.message", containsString("desativado")));
+                    .andExpect(jsonPath("$.message", containsString(expectedFragment)));
         }
     }
 

@@ -2,7 +2,6 @@ package br.com.fiap.siase.service;
 
 import br.com.fiap.siase.dto.request.ClienteRequest;
 import br.com.fiap.siase.dto.response.ClienteResponse;
-import br.com.fiap.siase.exception.BusinessException;
 import br.com.fiap.siase.exception.DuplicateResourceException;
 import br.com.fiap.siase.exception.ResourceNotFoundException;
 import br.com.fiap.siase.model.Cliente;
@@ -25,7 +24,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,7 +102,8 @@ class ClienteServiceTest {
         void deveLancarExcecaoQuandoDocumentoDuplicado() {
             when(clienteRepository.existsByDocumento("52998224725")).thenReturn(true);
 
-            assertThatThrownBy(() -> clienteService.criar(buildRequest()))
+            var request = buildRequest();
+            assertThatThrownBy(() -> clienteService.criar(request))
                     .isInstanceOf(DuplicateResourceException.class)
                     .hasMessageContaining("52998224725");
 
@@ -222,7 +221,8 @@ class ClienteServiceTest {
             UUID idDesconhecido = UUID.randomUUID();
             when(clienteRepository.findById(idDesconhecido)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> clienteService.atualizar(idDesconhecido, buildRequest()))
+            var request = buildRequest();
+            assertThatThrownBy(() -> clienteService.atualizar(idDesconhecido, request))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
