@@ -33,6 +33,8 @@ export class DashboardComponent implements OnInit {
   protected readonly pecasCriticas = signal<PecaResponse[]>([]);
   protected readonly tempoMedioHoras = signal(0);
   protected readonly tempoMedioMinutosRestantes = signal(0);
+  protected readonly tempoMedioSegundos = signal(0);
+  protected readonly tempoMedioMenorQueUmMinuto = signal(false);
 
   private readonly iconColorMap: Record<StatusOS, string> = {
     RECEBIDA:             '#6b7280',
@@ -94,8 +96,14 @@ export class DashboardComponent implements OnInit {
 
     this.osService.tempoMedioExecucao().subscribe({
       next: ({ tempoMedioMinutos }) => {
-        this.tempoMedioHoras.set(Math.floor(tempoMedioMinutos / 60));
-        this.tempoMedioMinutosRestantes.set(Math.round(tempoMedioMinutos % 60));
+        if (tempoMedioMinutos < 1) {
+          this.tempoMedioMenorQueUmMinuto.set(true);
+          this.tempoMedioSegundos.set(Math.round(tempoMedioMinutos * 60));
+        } else {
+          this.tempoMedioMenorQueUmMinuto.set(false);
+          this.tempoMedioHoras.set(Math.floor(tempoMedioMinutos / 60));
+          this.tempoMedioMinutosRestantes.set(Math.floor(tempoMedioMinutos % 60));
+        }
         finalizar();
       },
       error: finalizar,

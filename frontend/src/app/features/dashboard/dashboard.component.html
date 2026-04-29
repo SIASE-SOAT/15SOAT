@@ -17,7 +17,11 @@
     </div>
     <div>
       <p class="tempo-label">Tempo médio de execução dos serviços</p>
-      <p class="tempo-value">{{ tempoMedioHoras() }}h {{ tempoMedioMinutosRestantes() }}min</p>
+      @if (tempoMedioMenorQueUmMinuto()) {
+        <p class="tempo-value">{{ tempoMedioSegundos() }}s</p>
+      } @else {
+        <p class="tempo-value">{{ tempoMedioHoras() }}h {{ tempoMedioMinutosRestantes() }}min</p>
+      }
     </div>
   </div>
 
