@@ -1,7 +1,9 @@
 package br.com.fiap.siase.repository;
 
 import br.com.fiap.siase.model.Cliente;
+import br.com.fiap.siase.model.ItemServico;
 import br.com.fiap.siase.model.OrdemDeServico;
+import br.com.fiap.siase.model.Servico;
 import br.com.fiap.siase.model.Veiculo;
 import br.com.fiap.siase.model.enums.StatusOS;
 import br.com.fiap.siase.repository.testdata.OrdemDeServicoTestData;
@@ -39,16 +41,26 @@ class OrdemDeServicoRepositoryAdvancedTest {
     @Autowired
     private VeiculoRepository veiculoRepository;
 
+        @Autowired
+        private ServicoRepository servicoRepository;
+
     @Autowired
     private TestEntityManager entityManager;
 
     private Cliente cliente;
     private Veiculo veiculo;
+        private Servico servico;
 
     @BeforeEach
     void setUp() {
         cliente = clienteRepository.save(OrdemDeServicoTestData.criarCliente());
         veiculo = veiculoRepository.save(OrdemDeServicoTestData.criarVeiculo(cliente));
+                servico = new Servico();
+                servico.setNome("Alinhamento");
+                servico.setDescricao("Ajuste de direção");
+                servico.setPreco(new BigDecimal("150.00"));
+                servico.setTempoEstimadoMinutos(90);
+                servico = servicoRepository.save(servico);
     }
 
     @Test
@@ -101,17 +113,25 @@ class OrdemDeServicoRepositoryAdvancedTest {
 
     @ParameterizedTest(name = "Precisão: {0}ms")
     @ValueSource(ints = {60, 120, 180, 240})
-    @DisplayName("Deve calcular tempo médio com diferentes durações")
+        @DisplayName("Deve calcular tempo médio com diferentes durações dos serviços")
     void calcularTempoMedio_VariousDurations_CalculatesCorrectly(int minutos) {
-        LocalDateTime agora = LocalDateTime.now();
         var ordem = OrdemDeServicoTestData.builder()
                 .numero("OS-TEMPO-" + minutos)
                 .cliente(cliente)
                 .veiculo(veiculo)
-                .dataAbertura(agora.minusMinutes(minutos))
-                .dataFechamento(agora)
-                .status(StatusOS.FINALIZADA)
                 .build();
+        repository.save(ordem);
+        entityManager.flush();
+
+        ItemServico item = new ItemServico();
+        item.setOrdemDeServico(ordem);
+        item.setServico(servico);
+        item.setPrecoUnitario(servico.getPreco());
+        item.setTempoEstimadoMinutos(servico.getTempoEstimadoMinutos());
+        item.setDataInicioExecucao(LocalDateTime.now().minusMinutes(minutos));
+        item.setDataFimExecucao(LocalDateTime.now());
+        ordem.getItensServico().add(item);
+
         repository.save(ordem);
         entityManager.flush();
 

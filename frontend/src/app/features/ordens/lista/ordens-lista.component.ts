@@ -12,7 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { OrdemDeServicoResponse, StatusOS } from '../../../core/models/ordem-de-servico.model';
+import { ItemServicoResponse, OrdemDeServicoResponse, StatusOS } from '../../../core/models/ordem-de-servico.model';
 import { OrdemDeServicoService } from '../../../core/services/ordem-de-servico.service';
 import { OsFormDialogComponent } from '../dialogs/os-form-dialog.component';
 
@@ -20,6 +20,7 @@ const STATUS_COLOR: Record<StatusOS, string> = {
   RECEBIDA:             'bg-gray-100 text-gray-700',
   EM_DIAGNOSTICO:       'bg-purple-100 text-purple-700',
   AGUARDANDO_APROVACAO: 'bg-yellow-100 text-yellow-700',
+  APROVADO:             'bg-green-100 text-green-800',
   EM_EXECUCAO:          'bg-blue-100 text-blue-700',
   FINALIZADA:           'bg-green-100 text-green-700',
   ENTREGUE:             'bg-green-200 text-green-900',
@@ -45,7 +46,7 @@ export class OrdensListaComponent implements OnInit {
   protected readonly loading = signal(true);
   protected readonly ordens = signal<OrdemDeServicoResponse[]>([]);
   protected filtroStatus: StatusOS | null = null;
-  protected readonly colunas = ['numero', 'status', 'cliente', 'veiculo', 'total', 'data', 'acoes'];
+  protected readonly colunas = ['numero', 'status', 'execucao', 'cliente', 'veiculo', 'total', 'data', 'acoes'];
 
   protected readonly statusList: { value: StatusOS; label: string }[] = [
     { value: 'RECEBIDA',             label: 'Recebida' },
@@ -59,6 +60,36 @@ export class OrdensListaComponent implements OnInit {
 
   protected statusColor(status: StatusOS) { return STATUS_COLOR[status]; }
 
+  protected itemStatus(item: ItemServicoResponse): 'NAO_INICIADO' | 'EM_EXECUCAO' | 'FINALIZADO' {
+    if (item.dataFimExecucao) return 'FINALIZADO';
+    if (item.dataInicioExecucao) return 'EM_EXECUCAO';
+    return 'NAO_INICIADO';
+  }
+
+  protected resumoExecucao(os: OrdemDeServicoResponse) {
+    const total = os.itensServico.length;
+    const finalizados = os.itensServico.filter(i => this.itemStatus(i) === 'FINALIZADO').length;
+    const emExecucao = os.itensServico.filter(i => this.itemStatus(i) === 'EM_EXECUCAO').length;
+    const naoIniciados = total - finalizados - emExecucao;
+    return { total, finalizados, emExecucao, naoIniciados };
+  }
+
+  protected classeExecucaoOS(os: OrdemDeServicoResponse) {
+    const { total, finalizados, emExecucao } = this.resumoExecucao(os);
+    if (total === 0) return 'exec-sem-itens';
+    if (finalizados === total) return 'exec-finalizado';
+    if (emExecucao > 0) return 'exec-em-execucao';
+    return 'exec-nao-iniciado';
+  }
+
+  protected labelExecucaoOS(os: OrdemDeServicoResponse) {
+    const { total, finalizados, emExecucao } = this.resumoExecucao(os);
+    if (total === 0) return 'Sem serviços';
+    if (finalizados === total) return 'Finalizado';
+    if (emExecucao > 0) return 'Em execução';
+    return 'Não iniciado';
+  }
+
   ngOnInit() { this.filtrar(); }
 
   protected filtrar() {
@@ -70,13 +101,11 @@ export class OrdensListaComponent implements OnInit {
   }
 
   protected abrirNovaOS() {
-    this.dialog.open(OsFormDialogComponent, { width: '660px', data: {} })
+    this.dialog.open(OsFormDialogComponent, { width: '880px', maxWidth: '95vw', data: {} })
       .afterClosed().subscribe(result => {
         if (!result) return;
-        this.service.criar(result).subscribe({
-          next: () => { this.snackBar.open('OS criada!', 'Fechar', { duration: 3000 }); this.filtrar(); },
-          error: () => this.snackBar.open('Erro ao criar OS.', 'Fechar', { duration: 3000 }),
-        });
+        this.snackBar.open('OS criada com sucesso!', 'Fechar', { duration: 3000 });
+        this.filtrar();
       });
   }
 }

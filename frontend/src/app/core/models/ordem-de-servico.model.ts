@@ -2,6 +2,7 @@ export type StatusOS =
   | 'RECEBIDA'
   | 'EM_DIAGNOSTICO'
   | 'AGUARDANDO_APROVACAO'
+  | 'APROVADO'
   | 'EM_EXECUCAO'
   | 'FINALIZADA'
   | 'ENTREGUE'
@@ -25,12 +26,39 @@ export interface OrdemDeServicoRequest {
   itensPeca?: ItemPecaRequest[];
 }
 
+export interface ClienteIdentificadoResponse {
+  id: string;
+  nome: string;
+  documento: string;
+  email?: string;
+  telefone?: string;
+}
+
+export interface VeiculoIdentificadoResponse {
+  id: string;
+  placa: string;
+  marca: string;
+  modelo: string;
+  ano: number;
+  ativo: boolean;
+}
+
+export interface PreparacaoAberturaOrdemResponse {
+  cliente: ClienteIdentificadoResponse;
+  veiculos: VeiculoIdentificadoResponse[];
+  veiculoSelecionado?: VeiculoIdentificadoResponse | null;
+  prontoParaAbertura: boolean;
+}
+
 export interface ItemServicoResponse {
+  id: string;
   servicoId: string;
   servicoNome: string;
   precoUnitario: number;
   tempoEstimadoMinutos?: number;
   observacoes?: string;
+  dataInicioExecucao?: string;
+  dataFimExecucao?: string;
 }
 
 export interface ItemPecaResponse {

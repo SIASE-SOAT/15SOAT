@@ -86,7 +86,8 @@ public class OrdemDeServico extends BaseEntity {
         this.status = switch (this.status) {
             case RECEBIDA -> StatusOS.EM_DIAGNOSTICO;
             case EM_DIAGNOSTICO -> StatusOS.AGUARDANDO_APROVACAO;
-            case AGUARDANDO_APROVACAO -> StatusOS.EM_EXECUCAO;
+            case AGUARDANDO_APROVACAO -> StatusOS.APROVADO;
+            case APROVADO -> StatusOS.EM_EXECUCAO;
             case EM_EXECUCAO -> StatusOS.FINALIZADA;
             case FINALIZADA -> StatusOS.ENTREGUE;
             case ENTREGUE -> throw new IllegalStateException("Ordem de serviço já foi entregue.");

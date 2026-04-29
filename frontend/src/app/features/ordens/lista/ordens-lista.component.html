@@ -69,6 +69,21 @@
           </td>
         </ng-container>
 
+        <!-- Execução dos serviços -->
+        <ng-container matColumnDef="execucao">
+          <th mat-header-cell *matHeaderCellDef>Execução serviços</th>
+          <td mat-cell *matCellDef="let o">
+            <div class="exec-cell">
+              <span [class]="'exec-badge ' + classeExecucaoOS(o)">{{ labelExecucaoOS(o) }}</span>
+              @if (resumoExecucao(o).total > 0) {
+                <span class="exec-meta">
+                  {{ resumoExecucao(o).finalizados }}/{{ resumoExecucao(o).total }} finalizados
+                </span>
+              }
+            </div>
+          </td>
+        </ng-container>
+
         <!-- Cliente -->
         <ng-container matColumnDef="cliente">
           <th mat-header-cell *matHeaderCellDef>Cliente</th>

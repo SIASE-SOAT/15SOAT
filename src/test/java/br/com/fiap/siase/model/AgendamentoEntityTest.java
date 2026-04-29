@@ -85,7 +85,8 @@ class AgendamentoEntityTest {
         void deveRejeitarRealizacaoInvalida() {
             Agendamento agendamento = new Agendamento();
 
-            assertThatThrownBy(() -> agendamento.realizar(new OrdemDeServico()))
+            var ordem = new OrdemDeServico();
+            assertThatThrownBy(() -> agendamento.realizar(ordem))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("CONFIRMADOS");
         }

@@ -1,3 +1,12 @@
+/* ── Standalone (sem Shell — contexto mecânico) ─────── */
+.standalone-wrap {
+  padding: 2rem;
+  max-width: 96rem;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
 /* ── Loader ─────────────────────────────────────────── */
 .loader {
   display: flex;
@@ -53,6 +62,7 @@
   &.status-RECEBIDA             { background: #f3f4f6; color: #374151; }
   &.status-EM_DIAGNOSTICO       { background: #ede9fe; color: #5b21b6; }
   &.status-AGUARDANDO_APROVACAO { background: #fef3c7; color: #92400e; }
+  &.status-APROVADO             { background: #d1fae5; color: #065f46; }
   &.status-EM_EXECUCAO          { background: #dbeafe; color: #1e40af; }
   &.status-FINALIZADA           { background: #dcfce7; color: #166534; }
   &.status-ENTREGUE             { background: #a7f3d0; color: #065f46; }
@@ -145,11 +155,46 @@
       margin: 0 0 0.125rem;
     }
 
+    .item-status-tag {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 0.1rem 0.55rem;
+      font-size: 0.66rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+
+      &.item-status-nao-iniciado { background: #fef3c7; color: #92400e; }
+      &.item-status-execucao { background: #dbeafe; color: #1e40af; }
+      &.item-status-finalizado { background: #dcfce7; color: #166534; }
+    }
+
     .item-meta {
       font-size: 0.75rem;
       color: #9ca3af;
       margin: 0;
     }
+
+    .item-execucao {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.35rem;
+      font-size: 0.7rem;
+      color: #9ca3af;
+
+      .exec-label { font-weight: 600; color: #6b7280; }
+      .exec-value { font-variant-numeric: tabular-nums; }
+      .exec-sep { color: #d1d5db; }
+    }
+  }
+
+  .item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+    min-width: 140px;
   }
 
   .item-price {
@@ -157,6 +202,19 @@
     font-weight: 700;
     color: #15803d;
     white-space: nowrap;
+  }
+
+  .btn-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .btn-item-finalizar {
+    background: #16a34a;
+    color: #fff;
   }
 }
 
@@ -198,6 +256,17 @@
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
+}
+
+.acao-info {
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.55rem;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 /* ── Pagamento ──────────────────────────────────────── */

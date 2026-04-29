@@ -79,7 +79,7 @@ public class ClienteService {
   }
 
   private String limparDocumento(String documento) {
-    return documento.replaceAll("[^0-9]", "");
+    return documento.replaceAll("\\D", "");
   }
 
   private ClienteResponse toResponse(Cliente c) {

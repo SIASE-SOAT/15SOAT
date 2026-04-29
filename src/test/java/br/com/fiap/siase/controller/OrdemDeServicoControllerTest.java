@@ -2,6 +2,7 @@ package br.com.fiap.siase.controller;
 
 import br.com.fiap.siase.config.SecurityConfig;
 import br.com.fiap.siase.dto.response.OrdemDeServicoResponse;
+import br.com.fiap.siase.dto.response.PreparacaoAberturaOrdemResponse;
 import br.com.fiap.siase.exception.BusinessException;
 import br.com.fiap.siase.exception.GlobalExceptionHandler;
 import br.com.fiap.siase.exception.ResourceNotFoundException;
@@ -14,6 +15,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -548,7 +554,7 @@ class OrdemDeServicoControllerTest {
                     null,
                     List.of(new OrdemDeServicoResponse.ItemServicoResponse(
                             UUID.randomUUID(), servicoId, "Revisão Completa",
-                            new BigDecimal("150.00"), 120, null
+                            new BigDecimal("150.00"), 120, null, null, null
                     )),
                     List.of(),
                     new BigDecimal("150.00"), BigDecimal.ZERO, new BigDecimal("150.00"),
@@ -620,30 +626,20 @@ class OrdemDeServicoControllerTest {
                     .andExpect(status().isNotFound());
         }
 
-        @Test
-        @DisplayName("Deve retornar 422 quando serviço já foi adicionado")
-        void deveRetornar422QuandoServicoJaAdicionado() throws Exception {
-            when(service.adicionarServicoAOrdem(any(), any()))
-                    .thenThrow(new BusinessException("Este serviço já foi adicionado a esta ordem de serviço."));
-
-            String body = """
-                    {
-                      "servicoId": "%s"
-                    }
-                    """.formatted(servicoId);
-
-            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(body))
-                    .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.message", containsString("já foi adicionado")));
+        static Stream<Arguments> businessExceptions422() {
+            return Stream.of(
+                Arguments.of("Este serviço já foi adicionado a esta ordem de serviço.", "já foi adicionado"),
+                Arguments.of("Não é possível adicionar serviços em uma ordem com status Entregue", "status"),
+                Arguments.of("Serviço desativado não pode ser adicionado", "desativado")
+            );
         }
 
-        @Test
-        @DisplayName("Deve retornar 422 quando status não permite adicionar serviço")
-        void deveRetornar422QuandoStatusNaoPermite() throws Exception {
+        @ParameterizedTest(name = "mensagem contém \"{1}\"")
+        @MethodSource("businessExceptions422")
+        @DisplayName("Deve retornar 422 quando BusinessException é lançada ao adicionar serviço")
+        void deveRetornar422QuandoBusinessException(String exceptionMessage, String expectedFragment) throws Exception {
             when(service.adicionarServicoAOrdem(any(), any()))
-                    .thenThrow(new BusinessException("Não é possível adicionar serviços em uma ordem com status Entregue"));
+                    .thenThrow(new BusinessException(exceptionMessage));
 
             String body = """
                     {
@@ -655,26 +651,7 @@ class OrdemDeServicoControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
                     .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.message", containsString("status")));
-        }
-
-        @Test
-        @DisplayName("Deve retornar 422 quando serviço está desativado")
-        void deveRetornar422QuandoServicoDesativado() throws Exception {
-            when(service.adicionarServicoAOrdem(any(), any()))
-                    .thenThrow(new BusinessException("Serviço desativado não pode ser adicionado"));
-
-            String body = """
-                    {
-                      "servicoId": "%s"
-                    }
-                    """.formatted(servicoId);
-
-            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(body))
-                    .andExpect(status().isUnprocessableEntity())
-                    .andExpect(jsonPath("$.message", containsString("desativado")));
+                    .andExpect(jsonPath("$.message", containsString(expectedFragment)));
         }
     }
 
@@ -720,6 +697,69 @@ class OrdemDeServicoControllerTest {
             mockMvc.perform(patch("/ordens/{id}/avancar", UUID.randomUUID()))
                     .andExpect(status().isUnprocessableEntity())
                     .andExpect(jsonPath("$.message", containsString("já foi entregue")));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /ordens/preparar-abertura")
+    class PrepararAbertura {
+
+        private PreparacaoAberturaOrdemResponse response;
+
+        @BeforeEach
+        void setUpPreparacao() {
+            response = new PreparacaoAberturaOrdemResponse(
+                    new PreparacaoAberturaOrdemResponse.ClienteIdentificadoResponse(
+                            UUID.randomUUID(),
+                            "João da Silva",
+                            "52998224725",
+                            "joao@email.com",
+                            "11999999999"
+                    ),
+                    List.of(new PreparacaoAberturaOrdemResponse.VeiculoIdentificadoResponse(
+                            UUID.randomUUID(),
+                            "ABC1234",
+                            "Toyota",
+                            "Corolla",
+                            2022,
+                            true
+                    )),
+                    null,
+                    false
+            );
+        }
+
+        @Test
+        @DisplayName("Deve retornar 200 ao preparar abertura apenas com documento")
+        void deveRetornar200ComDocumento() throws Exception {
+            when(service.prepararAbertura("52998224725", null)).thenReturn(response);
+
+            mockMvc.perform(get("/ordens/preparar-abertura")
+                            .param("documento", "52998224725"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.cliente.nome", is("João da Silva")))
+                    .andExpect(jsonPath("$.veiculos", hasSize(1)))
+                    .andExpect(jsonPath("$.veiculos[0].placa", is("ABC1234")))
+                    .andExpect(jsonPath("$.prontoParaAbertura", is(false)));
+        }
+
+        @Test
+        @DisplayName("Deve retornar 200 ao preparar abertura com documento e placa")
+        void deveRetornar200ComDocumentoEPlaca() throws Exception {
+            PreparacaoAberturaOrdemResponse comVeiculoSelecionado = new PreparacaoAberturaOrdemResponse(
+                    response.cliente(),
+                    response.veiculos(),
+                    response.veiculos().get(0),
+                    true
+            );
+            when(service.prepararAbertura("52998224725", "ABC1234")).thenReturn(comVeiculoSelecionado);
+
+            mockMvc.perform(get("/ordens/preparar-abertura")
+                            .param("documento", "52998224725")
+                            .param("placa", "ABC1234"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.veiculoSelecionado.placa", is("ABC1234")))
+                    .andExpect(jsonPath("$.prontoParaAbertura", is(true)));
         }
     }
 

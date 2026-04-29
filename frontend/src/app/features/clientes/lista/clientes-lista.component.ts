@@ -10,6 +10,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ClienteResponse } from '../../../core/models/cliente.model';
 import { ClienteService } from '../../../core/services/cliente.service';
 import { ClienteFormDialogComponent } from '../dialogs/cliente-form-dialog.component';
+import { extractApiError } from '../../../core/utils/api-error.util';
 
 @Component({
   selector: 'app-clientes-lista',
@@ -47,7 +48,7 @@ export class ClientesListaComponent implements OnInit {
         if (!result) return;
         this.service.criar(result).subscribe({
           next: () => { this.snackBar.open('Cliente criado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao criar cliente.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao criar cliente.'), 'Fechar', { duration: 5000 }),
         });
       });
   }
@@ -58,7 +59,7 @@ export class ClientesListaComponent implements OnInit {
         if (!result) return;
         this.service.atualizar(c.id, result).subscribe({
           next: () => { this.snackBar.open('Cliente atualizado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao atualizar cliente.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao atualizar cliente.'), 'Fechar', { duration: 5000 }),
         });
       });
   }

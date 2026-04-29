@@ -2,7 +2,6 @@ package br.com.fiap.siase.service;
 
 import br.com.fiap.siase.dto.request.VeiculoRequest;
 import br.com.fiap.siase.dto.response.VeiculoResponse;
-import br.com.fiap.siase.exception.BusinessException;
 import br.com.fiap.siase.exception.DuplicateResourceException;
 import br.com.fiap.siase.exception.ResourceNotFoundException;
 import br.com.fiap.siase.model.Cliente;
@@ -117,7 +116,8 @@ class VeiculoServiceTest {
         void deveLancarExcecaoParaPlacaDuplicada() {
             when(veiculoRepository.existsByPlaca("ABC1234")).thenReturn(true);
 
-            assertThatThrownBy(() -> veiculoService.criar(buildRequest()))
+            var request = buildRequest();
+            assertThatThrownBy(() -> veiculoService.criar(request))
                     .isInstanceOf(DuplicateResourceException.class)
                     .hasMessageContaining("ABC1234");
 
@@ -131,7 +131,8 @@ class VeiculoServiceTest {
             when(clienteService.findById(clienteId))
                     .thenThrow(new ResourceNotFoundException("Cliente", clienteId));
 
-            assertThatThrownBy(() -> veiculoService.criar(buildRequest()))
+            var request = buildRequest();
+            assertThatThrownBy(() -> veiculoService.criar(request))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
@@ -160,7 +161,8 @@ class VeiculoServiceTest {
         void deveLancarExcecaoPorIdInexistente() {
             when(veiculoRepository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> veiculoService.buscarPorId(UUID.randomUUID()))
+            var id = UUID.randomUUID();
+            assertThatThrownBy(() -> veiculoService.buscarPorId(id))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
 
@@ -250,7 +252,9 @@ class VeiculoServiceTest {
         void deveLancarExcecaoAoAtualizarInexistente() {
             when(veiculoRepository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> veiculoService.atualizar(UUID.randomUUID(), buildRequest()))
+            var id = UUID.randomUUID();
+            var request = buildRequest();
+            assertThatThrownBy(() -> veiculoService.atualizar(id, request))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
@@ -280,7 +284,8 @@ class VeiculoServiceTest {
         void deveLancarExcecaoAoDesativarInexistente() {
             when(veiculoRepository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> veiculoService.desativar(UUID.randomUUID()))
+            var id = UUID.randomUUID();
+            assertThatThrownBy(() -> veiculoService.desativar(id))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }

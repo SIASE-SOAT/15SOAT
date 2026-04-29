@@ -4,6 +4,7 @@ import br.com.fiap.siase.dto.request.ItemPecaRequest;
 import br.com.fiap.siase.dto.request.ItemServicoRequest;
 import br.com.fiap.siase.dto.request.OrdemDeServicoRequest;
 import br.com.fiap.siase.dto.response.OrdemDeServicoResponse;
+import br.com.fiap.siase.dto.response.PreparacaoAberturaOrdemResponse;
 import br.com.fiap.siase.exception.BusinessException;
 import br.com.fiap.siase.exception.ResourceNotFoundException;
 import br.com.fiap.siase.model.ItemPeca;
@@ -16,6 +17,7 @@ import br.com.fiap.siase.repository.PecaRepository;
 import br.com.fiap.siase.repository.ServicoRepository;
 import br.com.fiap.siase.repository.VeiculoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,12 +33,16 @@ import static br.com.fiap.siase.model.enums.StatusOS.ENTREGUE;
 @RequiredArgsConstructor
 public class OrdemDeServicoService {
 
+    private static final String OS_NAO_ENCONTRADA_MSG = "OS não encontrada: ";
+    private static final String EMAIL_FALLBACK = "sem-email@siase.com";
+
     private final OrdemDeServicoRepository repository;
     private final ClienteRepository clienteRepository;
     private final VeiculoRepository veiculoRepository;
     private final ServicoRepository servicoRepository;
     private final PecaRepository pecaRepository;
     private final EmailService emailService;
+    private final ObjectProvider<OrdemDeServicoService> selfProvider;
 
     @Transactional
     public OrdemDeServicoResponse criar(OrdemDeServicoRequest request) {
@@ -122,7 +128,68 @@ public class OrdemDeServicoService {
     public OrdemDeServicoResponse buscarPorNumero(String numero) {
         return OrdemDeServicoResponse.from(
                 repository.findByNumero(numero)
-                        .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + numero))
+                        .orElseThrow(() -> new ResourceNotFoundException(OS_NAO_ENCONTRADA_MSG + numero))
+        );
+    }
+
+    @Transactional
+    public OrdemDeServicoResponse aprovarOrcamentoPorNumero(String numero) {
+        var os = repository.findByNumero(numero)
+                .orElseThrow(() -> new ResourceNotFoundException(OS_NAO_ENCONTRADA_MSG + numero));
+
+        if (os.getStatus() != StatusOS.AGUARDANDO_APROVACAO) {
+            throw new BusinessException("A OS " + numero + " não está aguardando aprovação no momento.");
+        }
+
+        return avancarStatusInterno(os.getId(), true);
+    }
+
+    @Transactional
+    public OrdemDeServicoResponse recusarOrcamentoPorNumero(String numero) {
+        var os = repository.findByNumero(numero)
+                .orElseThrow(() -> new ResourceNotFoundException(OS_NAO_ENCONTRADA_MSG + numero));
+
+        if (os.getStatus() != StatusOS.AGUARDANDO_APROVACAO) {
+            throw new BusinessException("A OS " + numero + " não está aguardando aprovação no momento.");
+        }
+
+        return selfProvider.getObject().cancelar(os.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public PreparacaoAberturaOrdemResponse prepararAbertura(String documento, String placa) {
+        String documentoLimpo = limparDocumento(documento);
+
+        var cliente = clienteRepository.findByDocumento(documentoLimpo)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado para o documento: " + documento));
+
+        var veiculosAtivos = veiculoRepository.findByClienteId(cliente.getId()).stream()
+                .filter(veiculo -> Boolean.TRUE.equals(veiculo.getAtivo()))
+                .map(PreparacaoAberturaOrdemResponse.VeiculoIdentificadoResponse::from)
+                .toList();
+
+        PreparacaoAberturaOrdemResponse.VeiculoIdentificadoResponse veiculoSelecionado = null;
+        if (placa != null && !placa.isBlank()) {
+            String placaNormalizada = placa.toUpperCase().trim();
+            var veiculo = veiculoRepository.findByPlaca(placaNormalizada)
+                    .orElseThrow(() -> new ResourceNotFoundException("Veículo não encontrado para a placa: " + placa));
+
+            if (!veiculo.getCliente().getId().equals(cliente.getId())) {
+                throw new BusinessException("O veículo informado não pertence ao cliente identificado pelo documento.");
+            }
+
+            if (!Boolean.TRUE.equals(veiculo.getAtivo())) {
+                throw new BusinessException("O veículo informado está inativo e não pode ser usado para abrir uma OS.");
+            }
+
+            veiculoSelecionado = PreparacaoAberturaOrdemResponse.VeiculoIdentificadoResponse.from(veiculo);
+        }
+
+        return new PreparacaoAberturaOrdemResponse(
+                PreparacaoAberturaOrdemResponse.ClienteIdentificadoResponse.from(cliente),
+                veiculosAtivos,
+                veiculoSelecionado,
+                veiculoSelecionado != null
         );
     }
 
@@ -134,8 +201,16 @@ public class OrdemDeServicoService {
 
     @Transactional
     public OrdemDeServicoResponse avancarStatus(UUID id) {
+        return avancarStatusInterno(id, false);
+    }
+
+    private OrdemDeServicoResponse avancarStatusInterno(UUID id, boolean aprovadoPeloCliente) {
         var os = findOrThrow(id);
         StatusOS statusAnterior = os.getStatus();
+
+        if (statusAnterior == StatusOS.AGUARDANDO_APROVACAO && !aprovadoPeloCliente) {
+            throw new BusinessException("O orçamento ainda aguarda aprovação do cliente no portal público.");
+        }
 
         try {
             os.avancarStatus();
@@ -148,7 +223,7 @@ public class OrdemDeServicoService {
         // Dispara email quando orçamento é enviado para aprovação
         if (os.getStatus() == StatusOS.AGUARDANDO_APROVACAO) {
             String email = os.getCliente().getEmail() != null
-                    ? os.getCliente().getEmail() : "sem-email@siase.com";
+                    ? os.getCliente().getEmail() : EMAIL_FALLBACK;
             emailService.enviarOrcamentoParaAprovacao(
                     email,
                     os.getCliente().getNome(),
@@ -157,10 +232,10 @@ public class OrdemDeServicoService {
             );
         }
 
-        // Dispara email quando orçamento é aprovado e execução inicia
-        if (statusAnterior == StatusOS.AGUARDANDO_APROVACAO && os.getStatus() == StatusOS.EM_EXECUCAO) {
+        // Dispara email quando cliente aprova o orçamento
+        if (statusAnterior == StatusOS.AGUARDANDO_APROVACAO && os.getStatus() == StatusOS.APROVADO) {
             String email = os.getCliente().getEmail() != null
-                    ? os.getCliente().getEmail() : "sem-email@siase.com";
+                    ? os.getCliente().getEmail() : EMAIL_FALLBACK;
             emailService.enviarOrcamentoAprovado(email, os.getCliente().getNome(), os.getNumero());
         }
 
@@ -238,6 +313,34 @@ public class OrdemDeServicoService {
     }
 
     @Transactional
+    public OrdemDeServicoResponse iniciarExecucaoItemServico(UUID ordemId, UUID itemId) {
+        var os = findOrThrow(ordemId);
+
+        if (os.getStatus() != StatusOS.EM_EXECUCAO) {
+            throw new BusinessException("Só é possível iniciar a execução de serviços quando a OS está em execução.");
+        }
+
+        var item = findItemServico(os, itemId);
+        item.iniciarExecucao();
+
+        return OrdemDeServicoResponse.from(repository.save(os));
+    }
+
+    @Transactional
+    public OrdemDeServicoResponse finalizarExecucaoItemServico(UUID ordemId, UUID itemId) {
+        var os = findOrThrow(ordemId);
+
+        if (os.getStatus() != StatusOS.EM_EXECUCAO) {
+            throw new BusinessException("Só é possível finalizar a execução de serviços quando a OS está em execução.");
+        }
+
+        var item = findItemServico(os, itemId);
+        item.finalizarExecucao();
+
+        return OrdemDeServicoResponse.from(repository.save(os));
+    }
+
+    @Transactional
     public OrdemDeServicoResponse cancelar(UUID id) {
         var os = findOrThrow(id);
         try {
@@ -255,7 +358,7 @@ public class OrdemDeServicoService {
         var salvo = repository.save(os);
 
         String email = os.getCliente().getEmail() != null
-                ? os.getCliente().getEmail() : "sem-email@siase.com";
+                ? os.getCliente().getEmail() : EMAIL_FALLBACK;
         emailService.enviarOrcamentoCancelado(email, os.getCliente().getNome(), os.getNumero());
 
         return OrdemDeServicoResponse.from(salvo);
@@ -263,7 +366,7 @@ public class OrdemDeServicoService {
 
     private OrdemDeServico findOrThrow(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("OS não encontrada: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(OS_NAO_ENCONTRADA_MSG + id));
     }
 
     private boolean jaTemPeca(OrdemDeServico os, UUID pecaId) {
@@ -276,17 +379,22 @@ public class OrdemDeServicoService {
                 .anyMatch(item -> item.getServico().getId().equals(servicoId));
     }
 
+    private ItemServico findItemServico(OrdemDeServico os, UUID itemId) {
+        return os.getItensServico().stream()
+                .filter(item -> item.getId().equals(itemId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Item de serviço não encontrado: " + itemId));
+    }
+
     private boolean isStatusPermitidoParaAdicionarPeca(StatusOS status) {
         return status == StatusOS.RECEBIDA
                 || status == StatusOS.EM_DIAGNOSTICO
-                || status == StatusOS.AGUARDANDO_APROVACAO
                 || status == StatusOS.EM_EXECUCAO;
     }
 
     private boolean isStatusPermitidoParaAdicionarServico(StatusOS status) {
         return status == StatusOS.RECEBIDA
                 || status == StatusOS.EM_DIAGNOSTICO
-                || status == StatusOS.AGUARDANDO_APROVACAO
                 || status == StatusOS.EM_EXECUCAO;
     }
 
@@ -294,5 +402,9 @@ public class OrdemDeServicoService {
         String data = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String sufixo = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
         return "OS-" + data + "-" + sufixo;
+    }
+
+    private String limparDocumento(String documento) {
+        return documento.replaceAll("\\D", "");
     }
 }

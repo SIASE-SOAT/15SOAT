@@ -1,0 +1,135 @@
+<div class="mecanico-page">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar__inner">
+      <span class="topbar__logo">
+        <mat-icon>build</mat-icon>
+        Painel do Mecânico
+      </span>
+      <span class="topbar__user">SIASE Oficina</span>
+    </div>
+  </header>
+
+  <main class="conteudo">
+
+    @if (loading()) {
+      <div class="loader">
+        <mat-spinner diameter="40" />
+        <span>Carregando fila de serviços...</span>
+      </div>
+    }
+
+    @if (erro()) {
+      <mat-card class="alerta alerta-erro">
+        <mat-card-content>
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ erro() }}</span>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    @if (!loading() && !erro()) {
+
+      <!-- Contadores -->
+      <div class="contadores">
+        <div class="contador contador--verde">
+          <span class="contador__num">{{ aprovadas().length }}</span>
+          <span class="contador__label">Prontas para iniciar</span>
+        </div>
+        <div class="contador contador--azul">
+          <span class="contador__num">{{ emExecucao().length }}</span>
+          <span class="contador__label">Em execução</span>
+        </div>
+        <div class="contador contador--cinza">
+          <span class="contador__num">{{ pendentes().length }}</span>
+          <span class="contador__label">Diagnóstico / Novas</span>
+        </div>
+      </div>
+
+      <!-- APROVADAS -->
+      @if (aprovadas().length > 0) {
+        <section class="secao">
+          <div class="secao__header secao__header--verde">
+            <mat-icon>notifications_active</mat-icon>
+            <span>Prontas para iniciar</span>
+          </div>
+          @for (os of aprovadas(); track os.id) {
+            <div class="os-card os-card--destaque" (click)="verOS(os.id)">
+              <div class="os-card__info">
+                <p class="os-card__numero">{{ os.numero }}</p>
+                <p class="os-card__sub">{{ os.clienteNome }} · {{ os.veiculoModelo }} ({{ os.veiculoPlaca }})</p>
+                <span class="os-chip" [style.background]="statusConfig[os.status].bg" [style.color]="statusConfig[os.status].cor">
+                  {{ statusConfig[os.status].label }}
+                </span>
+              </div>
+              <button mat-flat-button class="btn-ver btn-ver--verde">
+                <mat-icon>play_circle</mat-icon>
+                Ver OS
+              </button>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- EM EXECUÇÃO -->
+      @if (emExecucao().length > 0) {
+        <section class="secao">
+          <div class="secao__header secao__header--azul">
+            <mat-icon>settings</mat-icon>
+            <span>Em execução</span>
+          </div>
+          @for (os of emExecucao(); track os.id) {
+            <div class="os-card" (click)="verOS(os.id)">
+              <div class="os-card__info">
+                <p class="os-card__numero">{{ os.numero }}</p>
+                <p class="os-card__sub">{{ os.clienteNome }} · {{ os.veiculoModelo }} ({{ os.veiculoPlaca }})</p>
+                <span class="os-chip" [style.background]="statusConfig[os.status].bg" [style.color]="statusConfig[os.status].cor">
+                  {{ statusConfig[os.status].label }}
+                </span>
+              </div>
+              <button mat-flat-button class="btn-ver btn-ver--azul">
+                <mat-icon>arrow_forward</mat-icon>
+                Ver OS
+              </button>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- DIAGNÓSTICO / NOVAS -->
+      @if (pendentes().length > 0) {
+        <section class="secao">
+          <div class="secao__header secao__header--cinza">
+            <mat-icon>assignment</mat-icon>
+            <span>Em diagnóstico / Novas</span>
+          </div>
+          @for (os of pendentes(); track os.id) {
+            <div class="os-card" (click)="verOS(os.id)">
+              <div class="os-card__info">
+                <p class="os-card__numero">{{ os.numero }}</p>
+                <p class="os-card__sub">{{ os.clienteNome }} · {{ os.veiculoModelo }} ({{ os.veiculoPlaca }})</p>
+                <span class="os-chip" [style.background]="statusConfig[os.status].bg" [style.color]="statusConfig[os.status].cor">
+                  {{ statusConfig[os.status].label }}
+                </span>
+              </div>
+              <button mat-flat-button class="btn-ver btn-ver--cinza">
+                <mat-icon>arrow_forward</mat-icon>
+                Ver OS
+              </button>
+            </div>
+          }
+        </section>
+      }
+
+      @if (ordens().length === 0) {
+        <div class="vazio">
+          <mat-icon>check_circle_outline</mat-icon>
+          <p>Nenhuma OS aguardando serviço.</p>
+        </div>
+      }
+
+    }
+
+  </main>
+</div>

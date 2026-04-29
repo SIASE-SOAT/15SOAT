@@ -121,7 +121,8 @@ class ServicoServiceTest {
         void deveLancarExcecaoQuandoNaoEncontrado() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> servicoService.buscarPorId(UUID.randomUUID()))
+            var id = UUID.randomUUID();
+            assertThatThrownBy(() -> servicoService.buscarPorId(id))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Serviço não encontrado");
         }
@@ -177,8 +178,9 @@ class ServicoServiceTest {
         void deveLancarExcecaoAoAtualizarInexistente() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> servicoService.atualizar(UUID.randomUUID(),
-                    new ServicoRequest("X", null, BigDecimal.TEN)))
+            var id = UUID.randomUUID();
+            var request = new ServicoRequest("X", null, BigDecimal.TEN);
+            assertThatThrownBy(() -> servicoService.atualizar(id, request))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
@@ -204,7 +206,8 @@ class ServicoServiceTest {
         void deveLancarExcecaoQuandoNaoEncontrado() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> servicoService.desativar(UUID.randomUUID()))
+            var id = UUID.randomUUID();
+            assertThatThrownBy(() -> servicoService.desativar(id))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
@@ -285,8 +288,8 @@ class ServicoServiceTest {
             servico.setInsumos(new ArrayList<>());
             when(repository.findById(servicoId)).thenReturn(Optional.of(servico));
 
-            assertThatThrownBy(() -> servicoService.atualizarInsumo(servicoId, pecaId,
-                    new ServicoInsumoRequest(pecaId, 1)))
+            var request = new ServicoInsumoRequest(pecaId, 1);
+            assertThatThrownBy(() -> servicoService.atualizarInsumo(servicoId, pecaId, request))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
 
@@ -313,7 +316,8 @@ class ServicoServiceTest {
             servico.setInsumos(new ArrayList<>());
             when(repository.findById(servicoId)).thenReturn(Optional.of(servico));
 
-            assertThatThrownBy(() -> servicoService.removerInsumo(servicoId, UUID.randomUUID()))
+            var randomPecaId = UUID.randomUUID();
+            assertThatThrownBy(() -> servicoService.removerInsumo(servicoId, randomPecaId))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }

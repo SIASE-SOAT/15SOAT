@@ -16,8 +16,12 @@
       <mat-icon>timer</mat-icon>
     </div>
     <div>
-      <p class="tempo-label">Tempo médio de execução</p>
-      <p class="tempo-value">{{ tempoMedioHoras() }}h {{ tempoMedioMinutosRestantes() }}min</p>
+      <p class="tempo-label">Tempo médio de execução dos serviços</p>
+      @if (tempoMedioMenorQueUmMinuto()) {
+        <p class="tempo-value">{{ tempoMedioSegundos() }}s</p>
+      } @else {
+        <p class="tempo-value">{{ tempoMedioHoras() }}h {{ tempoMedioMinutosRestantes() }}min</p>
+      }
     </div>
   </div>
 

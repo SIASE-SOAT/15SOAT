@@ -23,8 +23,8 @@ public interface OrdemDeServicoRepository extends JpaRepository<OrdemDeServico, 
 
     boolean existsByVeiculoIdAndStatusNotIn(UUID veiculoId, List<StatusOS> statuses);
 
-    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (data_fechamento - data_abertura)) / 60.0) " +
-                   "FROM ordens_de_servico WHERE data_fechamento IS NOT NULL",
+    @Query(value = "SELECT AVG(EXTRACT(EPOCH FROM (data_fim_execucao - data_inicio_execucao)) / 60.0) " +
+                   "FROM itens_servico WHERE data_inicio_execucao IS NOT NULL AND data_fim_execucao IS NOT NULL",
            nativeQuery = true)
     Double calcularTempoMedioExecucaoMinutos();
 }

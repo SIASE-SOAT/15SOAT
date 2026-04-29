@@ -62,6 +62,7 @@ class ServicoControllerTest {
                 "Troca de Óleo",
                 "Substituição do óleo do motor",
                 new BigDecimal("120.00"),
+                60,
                 true,
                 List.of(),
                 LocalDateTime.now(),

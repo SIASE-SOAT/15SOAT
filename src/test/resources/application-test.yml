@@ -46,6 +46,16 @@ jwt:
   secret: dGVzdFNlY3JldEtleUZvckpXVFRlc3RpbmdQdXJwb3NlczEyMzQ1Njc4OTA=
   expiration-ms: 3600000
 
+cors:
+  allowed-origins: http://localhost:4200
+
+cliente:
+  portal-url: http://localhost:4200
+
+seed:
+  mecanico:
+    password: mecanico123
+
 logging:
   level:
     br.com.fiap.siase: INFO

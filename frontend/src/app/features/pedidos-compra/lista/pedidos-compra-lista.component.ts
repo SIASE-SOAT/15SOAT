@@ -11,6 +11,7 @@ import { PedidoCompraResponse } from '../../../core/models/pedido-compra.model';
 import { PedidoCompraService } from '../../../core/services/pedido-compra.service';
 import { PedidoCompraFormDialogComponent } from '../dialogs/pedido-compra-form-dialog.component';
 import { ReceberPedidoDialogComponent } from '../dialogs/receber-pedido-dialog.component';
+import { extractApiError } from '../../../core/utils/api-error.util';
 
 @Component({
   selector: 'app-pedidos-compra-lista',
@@ -43,7 +44,7 @@ export class PedidosCompraListaComponent implements OnInit {
         if (!result) return;
         this.service.criar(result).subscribe({
           next: () => { this.snackBar.open('Pedido criado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao criar pedido.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao criar pedido.'), 'Fechar', { duration: 5000 }),
         });
       });
   }
@@ -51,7 +52,7 @@ export class PedidosCompraListaComponent implements OnInit {
   protected aprovar(p: PedidoCompraResponse) {
     this.service.aprovar(p.id).subscribe({
       next: () => { this.snackBar.open('Pedido aprovado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-      error: () => this.snackBar.open('Erro ao aprovar pedido.', 'Fechar', { duration: 3000 }),
+      error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao aprovar pedido.'), 'Fechar', { duration: 5000 }),
     });
   }
 
@@ -61,7 +62,7 @@ export class PedidosCompraListaComponent implements OnInit {
         if (!quantidade) return;
         this.service.receber(p.id, quantidade).subscribe({
           next: () => { this.snackBar.open('Recebimento registrado!', 'Fechar', { duration: 3000 }); this.carregar(); },
-          error: () => this.snackBar.open('Erro ao registrar recebimento.', 'Fechar', { duration: 3000 }),
+          error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao registrar recebimento.'), 'Fechar', { duration: 5000 }),
         });
       });
   }
@@ -69,7 +70,7 @@ export class PedidosCompraListaComponent implements OnInit {
   protected cancelar(p: PedidoCompraResponse) {
     this.service.cancelar(p.id).subscribe({
       next: () => { this.snackBar.open('Pedido cancelado.', 'Fechar', { duration: 3000 }); this.carregar(); },
-      error: () => this.snackBar.open('Erro ao cancelar pedido.', 'Fechar', { duration: 3000 }),
+      error: (err) => this.snackBar.open(extractApiError(err, 'Erro ao cancelar pedido.'), 'Fechar', { duration: 5000 }),
     });
   }
 }

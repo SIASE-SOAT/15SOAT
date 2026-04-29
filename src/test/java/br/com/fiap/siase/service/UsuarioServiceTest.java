@@ -117,7 +117,8 @@ class UsuarioServiceTest {
         void deveLancarExcecaoQuandoUsernameJaExiste() {
             when(repository.existsByUsername("atendente1")).thenReturn(true);
 
-            assertThatThrownBy(() -> service.registrar(new RegistroRequest("atendente1", "Atend@2024")))
+            var request = new RegistroRequest("atendente1", "Atend@2024");
+            assertThatThrownBy(() -> service.registrar(request))
                     .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("atendente1");
         }
@@ -127,7 +128,8 @@ class UsuarioServiceTest {
         void naoDeveChamarEncoderQuandoUsernameJaExiste() {
             when(repository.existsByUsername("atendente1")).thenReturn(true);
 
-            assertThatThrownBy(() -> service.registrar(new RegistroRequest("atendente1", "Atend@2024")))
+            var request = new RegistroRequest("atendente1", "Atend@2024");
+            assertThatThrownBy(() -> service.registrar(request))
                     .isInstanceOf(BusinessException.class);
 
             verifyNoInteractions(passwordEncoder);
@@ -138,7 +140,8 @@ class UsuarioServiceTest {
         void naoDeveSalvarQuandoUsernameJaExiste() {
             when(repository.existsByUsername("atendente1")).thenReturn(true);
 
-            assertThatThrownBy(() -> service.registrar(new RegistroRequest("atendente1", "Atend@2024")))
+            var request = new RegistroRequest("atendente1", "Atend@2024");
+            assertThatThrownBy(() -> service.registrar(request))
                     .isInstanceOf(BusinessException.class);
 
             verify(repository, never()).save(any());

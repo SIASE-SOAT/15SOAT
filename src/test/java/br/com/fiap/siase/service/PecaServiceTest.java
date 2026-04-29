@@ -213,7 +213,8 @@ class PecaServiceTest {
             MovimentacaoEstoqueRequest request = new MovimentacaoEstoqueRequest(
                     MovimentacaoEstoqueRequest.Operacao.ENTRADA, 5);
 
-            assertThatThrownBy(() -> pecaService.movimentarEstoque(UUID.randomUUID(), request))
+            var id = UUID.randomUUID();
+            assertThatThrownBy(() -> pecaService.movimentarEstoque(id, request))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
@@ -239,7 +240,8 @@ class PecaServiceTest {
         void deveLancarExcecaoQuandoNaoEncontrada() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> pecaService.desativar(UUID.randomUUID()))
+            var id = UUID.randomUUID();
+            assertThatThrownBy(() -> pecaService.desativar(id))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Peça não encontrada");
         }

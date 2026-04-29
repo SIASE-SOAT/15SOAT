@@ -98,8 +98,8 @@ class PedidoCompraServiceTest {
         void deveLancarExcecaoQuandoPecaNaoEncontrada() {
             when(pecaRepository.findById(pecaId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> pedidoCompraService.criar(
-                    new PedidoCompraRequest(pecaId, 20, null)))
+            var pedidoRequest = new PedidoCompraRequest(pecaId, 20, null);
+            assertThatThrownBy(() -> pedidoCompraService.criar(pedidoRequest))
                     .isInstanceOf(ResourceNotFoundException.class);
 
             verify(repository, never()).save(any());
@@ -151,7 +151,8 @@ class PedidoCompraServiceTest {
         void deveLancarExcecaoPorIdInexistente() {
             when(repository.findById(any())).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> pedidoCompraService.buscarPorId(UUID.randomUUID()))
+            var id = UUID.randomUUID();
+            assertThatThrownBy(() -> pedidoCompraService.buscarPorId(id))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }
@@ -204,7 +205,7 @@ class PedidoCompraServiceTest {
             when(repository.save(any(PedidoCompra.class))).thenReturn(pedido);
             when(pecaRepository.save(any(Peca.class))).thenReturn(peca);
 
-            PedidoCompraResponse response = pedidoCompraService.receber(pedidoId, 20);
+            pedidoCompraService.receber(pedidoId, 20);
 
             assertThat(pedido.getStatus()).isEqualTo(StatusPedidoCompra.RECEBIDO);
             assertThat(pedido.getQuantidadeRecebida()).isEqualTo(20);

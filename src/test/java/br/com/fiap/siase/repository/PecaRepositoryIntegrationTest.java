@@ -93,7 +93,7 @@ class PecaRepositoryIntegrationTest {
             assertThatThrownBy(() -> {
                 repository.save(duplicado);
                 entityManager.flush();
-            });
+            }).isInstanceOf(Exception.class);
         }
     }
 
@@ -128,9 +128,8 @@ class PecaRepositoryIntegrationTest {
             // query usa < (estritamente abaixo), então estoque == mínimo não é retornado
             List<Peca> resultado = repository.findEstoqueBaixo();
 
-            assertThat(resultado)
-                    .extracting(Peca::getCodigo)
-                    .doesNotContain("FILTRO-001");
+            // ambas as peças têm estoque >= mínimo, então a lista deve ser vazia
+            assertThat(resultado).isEmpty();
         }
 
         @Test
@@ -144,14 +143,18 @@ class PecaRepositoryIntegrationTest {
         @Test
         @DisplayName("Não deve listar peças inativas com estoque baixo")
         void naoDeveListarInativasComEstoqueBaixo() {
-            Peca inativa = pecaCom("INATIVA-001", "Peça Inativa", 0, 10, false);
-            repository.save(inativa);
+            Peca inativa    = pecaCom("INATIVA-001",   "Peça Inativa",            0, 10, false);
+            Peca ativaLow   = pecaCom("ATIVA-LOW-001", "Peça Ativa Estoque Baixo", 2, 10, true);
+            repository.saveAll(List.of(inativa, ativaLow));
             entityManager.flush();
 
             List<Peca> resultado = repository.findEstoqueBaixo();
 
+            // ativaLow deve aparecer; inativa deve ser filtrada mesmo com estoque baixo
+            assertThat(resultado).isNotEmpty();
             assertThat(resultado)
                     .extracting(Peca::getCodigo)
+                    .contains("ATIVA-LOW-001")
                     .doesNotContain("INATIVA-001");
         }
     }
