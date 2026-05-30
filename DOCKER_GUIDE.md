@@ -66,9 +66,14 @@ docker run -d \
 #### Executar Backend
 ```bash
 cd /d/Projetos/15SOAT
-./mvnw spring-boot:run
+
+# Instalar modulos no repositorio local
+./mvnw install -DskipTests
+
+# Executar a aplicacao
+./mvnw spring-boot:run -pl siase-infrastructure
 # ou se estiver no Windows
-mvnw.cmd spring-boot:run
+mvnw.cmd spring-boot:run -pl siase-infrastructure
 ```
 
 Backend disponível em: `http://localhost:8080/api`

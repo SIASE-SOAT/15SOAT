@@ -1,43 +1,129 @@
-# SIASE - Sistema Integrado de Atendimento e Execução de Serviços
+# SIASE - Sistema Integrado de Atendimento e Execucao de Servicos
 
-> Pós Tech - Software Architecture | FIAP
+> Pos Tech - Software Architecture | FIAP | Fase 2 - Evolucao da Aplicacao
+
+## Descricao da Solucao
+
+O SIASE e um sistema de gestao de oficina mecanica que gerencia clientes, veiculos, servicos, pecas e ordens de servico. A Fase 2 evolui a aplicacao com:
+
+- **Clean Architecture (Hexagonal)** com 3 modulos Maven independentes
+- **APIs REST** para o ciclo completo de ordens de servico (5 novos endpoints)
+- **Inversao de dependencia** — domain nao depende de frameworks, application nao depende de infra
+- **Dockerfile** atualizado para build multi-modulo + healthcheck via Actuator
 
 ## Tecnologias
 
-| Tecnologia         | Versão  | Justificativa                                                                 |
+| Tecnologia         | Versao  | Justificativa                                                                 |
 |--------------------|---------|-------------------------------------------------------------------------------|
-| Java               | 17      | LTS com suporte estendido, records, sealed classes e melhorias de performance |
-| Spring Boot        | 3.2.4   | Framework consolidado, ecossistema maduro, convenção sobre configuração       |
-| PostgreSQL         | 16      | Banco relacional robusto, ACID, suporte a JSON, open-source e escalável       |
-| Flyway             | —       | Controle de versão do schema de banco via migrations                          |
-| Springdoc OpenAPI  | 2.4.0   | Documentação automática da API via anotações                                  |
-| Docker / Compose   | —       | Ambiente reproduzível e isolado para dev e produção                           |
+| Java               | 17      | LTS com suporte estendido, records, sealed classes                            |
+| Spring Boot        | 3.2.4   | Framework consolidado, ecossistema maduro, convencao sobre configuracao       |
+| PostgreSQL         | 16      | Banco relacional robusto, ACID, suporte a JSON, open-source e escalavel       |
+| Flyway             | —       | Controle de versao do schema de banco via migrations                          |
+| Springdoc OpenAPI  | 2.4.0   | Documentacao automatica da API via anotacoes                                  |
+| Docker / Compose   | —       | Ambiente reproduzivel e isolado para dev e producao                           |
+| JaCoCo             | 0.8.11  | Cobertura de testes com regra obrigatoria no build (minimo 80%)               |
 
 ### Por que PostgreSQL?
 
-PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, ideal para sistemas transacionais como atendimentos e execução de serviços. Oferece excelente desempenho, suporte a JSON/JSONB para dados semi-estruturados, extensibilidade e é open-source, reduzindo custos de licença.
+PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, ideal para sistemas transacionais como atendimentos e execucao de servicos. Oferece excelente desempenho, suporte a JSON/JSONB para dados semi-estruturados, extensibilidade e e open-source, reduzindo custos de licenca.
 
-## Estrutura do Projeto
+## Arquitetura
+
+### Clean Architecture / Hexagonal — 3 Modulos Maven
 
 ```
-src/main/java/br/com/fiap/siase/
-├── SiaseApplication.java          # Entry point
-├── config/                        # Configurações (OpenAPI, Beans)
-├── controller/                    # Controllers REST (camada de apresentação)
-├── service/                       # Regras de negócio (camada de serviço)
-├── repository/                    # Interfaces Spring Data JPA (camada de dados)
-├── model/                         # Entidades JPA
-├── dto/
-│   ├── request/                   # DTOs de entrada
-│   └── response/                  # DTOs de saída
-└── exception/                     # Exception handler global
+┌──────────────────────────────────────────────────────────────┐
+│                   INFRASTRUCTURE (adapters)                   │
+│  ┌──────────┐ ┌──────────────┐ ┌──────────┐ ┌────────────┐  │
+│  │ web/     │ │ persistence/ │ │ security/│ │ email/      │  │
+│  │ REST API │ │ JPA Repos    │ │ JWT      │ │ EmailAdapter│  │
+│  └────┬─────┘ └──────┬───────┘ └────┬─────┘ └─────┬──────┘  │
+├───────┼───────────────┼──────────────┼───────────────┼────────┤
+│       ▼               ▼              │               ▼        │
+│  ┌────────────────────────────────┐   │  ┌────────────────┐   │
+│  │    APPLICATION (use cases)     │   │  │ Ports (interf) │   │
+│  │  CriarOrdemServicoUC           │   │  │ EmailPort      │◄──┤
+│  │  ListarOrdensServicoUC         │   │  └────────────────┘   │
+│  │  ConsultarStatusOSUC           │   │                       │
+│  │  AprovarOrcamentoUC            │   │                       │
+│  │  AtualizarStatusViaWebhookUC   │   │                       │
+│  └───────────────┬────────────────┘   │                       │
+├──────────────────┼────────────────────┼───────────────────────┤
+│                  ▼                    ▼                       │
+│  ┌───────────────────────────────────────────────────────┐    │
+│  │              DOMAIN (core, zero deps)                  │    │
+│  │  Entities, Enums, Port interfaces, Domain services     │    │
+│  └───────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-> A arquitetura atual é MVC em camadas. A migração futura para Clean Architecture / Hexagonal será feita movendo as responsabilidades para `domain/`, `application/` e `infrastructure/`.
+### Estrutura do Projeto
 
-## Rodando localmente
+```
+15SOAT/
+├── pom.xml                        # POM pai (agregador)
+├── siase-domain/                   # Entidades, enums, ports (34 classes)
+├── siase-application/              # Use cases, DTOs (31 classes)
+├── siase-infrastructure/           # Adaptadores, controllers, main (35 classes)
+├── src/                            # Codigo legado da Fase 1 (preservado como referencia)
+├── frontend/                       # Frontend Angular
+├── k8s/                            # (proxima fase)
+├── infra/                          # (proxima fase)
+├── .github/                        # (proxima fase)
+├── Dockerfile                      # Multi-stage multi-modulo + healthcheck
+├── docker-compose.yml              # Dev local (backend + DB)
+├── docker-compose.full.yml         # Stack completa (+ frontend Angular)
+├── docker-compose.sonarqube.yml    # SonarQube para analise estatica
+└── postman/                        # Collection e guia de testes
+```
 
-### Pré-requisitos
+**Regra de dependencia:** `infrastructure → application → domain` (seta sempre aponta para dentro). O compilador impede violacoes de arquitetura.
+
+> A arquitetura original (Fase 1) era MVC em camadas. O codigo legado esta preservado em `src/` como referencia. O novo codigo nos modulos `siase-*` implementa Clean Architecture com inversao de dependencia.
+
+---
+
+## APIs de Ordem de Servico
+
+### Fluxo de Status
+
+```
+RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → APROVADO → EM_EXECUCAO → FINALIZADA → ENTREGUE
+                                                                                           ↑
+                                                             (pagamento confirmado) ──────┘
+```
+
+### Endpoints Principais
+
+| Metodo | Endpoint | Descricao | Auth |
+|--------|----------|-----------|------|
+| POST | `/api/ordens` | Abertura de OS | JWT |
+| GET | `/api/ordens` | Listagem ordenada (ativos) | JWT |
+| GET | `/api/ordens/{id}` | Consulta status | JWT |
+| GET | `/api/ordens/acompanhar/{numero}` | Acompanhamento (publico) | — |
+| PATCH | `/api/ordens/acompanhar/{numero}/aprovar-orcamento` | Aprovar orcamento | — |
+| PATCH | `/api/ordens/acompanhar/{numero}/recusar-orcamento` | Recusar orcamento | — |
+| POST | `/api/ordens/webhook/status` | Atualizacao via webhook (email) | Token |
+
+### Listagem de OS — Regras de Ordenacao
+
+- **Prioridade:** EM_EXECUCAO > AGUARDANDO_APROVACAO > EM_DIAGNOSTICO > RECEBIDA
+- **Desempate:** Mais antigas primeiro (data_abertura ASC)
+- **Exclusao logica:** FINALIZADA e ENTREGUE nao aparecem na listagem (registros preservados no banco)
+
+### Seguranca
+
+- JWT aplicado nas rotas administrativas (nao nas publicas)
+- Validacao de CPF/CNPJ via biblioteca **caelum-stella**
+- Suporte a placa **Mercosul** (ABC1D23) e **antiga** (ABC-1234)
+- Senhas com hash BCrypt
+- Usuario padrao: `mecanico` / senha configurada via `MECANICO_PASSWORD`
+
+---
+
+## Execucao Local
+
+### Pre-requisitos
 
 - Docker e Docker Compose instalados
 - Java 17+ (para rodar sem Docker)
@@ -45,22 +131,23 @@ src/main/java/br/com/fiap/siase/
 
 ---
 
-### 🚀 Opção 1 — Back-end + Banco (avaliação da API)
+### Opcao 1 — Back-end + Banco (avaliacao da API)
 
-Sobe apenas o banco de dados e a aplicação Spring Boot. Ideal para avaliar os endpoints via Swagger ou Postman.
+Sobe apenas o banco de dados e a aplicacao Spring Boot. Ideal para avaliar os endpoints via Swagger ou Postman.
 
 ```bash
 docker compose up --build
 ```
 
-| Serviço | URL |
+| Servico | URL |
 |---------|-----|
 | API REST | `http://localhost:8080/api` |
 | Swagger UI | `http://localhost:8080/api/swagger-ui.html` |
+| Health Check | `http://localhost:8080/api/actuator/health` |
 
 ---
 
-### ⭐ Opção 2 — Stack completa: Back-end + Front-end + Banco
+### Opcao 2 — Stack completa: Back-end + Front-end + Banco
 
 Sobe a stack inteira incluindo a interface web Angular. Permite visualizar e operar o sistema completo.
 
@@ -68,7 +155,7 @@ Sobe a stack inteira incluindo a interface web Angular. Permite visualizar e ope
 docker compose -f docker-compose.full.yml up --build
 ```
 
-| Serviço | URL |
+| Servico | URL |
 |---------|-----|
 | Interface Web | `http://localhost:4200` |
 | API REST | `http://localhost:8080/api` |
@@ -76,44 +163,47 @@ docker compose -f docker-compose.full.yml up --build
 
 ---
 
-### 🔧 Opção 3 — Desenvolvimento local (sem Docker para a aplicação)
+### Opcao 3 — Desenvolvimento local (sem Docker para a aplicacao)
 
-Útil para desenvolvimento com hot-reload. Sobe somente o banco via Docker e roda a aplicação localmente.
+Util para desenvolvimento com hot-reload. Sobe somente o banco via Docker e roda a aplicacao localmente.
 
-1. Suba o PostgreSQL:
 ```bash
+# 1. Suba o PostgreSQL
 docker compose up postgres
-```
 
-2. Configure as variáveis de ambiente (ou use os valores padrão):
-```bash
+# 2. Configure as variaveis de ambiente
 cp .env.example .env
+
+# 3. Compile todos os modulos
+./mvnw clean install -DskipTests
+
+# 4. Execute a aplicacao
+./mvnw spring-boot:run -pl siase-infrastructure
 ```
 
-3. Execute a aplicação:
-```bash
-./mvnw spring-boot:run
-```
+### Variaveis de Ambiente
 
-### Variáveis de Ambiente
-
-| Variável            | Padrão         | Descrição                        |
+| Variavel            | Padrao         | Descricao                        |
 |---------------------|----------------|----------------------------------|
 | `DB_HOST`           | `localhost`    | Host do banco de dados           |
 | `DB_PORT`           | `5432`         | Porta do PostgreSQL              |
 | `DB_NAME`           | `siase_db`     | Nome do banco                    |
-| `DB_USER`           | `siase_user`   | Usuário do banco                 |
+| `DB_USER`           | `siase_user`   | Usuario do banco                 |
 | `DB_PASSWORD`       | `siase_pass`   | Senha do banco                   |
-| `SERVER_PORT`       | `8080`         | Porta da aplicação               |
+| `SERVER_PORT`       | `8080`         | Porta da aplicacao               |
 | `JWT_SECRET`        | *(ver .env.example)* | Chave HMAC para assinar tokens |
-| `JWT_EXPIRATION_MS` | `3600000`      | Expiração do token (ms) — 1h    |
+| `JWT_EXPIRATION_MS` | `3600000`      | Expiracao do token (ms) — 1h    |
+| `MECANICO_PASSWORD` | `mecanico123`  | Senha do usuario padrao          |
+| `WEBHOOK_TOKEN`     | *(ver .env.example)* | Token para webhook externo   |
 
-## Primeiros passos (autenticação)
+---
 
-Todos os endpoints administrativos exigem JWT. Após subir a aplicação:
+## Primeiros passos (autenticacao)
+
+Todos os endpoints administrativos exigem JWT. Apos subir a aplicacao:
 
 ```bash
-# 1. Registrar usuário (sem autenticação)
+# 1. Registrar usuario (sem autenticacao)
 POST http://localhost:8080/api/auth/registrar
 {"username": "admin", "password": "Admin@123"}
 
@@ -128,7 +218,7 @@ Authorization: Bearer eyJ...
 
 ## Explorando a API
 
-A forma recomendada para explorar e testar os endpoints é via **Swagger UI**, disponível assim que a aplicação estiver no ar:
+A forma recomendada para explorar e testar os endpoints e via **Swagger UI**, disponivel assim que a aplicacao estiver no ar:
 
 ```
 http://localhost:8080/api/swagger-ui.html
@@ -136,30 +226,30 @@ http://localhost:8080/api/swagger-ui.html
 
 O Swagger documenta todos os endpoints, exibe os schemas de request/response e permite executar chamadas diretamente pelo navegador — basta clicar em **Authorize**, informar o Bearer token obtido no login e chamar qualquer endpoint.
 
-A pasta `postman/` também disponibiliza:
+A pasta `postman/` tambem disponibiliza:
 
-- `SIASE.postman_collection.json` — coleção com todos os endpoints pré-configurados
-- `GUIA_DE_TESTES.md` — roteiro com cenários de teste (ciclo completo de OS, cancelamento, controle de estoque, CRUD administrativo)
+- `SIASE.postman_collection.json` — colecao com todos os endpoints pre-configurados
+- `GUIA_DE_TESTES.md` — roteiro com cenarios de teste (ciclo completo de OS, cancelamento, controle de estoque, CRUD administrativo)
 
-## Documentação da API
+## Documentacao da API
 
-Com a aplicação rodando, acesse:
+Com a aplicacao rodando, acesse:
 
 - **Swagger UI:** `http://localhost:8080/api/swagger-ui.html`
 - **OpenAPI JSON:** `http://localhost:8080/api/v3/api-docs`
 
-## Relatório SonarQube
+## Relatorio SonarQube
 
-O script `scripts/sonar_pdf_report.py` gera um relatório PDF com as métricas do SonarQube. O arquivo gerado é salvo em:
+O script `scripts/sonar_pdf_report.py` gera um relatorio PDF com as metricas do SonarQube. O arquivo gerado e salvo em:
 
 ```
 scripts/target/sonar/relatorio_sonarqube.pdf
 ```
 
-### Pré-requisitos
+### Pre-requisitos
 
-- Python 3.x com as dependências: `fpdf2`, `matplotlib`, `requests`
-- SonarQube rodando em `http://localhost:9000` com o projeto `br.com.fiap:siase` já analisado
+- Python 3.x com as dependencias: `fpdf2`, `matplotlib`, `requests`
+- SonarQube rodando em `http://localhost:9000` com o projeto `br.com.fiap:siase` ja analisado
 
 ### Como gerar
 
@@ -175,7 +265,7 @@ cd scripts
 python sonar_pdf_report.py
 ```
 
-O PDF será criado automaticamente em `scripts/target/sonar/` (o diretório é criado se não existir).
+O PDF sera criado automaticamente em `scripts/target/sonar/` (o diretorio e criado se nao existir).
 
 ## Testes
 
@@ -183,6 +273,21 @@ O PDF será criado automaticamente em `scripts/target/sonar/` (o diretório é c
 # Rodar todos os testes
 ./mvnw test
 
-# Rodar com relatório de cobertura
+# Rodar com relatorio de cobertura
 ./mvnw test jacoco:report
 ```
+
+> Os testes automatizados da Fase 1 estao preservados em `src/test/` como referencia da cobertura atingida (46 arquivos de teste com minimo de 80% de cobertura de linha via JaCoCo). A cobertura dos fluxos criticos da OS possui evidencias de TDD documentadas.
+
+## Docker
+
+- **Multi-stage build:** estagio de build com Maven + estagio runtime com JRE
+- **Non-root user:** container executa como `appuser`
+- **Healthcheck:** `curl` no endpoint `/api/actuator/health` com Spring Boot Actuator
+- **docker-compose:** healthcheck no PostgreSQL com `depends_on` aguardando `service_healthy`
+
+## Links
+
+- **Swagger UI:** `http://localhost:8080/api/swagger-ui.html`
+- **Postman Collection:** `postman/SIASE.postman_collection.json`
+- **Link para video demonstrativo:** [YouTube / Vimeo]
