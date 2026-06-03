@@ -7,7 +7,7 @@
 O SIASE e um sistema de gestao de oficina mecanica que gerencia clientes, veiculos, servicos, pecas e ordens de servico. A Fase 2 evolui a aplicacao com:
 
 - **Clean Architecture (Hexagonal)** com 3 modulos Maven independentes
-- **APIs REST** para o ciclo completo de ordens de servico (5 novos endpoints)
+- **APIs REST** para o ciclo completo de ordens de servico
 - **Inversao de dependencia** — domain nao depende de frameworks, application nao depende de infra
 - **Dockerfile** atualizado para build multi-modulo + healthcheck via Actuator
 
@@ -21,11 +21,12 @@ O SIASE e um sistema de gestao de oficina mecanica que gerencia clientes, veicul
 | Flyway             | —       | Controle de versao do schema de banco via migrations                          |
 | Springdoc OpenAPI  | 2.4.0   | Documentacao automatica da API via anotacoes                                  |
 | Docker / Compose   | —       | Ambiente reproduzivel e isolado para dev e producao                           |
+| MapStruct          | 1.5.x   | Mapeamento entre entidades JPA e POJOs de dominio em tempo de compilacao      |
 | JaCoCo             | 0.8.11  | Cobertura de testes com regra obrigatoria no build (minimo 80%)               |
 
 ### Por que PostgreSQL?
 
-PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, ideal para sistemas transacionais como atendimentos e execucao de servicos. Oferece excelente desempenho, suporte a JSON/JSONB para dados semi-estruturados, extensibilidade e e open-source, reduzindo custos de licenca.
+PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, ideal para sistemas transacionais como atendimentos e execucao de servicos. Oferece excelente desempenho, suporte a JSON/JSONB para dados semi-estruturados, extensibilidade e open-source, reduzindo custos de licenca.
 
 ## Arquitetura
 
@@ -47,6 +48,14 @@ PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, 
 │  │  ConsultarStatusOSUC           │   │                       │
 │  │  AprovarOrcamentoUC            │   │                       │
 │  │  AtualizarStatusViaWebhookUC   │   │                       │
+│  │  AvancarStatusUC               │   │                       │
+│  │  CancelarOrdemUC               │   │                       │
+│  │  AdicionarPecaUC               │   │                       │
+│  │  AdicionarServicoUC            │   │                       │
+│  │  ConsultarTempoMedioUC         │   │                       │
+│  │  IniciarExecucaoItemUC         │   │                       │
+│  │  FinalizarExecucaoItemUC       │   │                       │
+│  │  PrepararAberturaOSUC          │   │                       │
 │  └───────────────┬────────────────┘   │                       │
 ├──────────────────┼────────────────────┼───────────────────────┤
 │                  ▼                    ▼                       │
@@ -62,9 +71,9 @@ PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, 
 ```
 15SOAT/
 ├── pom.xml                        # POM pai (agregador)
-├── siase-domain/                   # Entidades, enums, ports (34 classes)
-├── siase-application/              # Use cases, DTOs (31 classes)
-├── siase-infrastructure/           # Adaptadores, controllers, main (35 classes)
+├── siase-domain/                   # Entidades POJO, enums, ports, validacoes
+├── siase-application/              # Use cases, DTOs, port interfaces
+├── siase-infrastructure/           # JPA entities, mappers MapStruct, controllers, security
 ├── src/                            # Codigo legado da Fase 1 (preservado como referencia)
 ├── frontend/                       # Frontend Angular
 ├── k8s/                            # (proxima fase)
@@ -89,27 +98,32 @@ PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, 
 
 ```
 RECEBIDA → EM_DIAGNOSTICO → AGUARDANDO_APROVACAO → APROVADO → EM_EXECUCAO → FINALIZADA → ENTREGUE
-                                                                                           ↑
-                                                             (pagamento confirmado) ──────┘
+                                      ↑                  ↑
+                               cliente recusa      cliente aprova
+                               (OS cancelada)      orcamento
 ```
 
 ### Endpoints Principais
 
+#### Ordens de Servico
+
 | Metodo | Endpoint | Descricao | Auth |
 |--------|----------|-----------|------|
 | POST | `/api/ordens` | Abertura de OS | JWT |
-| GET | `/api/ordens` | Listagem ordenada (ativos) | JWT |
-| GET | `/api/ordens/{id}` | Consulta status | JWT |
+| GET | `/api/ordens?status={status}` | Listar OS (filtro opcional por status) | JWT |
+| GET | `/api/ordens/{id}` | Consulta OS por ID | JWT |
+| PATCH | `/api/ordens/{id}/avancar` | Avanca status da OS | JWT |
+| PATCH | `/api/ordens/{id}/cancelar` | Cancela a OS | JWT |
+| POST | `/api/ordens/{id}/items-peca` | Adiciona peca a OS | JWT |
+| POST | `/api/ordens/{id}/items-servico` | Adiciona servico a OS | JWT |
+| PATCH | `/api/ordens/{id}/itens-servico/{itemId}/iniciar` | Inicia execucao de item | JWT |
+| PATCH | `/api/ordens/{id}/itens-servico/{itemId}/finalizar` | Finaliza execucao de item | JWT |
+| GET | `/api/ordens/preparar-abertura?documento={doc}` | Busca cliente/veiculos para abertura | JWT |
+| GET | `/api/ordens/monitoramento/tempo-medio` | Tempo medio de execucao dos servicos | JWT |
 | GET | `/api/ordens/acompanhar/{numero}` | Acompanhamento (publico) | — |
-| PATCH | `/api/ordens/acompanhar/{numero}/aprovar-orcamento` | Aprovar orcamento | — |
-| PATCH | `/api/ordens/acompanhar/{numero}/recusar-orcamento` | Recusar orcamento | — |
-| POST | `/api/ordens/webhook/status` | Atualizacao via webhook (email) | Token |
-
-### Listagem de OS — Regras de Ordenacao
-
-- **Prioridade:** EM_EXECUCAO > AGUARDANDO_APROVACAO > EM_DIAGNOSTICO > RECEBIDA
-- **Desempate:** Mais antigas primeiro (data_abertura ASC)
-- **Exclusao logica:** FINALIZADA e ENTREGUE nao aparecem na listagem (registros preservados no banco)
+| PATCH | `/api/ordens/acompanhar/{numero}/aprovar-orcamento` | Aprovar orcamento (publico) | — |
+| PATCH | `/api/ordens/acompanhar/{numero}/recusar-orcamento` | Recusar orcamento (publico) | — |
+| POST | `/api/ordens/webhook/status` | Atualizacao via webhook externo | Token |
 
 ### Seguranca
 
@@ -277,7 +291,12 @@ O PDF sera criado automaticamente em `scripts/target/sonar/` (o diretorio e cria
 ./mvnw test jacoco:report
 ```
 
-> Os testes automatizados da Fase 1 estao preservados em `src/test/` como referencia da cobertura atingida (46 arquivos de teste com minimo de 80% de cobertura de linha via JaCoCo). A cobertura dos fluxos criticos da OS possui evidencias de TDD documentadas.
+> Os testes estao organizados por modulo seguindo Clean Architecture:
+> - `siase-domain/src/test/` — testes unitarios de regras de negocio (OrdemDeServico, Peca)
+> - `siase-application/src/test/` — testes unitarios dos use cases com mocks dos ports
+> - `siase-infrastructure/src/test/` — testes de controller com MockMvc e integracao com H2
+>
+> Cobertura minima de 80% de linhas configurada como regra obrigatoria do build via JaCoCo. Evidencias de TDD documentadas nos fluxos criticos de OS.
 
 ## Docker
 
