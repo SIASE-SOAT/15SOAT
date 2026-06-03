@@ -1,6 +1,6 @@
 package br.com.fiap.siase.infrastructure.persistence;
 
-import br.com.fiap.siase.domain.model.Veiculo;
+import br.com.fiap.siase.infrastructure.persistence.entity.VeiculoEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,9 +9,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface VeiculoJpaRepository extends JpaRepository<Veiculo, UUID> {
+public interface VeiculoJpaRepository extends JpaRepository<VeiculoEntity, UUID> {
 
-    Optional<Veiculo> findByPlaca(String placa);
+    Optional<VeiculoEntity> findByPlaca(String placa);
 
-    List<Veiculo> findByClienteId(UUID clienteId);
+    List<VeiculoEntity> findByClienteId(UUID clienteId);
 }

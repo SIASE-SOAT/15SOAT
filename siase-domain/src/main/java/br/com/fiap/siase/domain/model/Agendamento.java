@@ -1,7 +1,8 @@
 package br.com.fiap.siase.domain.model;
 
 import br.com.fiap.siase.domain.enums.StatusAgendamento;
-import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,31 +13,19 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-@Entity
-@Table(name = "agendamentos")
-public class Agendamento extends BaseEntity {
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cliente_id", nullable = false)
+@AllArgsConstructor
+@Builder
+public class Agendamento {
+    private UUID id;
     private Cliente cliente;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "veiculo_id", nullable = false)
     private Veiculo veiculo;
-
-    @Column(name = "data_hora", nullable = false)
-    private java.time.LocalDateTime dataHora;
-
-    @Column(name = "descricao_servicos", columnDefinition = "TEXT")
+    private LocalDateTime dataHora;
     private String descricaoServicos;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Builder.Default
     private StatusAgendamento status = StatusAgendamento.AGENDADO;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ordem_de_servico_id")
     private OrdemDeServico ordemDeServico;
+    private LocalDateTime criadoEm;
+    private LocalDateTime atualizadoEm;
 
     public void confirmar() {
         if (this.status != StatusAgendamento.AGENDADO) {

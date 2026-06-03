@@ -16,12 +16,11 @@ import br.com.fiap.siase.domain.port.ServicoRepositoryPort;
 import br.com.fiap.siase.domain.port.VeiculoRepositoryPort;
 import br.com.fiap.siase.domain.enums.StatusOS;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.UUID;
+import br.com.fiap.siase.application.usecase.port.CriarOrdemServicoUCPort;
 
-public class CriarOrdemServicoUC {
+import java.util.List;
+
+public class CriarOrdemServicoUC implements CriarOrdemServicoUCPort {
 
     private final OrdemServicoRepositoryPort ordemServicoRepository;
     private final ClienteRepositoryPort clienteRepository;
@@ -61,7 +60,7 @@ public class CriarOrdemServicoUC {
         }
 
         var os = new OrdemDeServico();
-        os.setNumero(gerarNumero());
+        os.setNumero(OrdemDeServico.gerarNumero());
         os.setCliente(cliente);
         os.setVeiculo(veiculo);
         os.setObservacoes(request.observacoes());
@@ -100,9 +99,4 @@ public class CriarOrdemServicoUC {
         return OrdemDeServicoResponse.from(ordemServicoRepository.save(os));
     }
 
-    private String gerarNumero() {
-        String data = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String sufixo = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        return "OS-" + data + "-" + sufixo;
-    }
 }

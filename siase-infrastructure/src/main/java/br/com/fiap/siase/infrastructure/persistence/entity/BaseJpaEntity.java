@@ -1,11 +1,10 @@
-package br.com.fiap.siase.domain.model;
+package br.com.fiap.siase.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AccessLevel;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,7 +12,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @MappedSuperclass
-public abstract class BaseEntity {
+public abstract class BaseJpaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -47,6 +47,9 @@ jwt:
   secret: ${JWT_SECRET:bXlTdXBlclNlY3JldEtleUZvckpXVEF1dGhlbnRpY2F0aW9uMjAyNA==}
   expiration-ms: ${JWT_EXPIRATION_MS:3600000}
 
+webhook:
+  token: ${WEBHOOK_TOKEN:changeme}
+
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000}
 

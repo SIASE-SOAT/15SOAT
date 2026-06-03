@@ -26,4 +26,6 @@ public interface OrdemServicoRepositoryPort {
     boolean existsByVeiculoIdAndStatusNotIn(UUID veiculoId, List<StatusOS> statuses);
 
     List<OrdemDeServico> findAllAtivasOrdered();
+
+    Optional<Double> calcularTempoMedioExecucaoMinutos();
 }

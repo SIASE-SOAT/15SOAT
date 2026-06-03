@@ -7,7 +7,7 @@ import br.com.fiap.siase.domain.exception.BusinessException;
 import br.com.fiap.siase.domain.exception.ResourceNotFoundException;
 import br.com.fiap.siase.domain.model.PedidoCompra;
 import br.com.fiap.siase.domain.port.PecaRepositoryPort;
-import br.com.fiap.siase.infrastructure.persistence.PedidoCompraJpaRepository;
+import br.com.fiap.siase.domain.port.PedidoCompraRepositoryPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,12 +28,12 @@ import java.util.UUID;
 @Tag(name = "Pedidos de Compra", description = "Gerenciamento de pedidos de reposição de estoque")
 public class PedidoCompraController {
 
-    private final PedidoCompraJpaRepository pedidoCompraJpaRepository;
+    private final PedidoCompraRepositoryPort pedidoCompraRepository;
     private final PecaRepositoryPort pecaRepository;
 
-    public PedidoCompraController(PedidoCompraJpaRepository pedidoCompraJpaRepository,
+    public PedidoCompraController(PedidoCompraRepositoryPort pedidoCompraRepository,
                                   PecaRepositoryPort pecaRepository) {
-        this.pedidoCompraJpaRepository = pedidoCompraJpaRepository;
+        this.pedidoCompraRepository = pedidoCompraRepository;
         this.pecaRepository = pecaRepository;
     }
 
@@ -58,7 +58,7 @@ public class PedidoCompraController {
         pedido.setQuantidadeSolicitada(request.quantidadeSolicitada());
         pedido.setObservacoes(request.observacoes());
 
-        PedidoCompraResponse response = PedidoCompraResponse.from(pedidoCompraJpaRepository.save(pedido));
+        PedidoCompraResponse response = PedidoCompraResponse.from(pedidoCompraRepository.save(pedido));
         var location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(response.id())
@@ -79,8 +79,8 @@ public class PedidoCompraController {
     public ResponseEntity<List<PedidoCompraResponse>> listar(
             @Parameter(description = "Filtro opcional por status") @RequestParam(required = false) StatusPedidoCompra status) {
         List<PedidoCompraResponse> lista = status != null
-                ? pedidoCompraJpaRepository.findByStatus(status).stream().map(PedidoCompraResponse::from).toList()
-                : pedidoCompraJpaRepository.findAll().stream().map(PedidoCompraResponse::from).toList();
+                ? pedidoCompraRepository.findByStatus(status).stream().map(PedidoCompraResponse::from).toList()
+                : pedidoCompraRepository.findAll().stream().map(PedidoCompraResponse::from).toList();
         return ResponseEntity.ok(lista);
     }
 
@@ -117,7 +117,7 @@ public class PedidoCompraController {
         } catch (IllegalStateException e) {
             throw new BusinessException(e.getMessage());
         }
-        return ResponseEntity.ok(PedidoCompraResponse.from(pedidoCompraJpaRepository.save(pedido)));
+        return ResponseEntity.ok(PedidoCompraResponse.from(pedidoCompraRepository.save(pedido)));
     }
 
     @PatchMapping("/{id}/receber")
@@ -149,7 +149,7 @@ public class PedidoCompraController {
         }
 
         pecaRepository.save(pedido.getPeca());
-        return ResponseEntity.ok(PedidoCompraResponse.from(pedidoCompraJpaRepository.save(pedido)));
+        return ResponseEntity.ok(PedidoCompraResponse.from(pedidoCompraRepository.save(pedido)));
     }
 
     @PatchMapping("/{id}/cancelar")
@@ -172,11 +172,11 @@ public class PedidoCompraController {
         } catch (IllegalStateException e) {
             throw new BusinessException(e.getMessage());
         }
-        return ResponseEntity.ok(PedidoCompraResponse.from(pedidoCompraJpaRepository.save(pedido)));
+        return ResponseEntity.ok(PedidoCompraResponse.from(pedidoCompraRepository.save(pedido)));
     }
 
     private PedidoCompra findById(UUID id) {
-        return pedidoCompraJpaRepository.findById(id)
+        return pedidoCompraRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido de compra não encontrado: " + id));
     }
 }

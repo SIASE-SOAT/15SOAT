@@ -1,42 +1,32 @@
 package br.com.fiap.siase.domain.model;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
-@Entity
-@Table(name = "servicos")
-public class Servico extends BaseEntity {
-
-    @NotBlank
-    @Column(nullable = false, length = 255)
+@AllArgsConstructor
+@Builder
+public class Servico {
+    private UUID id;
     private String nome;
-
-    @Column(columnDefinition = "TEXT")
     private String descricao;
-
-    @NotNull
-    @DecimalMin("0.00")
-    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal preco;
-
-    @Column(name = "tempo_estimado_minutos")
     private Integer tempoEstimadoMinutos;
-
-    @Column(nullable = false)
+    @Builder.Default
     private Boolean ativo = true;
-
-    @OneToMany(mappedBy = "servico", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ServicoInsumo> insumos = new ArrayList<>();
+    private LocalDateTime criadoEm;
+    private LocalDateTime atualizadoEm;
 }

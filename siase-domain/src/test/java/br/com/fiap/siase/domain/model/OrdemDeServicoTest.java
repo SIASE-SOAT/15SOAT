@@ -19,12 +19,10 @@ class OrdemDeServicoTest {
 
     @BeforeEach
     void setUp() {
-        os = new OrdemDeServico();
-        os.setNumero("OS-20260530-ABC123");
-        os.setStatus(StatusOS.RECEBIDA);
-        os.setTotalServicos(BigDecimal.ZERO);
-        os.setTotalPecas(BigDecimal.ZERO);
-        os.setTotal(BigDecimal.ZERO);
+        os = OrdemDeServico.builder()
+                .numero("OS-20260530-ABC123")
+                .status(StatusOS.RECEBIDA)
+                .build();
     }
 
     @ParameterizedTest

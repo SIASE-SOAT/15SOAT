@@ -1,6 +1,6 @@
 package br.com.fiap.siase.infrastructure.persistence;
 
-import br.com.fiap.siase.domain.model.Peca;
+import br.com.fiap.siase.infrastructure.persistence.entity.PecaEntity;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -12,11 +12,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface PecaJpaRepository extends JpaRepository<Peca, UUID> {
+public interface PecaJpaRepository extends JpaRepository<PecaEntity, UUID> {
 
-    List<Peca> findByAtivoTrue();
+    List<PecaEntity> findByAtivoTrue();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM Peca p WHERE p.id = :id")
-    Optional<Peca> findByIdParaAtualizacao(UUID id);
+    @Query("SELECT p FROM PecaEntity p WHERE p.id = :id")
+    Optional<PecaEntity> findByIdParaAtualizacao(UUID id);
 }

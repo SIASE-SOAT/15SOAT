@@ -1,7 +1,7 @@
 package br.com.fiap.siase.infrastructure.persistence;
 
 import br.com.fiap.siase.domain.enums.StatusOS;
-import br.com.fiap.siase.domain.model.OrdemDeServico;
+import br.com.fiap.siase.infrastructure.persistence.entity.OrdemDeServicoEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -11,15 +11,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface OrdemServicoJpaRepository extends JpaRepository<OrdemDeServico, UUID> {
+public interface OrdemServicoJpaRepository extends JpaRepository<OrdemDeServicoEntity, UUID> {
 
-    Optional<OrdemDeServico> findByNumero(String numero);
+    Optional<OrdemDeServicoEntity> findByNumero(String numero);
 
-    List<OrdemDeServico> findByClienteId(UUID clienteId);
+    List<OrdemDeServicoEntity> findByClienteId(UUID clienteId);
 
-    List<OrdemDeServico> findByVeiculoId(UUID veiculoId);
+    List<OrdemDeServicoEntity> findByVeiculoId(UUID veiculoId);
 
-    List<OrdemDeServico> findByStatus(StatusOS status);
+    List<OrdemDeServicoEntity> findByStatus(StatusOS status);
 
     boolean existsByVeiculoIdAndStatusNotIn(UUID veiculoId, List<StatusOS> statuses);
 
@@ -39,5 +39,5 @@ public interface OrdemServicoJpaRepository extends JpaRepository<OrdemDeServico,
                    "END, " +
                    "data_abertura ASC",
            nativeQuery = true)
-    List<OrdemDeServico> findAllAtivasOrdered();
+    List<OrdemDeServicoEntity> findAllAtivasOrdered();
 }

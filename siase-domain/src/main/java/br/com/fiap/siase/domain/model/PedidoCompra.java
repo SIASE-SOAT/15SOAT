@@ -1,34 +1,31 @@
 package br.com.fiap.siase.domain.model;
 
 import br.com.fiap.siase.domain.enums.StatusPedidoCompra;
-import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Getter
 @Setter
 @NoArgsConstructor
-@Entity
-@Table(name = "pedidos_compra")
-public class PedidoCompra extends BaseEntity {
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "peca_id", nullable = false)
+@AllArgsConstructor
+@Builder
+public class PedidoCompra {
+    private UUID id;
     private Peca peca;
-
-    @Column(name = "quantidade_solicitada", nullable = false)
     private Integer quantidadeSolicitada;
-
-    @Column(name = "quantidade_recebida", nullable = false)
+    @Builder.Default
     private Integer quantidadeRecebida = 0;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Builder.Default
     private StatusPedidoCompra status = StatusPedidoCompra.PENDENTE;
-
-    @Column(columnDefinition = "TEXT")
     private String observacoes;
+    private LocalDateTime criadoEm;
+    private LocalDateTime atualizadoEm;
 
     public void aprovar() {
         if (this.status != StatusPedidoCompra.PENDENTE) {

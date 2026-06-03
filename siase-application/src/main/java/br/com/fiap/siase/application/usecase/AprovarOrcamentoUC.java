@@ -1,13 +1,14 @@
 package br.com.fiap.siase.application.usecase;
 
 import br.com.fiap.siase.application.dto.output.OrdemDeServicoResponse;
+import br.com.fiap.siase.application.usecase.port.AprovarOrcamentoUCPort;
 import br.com.fiap.siase.domain.enums.StatusOS;
 import br.com.fiap.siase.domain.exception.BusinessException;
 import br.com.fiap.siase.domain.exception.ResourceNotFoundException;
 import br.com.fiap.siase.domain.port.EmailPort;
 import br.com.fiap.siase.domain.port.OrdemServicoRepositoryPort;
 
-public class AprovarOrcamentoUC {
+public class AprovarOrcamentoUC implements AprovarOrcamentoUCPort {
 
     private final OrdemServicoRepositoryPort ordemServicoRepository;
     private final EmailPort emailPort;

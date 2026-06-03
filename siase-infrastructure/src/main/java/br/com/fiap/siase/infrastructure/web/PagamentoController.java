@@ -8,7 +8,7 @@ import br.com.fiap.siase.domain.exception.ResourceNotFoundException;
 import br.com.fiap.siase.domain.model.Pagamento;
 import br.com.fiap.siase.domain.port.EmailPort;
 import br.com.fiap.siase.domain.port.OrdemServicoRepositoryPort;
-import br.com.fiap.siase.infrastructure.persistence.PagamentoJpaRepository;
+import br.com.fiap.siase.domain.port.PagamentoRepositoryPort;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,14 +26,14 @@ import java.util.UUID;
 @Tag(name = "Pagamentos", description = "Registro e ciclo de vida de pagamentos vinculados a ordens de serviço")
 public class PagamentoController {
 
-    private final PagamentoJpaRepository pagamentoJpaRepository;
+    private final PagamentoRepositoryPort pagamentoRepository;
     private final OrdemServicoRepositoryPort ordemServicoRepository;
     private final EmailPort emailPort;
 
-    public PagamentoController(PagamentoJpaRepository pagamentoJpaRepository,
+    public PagamentoController(PagamentoRepositoryPort pagamentoRepository,
                                OrdemServicoRepositoryPort ordemServicoRepository,
                                EmailPort emailPort) {
-        this.pagamentoJpaRepository = pagamentoJpaRepository;
+        this.pagamentoRepository = pagamentoRepository;
         this.ordemServicoRepository = ordemServicoRepository;
         this.emailPort = emailPort;
     }
@@ -63,7 +63,7 @@ public class PagamentoController {
                 + os.getStatus().getDescricao());
         }
 
-        if (pagamentoJpaRepository.existsByOrdemDeServicoId(osId)) {
+        if (pagamentoRepository.existsByOrdemDeServicoId(osId)) {
             throw new BusinessException("Esta OS já possui um pagamento registrado.");
         }
 
@@ -72,7 +72,7 @@ public class PagamentoController {
         pagamento.setFormaPagamento(request.formaPagamento());
         pagamento.setValor(request.valor());
 
-        PagamentoResponse response = PagamentoResponse.from(pagamentoJpaRepository.save(pagamento));
+        PagamentoResponse response = PagamentoResponse.from(pagamentoRepository.save(pagamento));
         var location = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/pagamentos/{id}")
                 .buildAndExpand(response.id())
@@ -95,7 +95,7 @@ public class PagamentoController {
             @Parameter(description = "ID da ordem de serviço") @PathVariable UUID osId) {
         return ResponseEntity.ok(
                 PagamentoResponse.from(
-                        pagamentoJpaRepository.findByOrdemDeServicoId(osId)
+                        pagamentoRepository.findByOrdemDeServicoId(osId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado para a OS: " + osId))
                 )
         );
@@ -115,7 +115,7 @@ public class PagamentoController {
     @Transactional
     public ResponseEntity<PagamentoResponse> confirmar(
             @Parameter(description = "ID do pagamento") @PathVariable UUID id) {
-        var pagamento = pagamentoJpaRepository.findById(id)
+        var pagamento = pagamentoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
         try {
             pagamento.confirmar();
@@ -123,7 +123,7 @@ public class PagamentoController {
             throw new BusinessException(e.getMessage());
         }
 
-        var salvo = pagamentoJpaRepository.save(pagamento);
+        var salvo = pagamentoRepository.save(pagamento);
 
         var os = pagamento.getOrdemDeServico();
         String emailCliente = os.getCliente().getEmail() != null
@@ -157,13 +157,13 @@ public class PagamentoController {
     @Transactional
     public ResponseEntity<PagamentoResponse> cancelar(
             @Parameter(description = "ID do pagamento") @PathVariable UUID id) {
-        var pagamento = pagamentoJpaRepository.findById(id)
+        var pagamento = pagamentoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pagamento não encontrado: " + id));
         try {
             pagamento.cancelar();
         } catch (IllegalStateException e) {
             throw new BusinessException(e.getMessage());
         }
-        return ResponseEntity.ok(PagamentoResponse.from(pagamentoJpaRepository.save(pagamento)));
+        return ResponseEntity.ok(PagamentoResponse.from(pagamentoRepository.save(pagamento)));
     }
 }
