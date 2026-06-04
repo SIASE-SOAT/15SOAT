@@ -1,0 +1,23 @@
+package br.com.fiap.siase.domain.enums;
+
+public enum StatusOS {
+
+    RECEBIDA("Recebida"),
+    EM_DIAGNOSTICO("Em Diagnóstico"),
+    AGUARDANDO_APROVACAO("Aguardando Aprovação"),
+    APROVADO("Aprovado"),
+    EM_EXECUCAO("Em Execução"),
+    FINALIZADA("Finalizada"),
+    ENTREGUE("Entregue"),
+    CANCELADA("Cancelada");
+
+    private final String descricao;
+
+    StatusOS(String descricao) {
+        this.descricao = descricao;
+    }
+
+    public String getDescricao() {
+        return descricao;
+    }
+}
