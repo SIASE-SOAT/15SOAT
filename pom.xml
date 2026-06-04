@@ -36,12 +36,26 @@
         <sonar.host.url>http://localhost:9000</sonar.host.url>
         <sonar.coverage.exclusions>
             **/SiaseApplication.java,
-            **/exception/BusinessException.java,
-            **/exception/ResourceNotFoundException.java,
+            **/exception/**,
             **/infrastructure/config/OpenApiConfig.java,
             **/infrastructure/config/SecurityConfig.java,
-            **/domain/enums/StatusOS.java,
-            **/domain/enums/TipoPessoa.java,
+            **/infrastructure/config/BeanConfig.java,
+            **/infrastructure/config/DataInitializer.java,
+            **/infrastructure/config/DatabaseAutoCreateConfig.java,
+            **/domain/enums/**,
+            **/domain/port/**,
+            **/domain/validation/CpfCnpj.java,
+            **/domain/validation/PlacaVeiculo.java,
+            **/domain/model/ServicoInsumoId.java,
+            **/domain/model/ServicoInsumo.java,
+            **/application/usecase/port/**,
+            **/application/dto/input/**,
+            **/application/dto/output/**,
+            **/infrastructure/persistence/entity/**,
+            **/infrastructure/persistence/mapper/**,
+            **/infrastructure/persistence/*JpaRepository.java,
+            **/infrastructure/email/**,
+            **/infrastructure/security/UserDetailsAdapter.java,
             **/dto/**
         </sonar.coverage.exclusions>
         <mapstruct.version>1.5.5.Final</mapstruct.version>

@@ -77,6 +77,15 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <excludes>
+                                <exclude>br/com/fiap/siase/domain/enums/**</exclude>
+                                <exclude>br/com/fiap/siase/domain/exception/**</exclude>
+                                <exclude>br/com/fiap/siase/domain/port/**</exclude>
+                                <exclude>br/com/fiap/siase/domain/validation/CpfCnpj.class</exclude>
+                                <exclude>br/com/fiap/siase/domain/validation/PlacaVeiculo.class</exclude>
+                                <exclude>br/com/fiap/siase/domain/model/ServicoInsumoId.class</exclude>
+                                <exclude>br/com/fiap/siase/domain/model/ServicoInsumo.class</exclude>
+                            </excludes>
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>

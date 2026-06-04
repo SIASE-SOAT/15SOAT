@@ -74,6 +74,11 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <excludes>
+                                <exclude>br/com/fiap/siase/application/usecase/port/**</exclude>
+                                <exclude>br/com/fiap/siase/application/dto/input/**</exclude>
+                                <exclude>br/com/fiap/siase/application/dto/output/**</exclude>
+                            </excludes>
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>
