@@ -74,7 +74,6 @@ PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, 
 ├── siase-domain/                   # Entidades POJO, enums, ports, validacoes
 ├── siase-application/              # Use cases, DTOs, port interfaces
 ├── siase-infrastructure/           # JPA entities, mappers MapStruct, controllers, security
-├── src/                            # Codigo legado da Fase 1 (preservado como referencia)
 ├── frontend/                       # Frontend Angular
 ├── k8s/                            # (proxima fase)
 ├── infra/                          # (proxima fase)
@@ -87,8 +86,6 @@ PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, 
 ```
 
 **Regra de dependencia:** `infrastructure → application → domain` (seta sempre aponta para dentro). O compilador impede violacoes de arquitetura.
-
-> A arquitetura original (Fase 1) era MVC em camadas. O codigo legado esta preservado em `src/` como referencia. O novo codigo nos modulos `siase-*` implementa Clean Architecture com inversao de dependencia.
 
 ---
 
