@@ -1,34 +1,49 @@
-<h2 mat-dialog-title>Novo Pedido de Compra</h2>
+<div mat-dialog-title>
+  <div class="dialog-header">
+    <div class="header-icon">
+      <mat-icon>shopping_cart</mat-icon>
+    </div>
+    <div class="header-text">
+      <h2>Novo Pedido de Compra</h2>
+      <p>Solicite reposição de peças e insumos</p>
+    </div>
+  </div>
+</div>
 
 <mat-dialog-content>
-  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[420px] pt-2">
+  <form [formGroup]="form" novalidate class="form-body">
 
-    <mat-form-field>
-      <mat-label>Peça</mat-label>
+    <mat-form-field appearance="outline">
+      <mat-label>Peça / Insumo</mat-label>
       <mat-select formControlName="pecaId">
         @for (p of pecas(); track p.id) {
           <mat-option [value]="p.id">
-            {{ p.codigo }} — {{ p.nome }}
-            <span class="text-xs text-gray-500">(estoque: {{ p.quantidadeEstoque }} {{ p.unidadeMedida }})</span>
+            <div class="peca-option">
+              <span class="peca-nome">{{ p.nome }}</span>
+              <span class="peca-meta">{{ p.codigo }} · Estoque: {{ p.quantidadeEstoque }} {{ p.unidadeMedida }}</span>
+            </div>
           </mat-option>
         }
       </mat-select>
+      <mat-icon matPrefix>inventory_2</mat-icon>
       @if (form.controls.pecaId.hasError('required') && form.controls.pecaId.touched) {
-        <mat-error>Peça obrigatória</mat-error>
+        <mat-error>Selecione uma peça</mat-error>
       }
     </mat-form-field>
 
-    <mat-form-field>
+    <mat-form-field appearance="outline">
       <mat-label>Quantidade solicitada</mat-label>
-      <input matInput type="number" formControlName="quantidadeSolicitada" />
+      <input matInput type="number" formControlName="quantidadeSolicitada" min="1" />
+      <mat-icon matPrefix>numbers</mat-icon>
       @if (form.controls.quantidadeSolicitada.invalid && form.controls.quantidadeSolicitada.touched) {
         <mat-error>Quantidade deve ser maior que zero</mat-error>
       }
     </mat-form-field>
 
-    <mat-form-field>
+    <mat-form-field appearance="outline">
       <mat-label>Observações</mat-label>
-      <textarea matInput formControlName="observacoes" rows="2"></textarea>
+      <textarea matInput formControlName="observacoes" rows="3" placeholder="Urgência, fornecedor preferido..."></textarea>
+      <mat-icon matPrefix>notes</mat-icon>
       <mat-hint>Opcional</mat-hint>
     </mat-form-field>
 
@@ -37,5 +52,8 @@
 
 <mat-dialog-actions align="end">
   <button mat-button (click)="dialogRef.close()">Cancelar</button>
-  <button mat-flat-button (click)="submit()">Solicitar</button>
+  <button mat-flat-button color="primary" (click)="submit()">
+    <mat-icon>add_shopping_cart</mat-icon>
+    Solicitar
+  </button>
 </mat-dialog-actions>

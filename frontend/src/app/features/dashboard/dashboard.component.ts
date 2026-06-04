@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,11 +30,27 @@ export class DashboardComponent implements OnInit {
 
   protected readonly loading = signal(true);
   protected readonly statusCards = signal<CardInfo[]>([]);
+  protected readonly ordens = signal<OrdemDeServicoResponse[]>([]);
   protected readonly pecasCriticas = signal<PecaResponse[]>([]);
   protected readonly tempoMedioHoras = signal(0);
   protected readonly tempoMedioMinutosRestantes = signal(0);
   protected readonly tempoMedioSegundos = signal(0);
   protected readonly tempoMedioMenorQueUmMinuto = signal(false);
+  protected readonly termoBusca = signal('');
+
+  private readonly statusesAtivos: StatusOS[] = [
+    'RECEBIDA', 'EM_DIAGNOSTICO', 'AGUARDANDO_APROVACAO', 'APROVADO', 'EM_EXECUCAO',
+  ];
+
+  protected readonly totalEmAndamento = computed(() =>
+    this.statusCards().filter(c => this.statusesAtivos.includes(c.status)).reduce((s, c) => s + c.count, 0)
+  );
+
+  protected readonly resultadosBusca = computed(() => {
+    const termo = this.termoBusca().trim();
+    if (!termo) return [];
+    return this.ordens().filter(o => o.numero.includes(termo)).slice(0, 5);
+  });
 
   private readonly iconColorMap: Record<StatusOS, string> = {
     RECEBIDA:             '#6b7280',
@@ -58,12 +74,27 @@ export class DashboardComponent implements OnInit {
     CANCELADA:            '#fee2e2',
   };
 
+  private readonly accentColorMap: Record<StatusOS, string> = {
+    RECEBIDA:             '#6b7280',
+    EM_DIAGNOSTICO:       '#a78bfa',
+    AGUARDANDO_APROVACAO: '#fbbf24',
+    APROVADO:             '#34d399',
+    EM_EXECUCAO:          '#06b6d4',
+    FINALIZADA:           '#22d3ee',
+    ENTREGUE:             '#10b981',
+    CANCELADA:            '#f87171',
+  };
+
   protected iconColor(status: StatusOS): string {
     return this.iconColorMap[status];
   }
 
   protected iconBg(status: StatusOS): string {
     return this.iconBgColorMap[status] ?? '#f3f4f6';
+  }
+
+  protected accentColor(status: StatusOS): string {
+    return this.accentColorMap[status] ?? '#6b7280';
   }
 
   private readonly statusConfig: Record<StatusOS, { label: string; icon: string; color: string }> = {
@@ -88,6 +119,7 @@ export class DashboardComponent implements OnInit {
 
     this.osService.listar().subscribe({
       next: (ordens) => {
+        this.ordens.set(ordens);
         this.calcularCards(ordens);
         finalizar();
       },

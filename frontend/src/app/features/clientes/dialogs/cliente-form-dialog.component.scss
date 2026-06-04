@@ -1,0 +1,36 @@
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .header-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(6, 182, 212, 0.12);
+    display: flex; align-items: center; justify-content: center;
+    color: #06b6d4; flex-shrink: 0;
+  }
+
+  .header-text {
+    h2 { margin: 0; font-size: 1.2rem; font-weight: 600; color: #e2e8f0; }
+    p  { margin: 0; font-size: 0.8rem; color: #94a3b8; }
+  }
+}
+
+mat-dialog-content { padding: 0 24px !important; }
+
+.form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 0 8px;
+}
+
+.row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+mat-form-field { width: 100%; }
+
+mat-dialog-actions { padding: 8px 24px 20px !important; gap: 8px; }

@@ -10,35 +10,73 @@
   </div>
 } @else {
 
-  <!-- Tempo médio de execução -->
-  <div class="tempo-card">
-    <div class="tempo-icon">
-      <mat-icon>timer</mat-icon>
+  <!-- Métricas do topo -->
+  <div class="metrics-row">
+    <div class="metric-card metric-card--cyan">
+      <div>
+        <p class="metric-label">Tempo médio de execução</p>
+        @if (tempoMedioMenorQueUmMinuto()) {
+          <p class="metric-value">{{ tempoMedioSegundos() }}s</p>
+        } @else {
+          <p class="metric-value">{{ tempoMedioHoras() }}h {{ tempoMedioMinutosRestantes() }}min</p>
+        }
+      </div>
     </div>
-    <div>
-      <p class="tempo-label">Tempo médio de execução dos serviços</p>
-      @if (tempoMedioMenorQueUmMinuto()) {
-        <p class="tempo-value">{{ tempoMedioSegundos() }}s</p>
-      } @else {
-        <p class="tempo-value">{{ tempoMedioHoras() }}h {{ tempoMedioMinutosRestantes() }}min</p>
-      }
+
+    <div class="metric-card metric-card--neutral">
+      <div>
+        <p class="metric-label">Em andamento</p>
+        <p class="metric-value">{{ totalEmAndamento() }} <span class="metric-unit">ordens</span></p>
+      </div>
     </div>
   </div>
 
   <!-- Cards de OS por status -->
+  <p class="section-label">Ordens por status</p>
   <div class="status-grid">
     @for (card of statusCards(); track card.status) {
       <a
         class="status-card"
         [routerLink]="['/ordens']"
         [queryParams]="{ status: card.status }"
+        [style.--accent]="accentColor(card.status)"
       >
-        <div class="status-icon" [style.background-color]="iconBg(card.status)">
-          <mat-icon [style.color]="iconColor(card.status)">{{ card.icon }}</mat-icon>
-        </div>
         <span class="status-count">{{ card.count }}</span>
         <span class="status-label">{{ card.label }}</span>
       </a>
+    }
+  </div>
+
+  <!-- Busca de OS -->
+  <div class="search-section">
+    <p class="section-label">Buscar Ordem de Serviço</p>
+    <div class="search-wrap">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Buscar por nº da OS..."
+        [value]="termoBusca()"
+        (input)="termoBusca.set($any($event.target).value)"
+      />
+    </div>
+
+    @if (resultadosBusca().length > 0) {
+      <div class="search-results">
+        @for (os of resultadosBusca(); track os.id) {
+          <a class="result-row" [routerLink]="['/ordens', os.id]">
+            <div class="result-info">
+              <span class="result-numero">OS #{{ os.numero }}</span>
+              <span class="result-veiculo">{{ os.veiculoModelo }} · {{ os.veiculoPlaca }}</span>
+            </div>
+            <span
+              class="result-badge"
+              [style.color]="accentColor(os.status)"
+              [style.background-color]="accentColor(os.status) + '26'"
+            >{{ os.statusDescricao }}</span>
+          </a>
+        }
+      </div>
     }
   </div>
 

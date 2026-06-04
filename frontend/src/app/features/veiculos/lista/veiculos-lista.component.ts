@@ -38,7 +38,7 @@ export class VeiculosListaComponent implements OnInit {
   }
 
   protected abrirNovoVeiculo() {
-    this.dialog.open(VeiculoFormDialogComponent, { width: '520px', data: {} })
+    this.dialog.open(VeiculoFormDialogComponent, { width: '620px', maxWidth: '95vw', data: {} })
       .afterClosed().subscribe(result => {
         if (!result) return;
         this.service.criar(result).subscribe({
@@ -49,7 +49,7 @@ export class VeiculosListaComponent implements OnInit {
   }
 
   protected editarVeiculo(v: VeiculoResponse) {
-    this.dialog.open(VeiculoFormDialogComponent, { width: '520px', data: { veiculo: v } })
+    this.dialog.open(VeiculoFormDialogComponent, { width: '620px', maxWidth: '95vw', data: { veiculo: v } })
       .afterClosed().subscribe(result => {
         if (!result) return;
         this.service.atualizar(v.id, result).subscribe({

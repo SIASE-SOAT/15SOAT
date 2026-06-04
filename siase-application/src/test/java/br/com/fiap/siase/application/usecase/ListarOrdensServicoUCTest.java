@@ -55,15 +55,15 @@ class ListarOrdensServicoUCTest {
     }
 
     @Test
-    @DisplayName("Sem filtro deve usar findAllAtivasOrdered excluindo FINALIZADA e ENTREGUE")
-    void semFiltroDeveUsarFindAllAtivasOrdered() {
-        when(ordemServicoRepository.findAllAtivasOrdered()).thenReturn(List.of(osAtiva));
+    @DisplayName("Sem filtro deve usar findAll retornando todas as OS")
+    void semFiltroDeveUsarFindAll() {
+        when(ordemServicoRepository.findAll()).thenReturn(List.of(osAtiva));
 
         List<OrdemDeServicoResponse> resultado = useCase.executar(null);
 
         assertThat(resultado).hasSize(1);
         assertThat(resultado.get(0).status()).isEqualTo(StatusOS.EM_EXECUCAO.name());
-        verify(ordemServicoRepository).findAllAtivasOrdered();
+        verify(ordemServicoRepository).findAll();
         verifyNoMoreInteractions(ordemServicoRepository);
     }
 
@@ -80,14 +80,14 @@ class ListarOrdensServicoUCTest {
     }
 
     @Test
-    @DisplayName("Sem filtro retorna lista vazia quando nao ha OS ativas")
+    @DisplayName("Sem filtro retorna lista vazia quando nao ha OS")
     void semFiltroRetornaListaVazia() {
-        when(ordemServicoRepository.findAllAtivasOrdered()).thenReturn(List.of());
+        when(ordemServicoRepository.findAll()).thenReturn(List.of());
 
         List<OrdemDeServicoResponse> resultado = useCase.executar(null);
 
         assertThat(resultado).isEmpty();
-        verify(ordemServicoRepository).findAllAtivasOrdered();
+        verify(ordemServicoRepository).findAll();
     }
 
     @Test

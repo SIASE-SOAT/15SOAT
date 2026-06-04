@@ -46,7 +46,7 @@ export class ServicosListaComponent implements OnInit {
   }
 
   protected abrirNovoServico() {
-    this.dialog.open(ServicoFormDialogComponent, { width: '480px', data: {} })
+    this.dialog.open(ServicoFormDialogComponent, { width: '580px', maxWidth: '95vw', data: {} })
       .afterClosed().subscribe(result => {
         if (!result) return;
         this.service.criar(result).subscribe({
@@ -57,7 +57,7 @@ export class ServicosListaComponent implements OnInit {
   }
 
   protected editarServico(s: ServicoResponse) {
-    this.dialog.open(ServicoFormDialogComponent, { width: '480px', data: { servico: s } })
+    this.dialog.open(ServicoFormDialogComponent, { width: '580px', maxWidth: '95vw', data: { servico: s } })
       .afterClosed().subscribe(result => {
         if (!result) return;
         this.service.atualizar(s.id, result).subscribe({

@@ -1,55 +1,51 @@
 <div class="login-page">
-  <div class="login-card">
 
-    <!-- Header com logo -->
-    <div class="login-header">
-      <div class="brand-icon">
-        <mat-icon>build_circle</mat-icon>
+  <!-- Painel esquerdo: imagem -->
+  <div class="login-image-panel">
+    <img src="assets/login-bg.jpg" alt="Oficina mecânica" />
+  </div>
+
+  <!-- Painel direito: formulário -->
+  <div class="login-form-panel">
+    <div class="login-card">
+
+      <!-- Brand -->
+      <div class="brand">
+        <div class="brand-logo">
+          <mat-icon>build_circle</mat-icon>
+        </div>
+        <h1 class="brand-name">SIASE</h1>
+        <p class="brand-sub">Sistema de Gestão da Oficina Mecânica</p>
       </div>
-      <p class="brand-name">SIASE</p>
-      <p class="brand-sub">Oficina Mecânica</p>
-    </div>
 
-    <!-- Formulário -->
-    <div class="login-body">
-      <p class="login-title">Acesse sua conta</p>
+      <!-- Form -->
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="form">
 
-      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-
-        <div class="field-block">
-          <mat-form-field appearance="outline">
-            <mat-label>Usuário</mat-label>
-            <mat-icon matPrefix>person</mat-icon>
-            <input matInput formControlName="username" autocomplete="username" />
-            @if (form.controls.username.hasError('required') && form.controls.username.touched) {
-              <mat-error>Usuário obrigatório</mat-error>
-            }
-          </mat-form-field>
+        <div class="input-wrap" [class.input-error]="form.controls.username.invalid && form.controls.username.touched">
+          <span class="input-icon"><mat-icon>person</mat-icon></span>
+          <span class="input-sep"></span>
+          <input
+            class="input-field"
+            type="text"
+            placeholder="Usuário"
+            formControlName="username"
+            autocomplete="username"
+          />
         </div>
 
-        <div class="field-block">
-          <mat-form-field appearance="outline">
-            <mat-label>Senha</mat-label>
-            <mat-icon matPrefix>lock</mat-icon>
-            <input
-              matInput
-              [type]="showPassword() ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="current-password"
-            />
-            <button
-              matSuffix
-              mat-icon-button
-              type="button"
-              [attr.aria-label]="showPassword() ? 'Ocultar senha' : 'Mostrar senha'"
-              (click)="showPassword.update(v => !v)"
-            >
-              <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-            </button>
-            @if (form.controls.password.hasError('required') && form.controls.password.touched) {
-              <mat-error>Senha obrigatória</mat-error>
-            }
-          </mat-form-field>
+        <div class="input-wrap" [class.input-error]="form.controls.password.invalid && form.controls.password.touched">
+          <span class="input-icon"><mat-icon>lock</mat-icon></span>
+          <span class="input-sep"></span>
+          <input
+            class="input-field"
+            [type]="showPassword() ? 'text' : 'password'"
+            placeholder="Senha"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+          <button type="button" class="toggle-pw" (click)="showPassword.update(v => !v)" tabindex="-1">
+            <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
         </div>
 
         @if (error()) {
@@ -59,27 +55,19 @@
           </div>
         }
 
-        <button
-          mat-flat-button
-          type="submit"
-          class="submit-btn"
-          [disabled]="loading()"
-        >
+        <button type="submit" class="login-btn" [disabled]="loading()">
           @if (loading()) {
             <mat-spinner diameter="20" />
-          } @else {
-            <mat-icon>login</mat-icon>
           }
-          Entrar
+          LOGIN
         </button>
 
       </form>
-    </div>
 
-    <!-- Footer -->
-    <div class="login-footer">
-      SIASE &copy; 2025 &mdash; Sistema de Gestão da Oficina Mecânica
-    </div>
+      <p class="login-footer">SIASE &copy; 2026</p>
 
+    </div>
   </div>
+
+
 </div>

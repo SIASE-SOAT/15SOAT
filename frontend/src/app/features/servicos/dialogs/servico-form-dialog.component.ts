@@ -4,13 +4,15 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { ServicoRequest, ServicoResponse } from '../../../core/models/servico.model';
 
 @Component({
   selector: 'app-servico-form-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule],
   templateUrl: './servico-form-dialog.component.html',
+  styleUrl: './servico-form-dialog.component.scss',
 })
 export class ServicoFormDialogComponent {
   private readonly fb = inject(FormBuilder);

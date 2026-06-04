@@ -43,7 +43,7 @@ export class ClientesListaComponent implements OnInit {
   }
 
   protected abrirNovoCliente() {
-    this.dialog.open(ClienteFormDialogComponent, { width: '500px', data: {} })
+    this.dialog.open(ClienteFormDialogComponent, { width: '620px', maxWidth: '95vw', data: {} })
       .afterClosed().subscribe(result => {
         if (!result) return;
         this.service.criar(result).subscribe({
@@ -54,7 +54,7 @@ export class ClientesListaComponent implements OnInit {
   }
 
   protected editarCliente(c: ClienteResponse) {
-    this.dialog.open(ClienteFormDialogComponent, { width: '500px', data: { cliente: c } })
+    this.dialog.open(ClienteFormDialogComponent, { width: '620px', maxWidth: '95vw', data: { cliente: c } })
       .afterClosed().subscribe(result => {
         if (!result) return;
         this.service.atualizar(c.id, result).subscribe({

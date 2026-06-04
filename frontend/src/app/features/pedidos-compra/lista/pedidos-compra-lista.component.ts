@@ -39,7 +39,7 @@ export class PedidosCompraListaComponent implements OnInit {
   }
 
   protected abrirNovoPedido() {
-    this.dialog.open(PedidoCompraFormDialogComponent, { width: '480px', data: {} })
+    this.dialog.open(PedidoCompraFormDialogComponent, { width: '560px', maxWidth: '95vw', data: {} })
       .afterClosed().subscribe(result => {
         if (!result) return;
         this.service.criar(result).subscribe({
