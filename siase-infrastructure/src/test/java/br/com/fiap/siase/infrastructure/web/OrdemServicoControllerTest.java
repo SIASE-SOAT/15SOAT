@@ -451,6 +451,20 @@ class OrdemServicoControllerTest {
         }
 
         @Test
+        @DisplayName("deve retornar 404 quando OS ou serviço não encontrado")
+        void deveRetornar404() throws Exception {
+            UUID osId = UUID.randomUUID();
+            ItemServicoRequest req = new ItemServicoRequest(UUID.randomUUID(), null);
+            when(adicionarServicoUC.executar(eq(osId), any()))
+                    .thenThrow(new ResourceNotFoundException("Serviço não encontrado"));
+
+            mockMvc.perform(post("/ordens/{id}/items-servico", osId)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
         @DisplayName("deve retornar 422 quando serviço já adicionado")
         void deveRetornar422() throws Exception {
             UUID osId = UUID.randomUUID();
@@ -482,6 +496,18 @@ class OrdemServicoControllerTest {
             mockMvc.perform(get("/ordens/preparar-abertura").param("documento", "12345678901"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.cliente.nome").value("João Silva"));
+        }
+
+        @Test
+        @DisplayName("deve retornar 422 quando veículo pertence a outro cliente")
+        void deveRetornar422() throws Exception {
+            when(prepararAberturaOSUC.executar(eq("12345678901"), eq("ABC1234")))
+                    .thenThrow(new BusinessException("Veículo pertence a outro cliente"));
+
+            mockMvc.perform(get("/ordens/preparar-abertura")
+                            .param("documento", "12345678901")
+                            .param("placa", "ABC1234"))
+                    .andExpect(status().isUnprocessableEntity());
         }
 
         @Test

@@ -19,7 +19,7 @@ public class ListarOrdensServicoUC implements ListarOrdensServicoUCPort {
     public List<OrdemDeServicoResponse> executar(StatusOS status) {
         var ordens = status != null
                 ? ordemServicoRepository.findByStatus(status)
-                : ordemServicoRepository.findAll();
+                : ordemServicoRepository.findAllAtivasOrdered();
         return ordens.stream()
                 .map(OrdemDeServicoResponse::from)
                 .toList();

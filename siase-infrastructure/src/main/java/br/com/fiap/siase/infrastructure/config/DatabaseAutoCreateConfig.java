@@ -69,7 +69,8 @@ public class DatabaseAutoCreateConfig {
             check.setString(1, dbName);
 
             if (!check.executeQuery().next()) {
-               
+                // Safe: dbName and user validated by SAFE_IDENTIFIER regex above (alphanumeric + underscore + hyphen only)
+                // CREATE DATABASE does not support PreparedStatement parameters in PostgreSQL
                 conn.createStatement().execute(
                         "CREATE DATABASE \"" + dbName + "\" OWNER \"" + user + "\"");
                 log.info("[DatabaseAutoCreate] Banco '{}' criado com sucesso.", dbName);

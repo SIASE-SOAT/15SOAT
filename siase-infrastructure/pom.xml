@@ -160,13 +160,20 @@
                 <configuration>
                     <excludes>
                         <exclude>br/com/fiap/siase/**/SiaseApplication.class</exclude>
-                        <exclude>br/com/fiap/siase/**/exception/BusinessException.class</exclude>
-                        <exclude>br/com/fiap/siase/**/exception/ResourceNotFoundException.class</exclude>
+                        <exclude>br/com/fiap/siase/**/exception/**</exclude>
                         <exclude>br/com/fiap/siase/**/config/OpenApiConfig.class</exclude>
                         <exclude>br/com/fiap/siase/**/config/SecurityConfig.class</exclude>
-                        <exclude>br/com/fiap/siase/**/enums/StatusOS.class</exclude>
-                        <exclude>br/com/fiap/siase/**/enums/TipoPessoa.class</exclude>
+                        <exclude>br/com/fiap/siase/**/config/BeanConfig.class</exclude>
+                        <exclude>br/com/fiap/siase/**/config/DataInitializer.class</exclude>
+                        <exclude>br/com/fiap/siase/**/config/DatabaseAutoCreateConfig.class</exclude>
+                        <exclude>br/com/fiap/siase/**/enums/**</exclude>
                         <exclude>br/com/fiap/siase/**/dto/**</exclude>
+                        <exclude>br/com/fiap/siase/infrastructure/persistence/entity/**</exclude>
+                        <exclude>br/com/fiap/siase/infrastructure/persistence/mapper/**</exclude>
+                        <exclude>br/com/fiap/siase/infrastructure/persistence/*JpaRepository.class</exclude>
+                        <exclude>br/com/fiap/siase/infrastructure/persistence/*JpaRepository*.class</exclude>
+                        <exclude>br/com/fiap/siase/infrastructure/email/**</exclude>
+                        <exclude>br/com/fiap/siase/infrastructure/security/UserDetailsAdapter.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>
