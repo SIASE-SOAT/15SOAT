@@ -1,188 +1,90 @@
 .page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
+  display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem;
 
-  .header-text h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #111827;
-    margin: 0 0 0.25rem;
-    line-height: 1;
-  }
-
-  .header-text p {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin: 0;
-  }
+  .header-text h1 { font-size: 1.5rem; font-weight: 700; color: #e2e8f0; margin: 0 0 0.25rem; line-height: 1; }
+  .header-text p  { font-size: 0.875rem; color: #94a3b8; margin: 0; }
 }
 
-.loader {
-  display: flex;
-  justify-content: center;
-  padding: 4rem 0;
-}
+.loader     { display: flex; justify-content: center; padding: 4rem 0; }
 
 .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center;
 
-  mat-icon {
-    font-size: 3.5rem;
-    width: 3.5rem;
-    height: 3.5rem;
-    line-height: 3.5rem;
-    color: #d1d5db;
-    margin-bottom: 0.75rem;
-  }
-
-  p { font-size: 0.9375rem; color: #6b7280; margin: 0 0 1rem; }
+  mat-icon { font-size: 3.5rem; width: 3.5rem; height: 3.5rem; line-height: 3.5rem; color: #475569; margin-bottom: 0.75rem; }
+  p        { font-size: 0.9375rem; color: #94a3b8; margin: 0 0 1rem; }
 }
 
-/* ── Filter bar ─────────────────────────────────────── */
 .filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-
+  display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;
   mat-form-field { width: 220px; }
 }
 
-/* ── Stats strip ────────────────────────────────────── */
-.stats-strip {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-  flex-wrap: wrap;
-}
+.stats-strip { display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
 
 .stat-card {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.25rem;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  border-radius: 0.625rem;
-  min-width: 140px;
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.25rem;
+  background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); border-radius: 0.625rem; min-width: 140px;
 
-  mat-icon { color: #3b82f6; font-size: 1.5rem; width: 1.5rem; height: 1.5rem; line-height: 1.5rem; }
-
-  .stat-label {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #2563eb;
-    margin: 0 0 0.125rem;
-  }
-
-  .stat-value { font-size: 1.5rem; font-weight: 700; color: #1e40af; line-height: 1; margin: 0; }
+  mat-icon { color: #06b6d4; font-size: 1.5rem; width: 1.5rem; height: 1.5rem; line-height: 1.5rem; }
+  .stat-label { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #06b6d4; margin: 0 0 0.125rem; }
+  .stat-value { font-size: 1.5rem; font-weight: 700; color: #e2e8f0; line-height: 1; margin: 0; }
 }
 
-/* ── Table ──────────────────────────────────────────── */
 .table-card {
-  background: #fff;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
+  background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(8px);
+  border-radius: 0.75rem; border: 1px solid rgba(71, 85, 105, 0.25); overflow: hidden;
 }
 
 .table-wrap { overflow-x: auto; }
-table { width: 100%; }
+table       { width: 100%; }
 
-tr.mat-mdc-header-row { background-color: #f9fafb; }
+tr.mat-mdc-header-row { background-color: rgba(15, 23, 42, 0.6); }
 
 th.mat-mdc-header-cell {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b7280;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 0.75rem 1rem;
-  white-space: nowrap;
+  font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  color: #94a3b8; border-bottom: 1px solid rgba(71, 85, 105, 0.2); padding: 0.75rem 1rem; white-space: nowrap;
 }
 
 td.mat-mdc-cell {
-  font-size: 0.875rem;
-  color: #374151;
-  border-bottom: 1px solid #f3f4f6;
-  padding: 0.875rem 1rem;
+  font-size: 0.875rem; color: #cbd5e1; border-bottom: 1px solid rgba(71, 85, 105, 0.12); padding: 0.875rem 1rem;
 }
 
 tr.mat-mdc-row:last-child td.mat-mdc-cell { border-bottom: none; }
-tr.mat-mdc-row:hover td.mat-mdc-cell { background-color: #f8faff; }
+tr.mat-mdc-row:hover td.mat-mdc-cell { background-color: rgba(6, 182, 212, 0.04); }
 
-/* ── Cell helpers ───────────────────────────────────── */
 .cell-numero {
-  font-family: monospace;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #2563eb;
-  text-decoration: none;
-
+  font-family: monospace; font-size: 0.9rem; font-weight: 700; color: #06b6d4; text-decoration: none;
   &:hover { text-decoration: underline; }
 }
 
-.cell-bold   { font-weight: 600; color: #111827; }
-.cell-price  { font-weight: 700; color: #15803d; }
-.cell-muted  { color: #9ca3af; }
+.cell-bold   { font-weight: 600; color: #e2e8f0; }
+.cell-price  { font-weight: 700; color: #34d399; }
+.cell-muted  { color: #64748b; }
 
-/* ── Status badges ──────────────────────────────────── */
 .status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.625rem;
-  border-radius: 9999px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  white-space: nowrap;
+  display: inline-flex; align-items: center; padding: 0.2rem 0.625rem; border-radius: 9999px;
+  font-size: 0.6875rem; font-weight: 700; white-space: nowrap;
 
-  &.status-RECEBIDA             { background: #f3f4f6; color: #374151; }
-  &.status-EM_DIAGNOSTICO       { background: #ede9fe; color: #5b21b6; }
-  &.status-AGUARDANDO_APROVACAO { background: #fef3c7; color: #92400e; }
-  &.status-EM_EXECUCAO          { background: #dbeafe; color: #1e40af; }
-  &.status-FINALIZADA           { background: #dcfce7; color: #166534; }
-  &.status-ENTREGUE             { background: #a7f3d0; color: #065f46; }
-  &.status-CANCELADA            { background: #fee2e2; color: #991b1b; }
+  &.status-RECEBIDA             { background: rgba(100, 116, 139, 0.15); color: #94a3b8; }
+  &.status-EM_DIAGNOSTICO       { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+  &.status-AGUARDANDO_APROVACAO { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+  &.status-EM_EXECUCAO          { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+  &.status-FINALIZADA           { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+  &.status-ENTREGUE             { background: rgba(52, 211, 153, 0.2); color: #34d399; }
+  &.status-CANCELADA            { background: rgba(248, 113, 113, 0.15); color: #f87171; }
 }
 
-.exec-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
+.exec-cell { display: flex; flex-direction: column; gap: 0.25rem; }
 
 .exec-badge {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  padding: 0.15rem 0.55rem;
-  border-radius: 9999px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  white-space: nowrap;
+  display: inline-flex; width: fit-content; align-items: center; padding: 0.15rem 0.55rem;
+  border-radius: 9999px; font-size: 0.6875rem; font-weight: 700; white-space: nowrap;
 
-  &.exec-sem-itens    { background: #f3f4f6; color: #6b7280; }
-  &.exec-nao-iniciado { background: #fef3c7; color: #92400e; }
-  &.exec-em-execucao  { background: #dbeafe; color: #1e40af; }
-  &.exec-finalizado   { background: #dcfce7; color: #166534; }
+  &.exec-sem-itens    { background: rgba(100, 116, 139, 0.15); color: #94a3b8; }
+  &.exec-nao-iniciado { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+  &.exec-em-execucao  { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+  &.exec-finalizado   { background: rgba(52, 211, 153, 0.15); color: #34d399; }
 }
 
-.exec-meta {
-  font-size: 0.72rem;
-  color: #9ca3af;
-}
-
-.actions-cell {
-  text-align: right;
-  padding-right: 0.5rem !important;
-}
+.exec-meta { font-size: 0.72rem; color: #64748b; }
+.actions-cell { text-align: right; padding-right: 0.5rem !important; }

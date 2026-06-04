@@ -1,56 +1,74 @@
-<h2 mat-dialog-title>{{ data.veiculo ? 'Editar Veículo' : 'Novo Veículo' }}</h2>
+<div mat-dialog-title>
+  <div class="dialog-header">
+    <div class="header-icon">
+      <mat-icon>directions_car</mat-icon>
+    </div>
+    <div class="header-text">
+      <h2>{{ data.veiculo ? 'Editar Veículo' : 'Novo Veículo' }}</h2>
+      <p>{{ data.veiculo ? 'Atualize os dados do veículo' : 'Preencha os dados para cadastrar o veículo' }}</p>
+    </div>
+  </div>
+</div>
 
 <mat-dialog-content>
-  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[440px] pt-2">
+  <form [formGroup]="form" novalidate class="form-body">
 
-    <mat-form-field>
+    <mat-form-field appearance="outline">
       <mat-label>Cliente proprietário</mat-label>
       <mat-select formControlName="clienteId">
         @for (c of clientes(); track c.id) {
           <mat-option [value]="c.id">{{ c.nome }} — {{ c.documento }}</mat-option>
         }
       </mat-select>
+      <mat-icon matPrefix>person</mat-icon>
       @if (form.controls.clienteId.hasError('required') && form.controls.clienteId.touched) {
         <mat-error>Cliente obrigatório</mat-error>
       }
     </mat-form-field>
 
-    <mat-form-field>
+    <mat-form-field appearance="outline">
       <mat-label>Placa</mat-label>
-      <input matInput formControlName="placa" style="text-transform:uppercase" />
+      <input matInput formControlName="placa" placeholder="ABC-1234" style="text-transform:uppercase" />
+      <mat-icon matPrefix>pin</mat-icon>
       @if (form.controls.placa.hasError('required') && form.controls.placa.touched) {
         <mat-error>Placa obrigatória</mat-error>
       }
     </mat-form-field>
 
-    <div class="grid grid-cols-2 gap-3">
-      <mat-form-field>
+    <div class="row-2">
+      <mat-form-field appearance="outline">
         <mat-label>Marca</mat-label>
-        <input matInput formControlName="marca" />
+        <input matInput formControlName="marca" placeholder="Toyota, Honda, Fiat..." />
+        <mat-icon matPrefix>business</mat-icon>
         @if (form.controls.marca.hasError('required') && form.controls.marca.touched) {
           <mat-error>Obrigatório</mat-error>
         }
       </mat-form-field>
-      <mat-form-field>
+
+      <mat-form-field appearance="outline">
         <mat-label>Modelo</mat-label>
-        <input matInput formControlName="modelo" />
+        <input matInput formControlName="modelo" placeholder="Corolla, Civic, Uno..." />
+        <mat-icon matPrefix>directions_car</mat-icon>
         @if (form.controls.modelo.hasError('required') && form.controls.modelo.touched) {
           <mat-error>Obrigatório</mat-error>
         }
       </mat-form-field>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
-      <mat-form-field>
+    <div class="row-2">
+      <mat-form-field appearance="outline">
         <mat-label>Ano</mat-label>
-        <input matInput type="number" formControlName="ano" />
+        <input matInput type="number" formControlName="ano" [placeholder]="currentYear.toString()" />
+        <mat-icon matPrefix>calendar_today</mat-icon>
         @if (form.controls.ano.invalid && form.controls.ano.touched) {
           <mat-error>Ano inválido</mat-error>
         }
       </mat-form-field>
-      <mat-form-field>
+
+      <mat-form-field appearance="outline">
         <mat-label>Cor</mat-label>
-        <input matInput formControlName="cor" />
+        <input matInput formControlName="cor" placeholder="Branco, Prata, Preto..." />
+        <mat-icon matPrefix>palette</mat-icon>
         <mat-hint>Opcional</mat-hint>
       </mat-form-field>
     </div>
@@ -60,5 +78,8 @@
 
 <mat-dialog-actions align="end">
   <button mat-button (click)="dialogRef.close()">Cancelar</button>
-  <button mat-flat-button (click)="submit()">Salvar</button>
+  <button mat-flat-button color="primary" (click)="submit()">
+    <mat-icon>{{ data.veiculo ? 'save' : 'add' }}</mat-icon>
+    {{ data.veiculo ? 'Salvar alterações' : 'Cadastrar veículo' }}
+  </button>
 </mat-dialog-actions>

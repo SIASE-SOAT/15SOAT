@@ -1,45 +1,66 @@
-<h2 mat-dialog-title>{{ data.cliente ? 'Editar Cliente' : 'Novo Cliente' }}</h2>
+<div mat-dialog-title>
+  <div class="dialog-header">
+    <div class="header-icon">
+      <mat-icon>person_add</mat-icon>
+    </div>
+    <div class="header-text">
+      <h2>{{ data.cliente ? 'Editar Cliente' : 'Novo Cliente' }}</h2>
+      <p>{{ data.cliente ? 'Atualize os dados do cliente' : 'Preencha os dados para cadastrar o cliente' }}</p>
+    </div>
+  </div>
+</div>
 
 <mat-dialog-content>
-  <form [formGroup]="form" novalidate class="flex flex-col gap-3 min-w-[420px] pt-2">
+  <form [formGroup]="form" novalidate class="form-body">
 
-    <mat-form-field>
+    <mat-form-field appearance="outline">
       <mat-label>Nome completo</mat-label>
-      <input matInput formControlName="nome" />
+      <input matInput formControlName="nome" placeholder="Nome do cliente ou razão social" />
+      <mat-icon matPrefix>badge</mat-icon>
       @if (form.controls.nome.hasError('required') && form.controls.nome.touched) {
         <mat-error>Nome obrigatório</mat-error>
       }
     </mat-form-field>
 
-    <mat-form-field>
-      <mat-label>Tipo de pessoa</mat-label>
-      <mat-select formControlName="tipoPessoa">
-        <mat-option value="PF">Pessoa Física (CPF)</mat-option>
-        <mat-option value="PJ">Pessoa Jurídica (CNPJ)</mat-option>
-      </mat-select>
-    </mat-form-field>
+    <div class="row-2">
+      <mat-form-field appearance="outline">
+        <mat-label>Tipo de pessoa</mat-label>
+        <mat-select formControlName="tipoPessoa">
+          <mat-option value="PF">Pessoa Física (CPF)</mat-option>
+          <mat-option value="PJ">Pessoa Jurídica (CNPJ)</mat-option>
+        </mat-select>
+        <mat-icon matPrefix>domain</mat-icon>
+      </mat-form-field>
 
-    <mat-form-field>
-      <mat-label>{{ form.controls.tipoPessoa.value === 'PJ' ? 'CNPJ' : 'CPF' }}</mat-label>
-      <input matInput formControlName="documento" />
-      @if (form.controls.documento.hasError('required') && form.controls.documento.touched) {
-        <mat-error>Documento obrigatório</mat-error>
-      }
-    </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ form.controls.tipoPessoa.value === 'PJ' ? 'CNPJ' : 'CPF' }}</mat-label>
+        <input matInput formControlName="documento" [placeholder]="form.controls.tipoPessoa.value === 'PJ' ? '00.000.000/0001-00' : '000.000.000-00'" />
+        <mat-icon matPrefix>fingerprint</mat-icon>
+        @if (form.controls.documento.hasError('required') && form.controls.documento.touched) {
+          <mat-error>Documento obrigatório</mat-error>
+        }
+      </mat-form-field>
+    </div>
 
-    <mat-form-field>
-      <mat-label>E-mail</mat-label>
-      <input matInput type="email" formControlName="email" />
-    </mat-form-field>
+    <div class="row-2">
+      <mat-form-field appearance="outline">
+        <mat-label>E-mail</mat-label>
+        <input matInput type="email" formControlName="email" placeholder="cliente@email.com" />
+        <mat-icon matPrefix>email</mat-icon>
+      </mat-form-field>
 
-    <mat-form-field>
-      <mat-label>Telefone</mat-label>
-      <input matInput formControlName="telefone" />
-    </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Telefone</mat-label>
+        <input matInput formControlName="telefone" placeholder="(11) 99999-9999" />
+        <mat-icon matPrefix>phone</mat-icon>
+      </mat-form-field>
+    </div>
 
-    <mat-form-field>
+    <mat-form-field appearance="outline">
       <mat-label>Endereço</mat-label>
-      <input matInput formControlName="endereco" />
+      <input matInput formControlName="endereco" placeholder="Rua, número, bairro, cidade" />
+      <mat-icon matPrefix>location_on</mat-icon>
+      <mat-hint>Opcional</mat-hint>
     </mat-form-field>
 
   </form>
@@ -47,5 +68,8 @@
 
 <mat-dialog-actions align="end">
   <button mat-button (click)="dialogRef.close()">Cancelar</button>
-  <button mat-flat-button (click)="submit()">Salvar</button>
+  <button mat-flat-button color="primary" (click)="submit()">
+    <mat-icon>{{ data.cliente ? 'save' : 'person_add' }}</mat-icon>
+    {{ data.cliente ? 'Salvar alterações' : 'Cadastrar cliente' }}
+  </button>
 </mat-dialog-actions>

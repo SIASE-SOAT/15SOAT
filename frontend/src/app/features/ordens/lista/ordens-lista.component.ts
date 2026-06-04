@@ -101,7 +101,7 @@ export class OrdensListaComponent implements OnInit {
   }
 
   protected abrirNovaOS() {
-    this.dialog.open(OsFormDialogComponent, { width: '880px', maxWidth: '95vw', data: {} })
+    this.dialog.open(OsFormDialogComponent, { width: '90vw', maxWidth: '1200px', height: '90vh', maxHeight: '90vh', data: {} })
       .afterClosed().subscribe(result => {
         if (!result) return;
         this.snackBar.open('OS criada com sucesso!', 'Fechar', { duration: 3000 });
