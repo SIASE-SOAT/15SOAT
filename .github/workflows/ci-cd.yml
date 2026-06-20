@@ -141,6 +141,7 @@ jobs:
           terraform apply -auto-approve \
             -var="image_tag=${{ env.IMAGE_TAG }}" \
             -var="github_user=ricardo-okuyama" \
+            -var="ghcr_token=$MY_PAT" \
             -var="db_password=$DB_PASSWORD" \
             -var="jwt_secret=$JWT_SECRET" \
             -var="webhook_token=$WEBHOOK_TOKEN" \

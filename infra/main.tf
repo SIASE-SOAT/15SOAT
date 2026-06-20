@@ -34,6 +34,25 @@ resource "kubernetes_config_map" "siase_config" {
   }
 }
 
+resource "kubernetes_secret" "ghcr_pull_secret" {
+  metadata {
+    name      = "ghcr-pull-secret"
+    namespace = local.namespace
+  }
+  type = "kubernetes.io/dockerconfigjson"
+  data = {
+    ".dockerconfigjson" = jsonencode({
+      auths = {
+        "ghcr.io" = {
+          username = "ediwaldoneto"
+          password = var.ghcr_token
+          auth     = base64encode("ediwaldoneto:${var.ghcr_token}")
+        }
+      }
+    })
+  }
+}
+
 resource "kubernetes_secret" "siase_secret" {
   metadata {
     name      = "siase-secret"
@@ -173,6 +192,9 @@ resource "kubernetes_deployment" "siase_app" {
         labels = { app = "siase-app" }
       }
       spec {
+        image_pull_secrets {
+          name = kubernetes_secret.ghcr_pull_secret.metadata[0].name
+        }
         container {
           name  = "siase-app"
           image = local.app_image

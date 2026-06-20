@@ -44,3 +44,9 @@ variable "kubeconfig_path" {
   type        = string
   default     = "~/.kube/config"
 }
+
+variable "ghcr_token" {
+  description = "PAT com read:packages para pull da imagem no ghcr.io"
+  type        = string
+  sensitive   = true
+}
