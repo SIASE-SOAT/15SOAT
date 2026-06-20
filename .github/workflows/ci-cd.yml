@@ -137,7 +137,7 @@ jobs:
           kubectl apply -f k8s/namespace.yaml
 
           cd infra
-          terraform init -input=false
+          terraform init -input=false -upgrade
           terraform apply -auto-approve \
             -var="image_tag=${{ env.IMAGE_TAG }}" \
             -var="github_user=ricardo-okuyama" \
