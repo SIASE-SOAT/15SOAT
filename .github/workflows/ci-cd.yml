@@ -121,16 +121,15 @@ jobs:
           fi
 
           # Atualizar codigo na VPS (repo privado, usa PAT)
-          REPO_URL="https://ediwaldoneto:$MY_PAT@github.com/ricardo-okuyama/15SOAT.git"
           if [ -d "/root/15SOAT/.git" ]; then
             cd /root/15SOAT
-            git remote set-url origin "$REPO_URL"
+            git remote set-url origin "https://ediwaldoneto:$MY_PAT@github.com/ricardo-okuyama/15SOAT.git"
             git fetch origin
             git checkout feat/infra-k8s-cicd
             git pull origin feat/infra-k8s-cicd
           else
             rm -rf /root/15SOAT
-            git clone "$REPO_URL" /root/15SOAT
+            git clone "https://ediwaldoneto:$MY_PAT@github.com/ricardo-okuyama/15SOAT.git" /root/15SOAT
             cd /root/15SOAT && git checkout feat/infra-k8s-cicd
           fi
 
