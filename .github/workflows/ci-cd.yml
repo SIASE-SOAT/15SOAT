@@ -116,7 +116,7 @@ jobs:
               git checkout feat/infra-k8s-cicd
               git pull origin feat/infra-k8s-cicd
             else
-              git clone https://github.com/ricardo-okuyama/15SOAT.git /root/15SOAT
+              git clone https://x-access-token:${GH_TOKEN}@github.com/ricardo-okuyama/15SOAT.git /root/15SOAT
               cd /root/15SOAT && git checkout feat/infra-k8s-cicd
             fi
 
@@ -150,6 +150,7 @@ jobs:
             echo "=== Deploy OK ==="
         env:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
