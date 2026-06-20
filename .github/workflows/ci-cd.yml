@@ -110,15 +110,16 @@ jobs:
             fi
 
             # Atualizar codigo na VPS (repo publico, sem credencial)
-            export GIT_TERMINAL_PROMPT=0
+            git config --global credential.helper ''
+            git config --global url."https://github.com/".insteadOf "git@github.com:"
             if [ -d "/root/15SOAT/.git" ]; then
               cd /root/15SOAT
-              git fetch origin
+              git -c credential.helper= fetch origin
               git checkout feat/infra-k8s-cicd
-              git pull origin feat/infra-k8s-cicd
+              git -c credential.helper= pull origin feat/infra-k8s-cicd
             else
               rm -rf /root/15SOAT
-              git clone https://github.com/ricardo-okuyama/15SOAT.git /root/15SOAT
+              git -c credential.helper= clone https://github.com/ricardo-okuyama/15SOAT.git /root/15SOAT
               cd /root/15SOAT && git checkout feat/infra-k8s-cicd
             fi
 
