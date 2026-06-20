@@ -78,7 +78,7 @@ jobs:
   deploy:
     name: Deploy to K8s (VPS)
     needs: docker-build-push
-    runs-on: [self-hosted, siase-vps]
+    runs-on: ubuntu-latest
     if: github.event_name == 'push'
     env:
       IMAGE_TAG: ${{ needs.docker-build-push.outputs.image_tag }}
@@ -86,49 +86,71 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Garantir cluster Kind existe
-        run: |
-          if ! kind get clusters | grep -q siase; then
-            echo "Cluster nao encontrado. Criando..."
-            kind create cluster --name siase --config k8s/kind-cluster.yaml
-            kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-            kubectl patch deployment metrics-server -n kube-system \
-              --type='json' \
-              -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
-            kubectl rollout status deployment/metrics-server -n kube-system --timeout=120s
-          else
-            echo "Cluster ja existe."
-          fi
+      - name: Deploy na VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          password: ${{ secrets.VPS_PASSWORD }}
+          command_timeout: 600s
+          script: |
+            set -e
 
-      - name: Aplicar namespace
-        run: kubectl apply -f k8s/namespace.yaml
+            # Garantir cluster Kind existe
+            if ! kind get clusters 2>/dev/null | grep -q siase; then
+              echo "=== Criando cluster Kind ==="
+              kind create cluster --name siase --config /root/15SOAT/k8s/kind-cluster.yaml
+              kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+              kubectl patch deployment metrics-server -n kube-system \
+                --type='json' \
+                -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+              kubectl rollout status deployment/metrics-server -n kube-system --timeout=120s
+            else
+              echo "=== Cluster ja existe ==="
+            fi
 
-      - name: Terraform init e apply
-        working-directory: infra
+            # Atualizar codigo na VPS
+            if [ -d "/root/15SOAT" ]; then
+              cd /root/15SOAT
+              git fetch origin
+              git checkout feat/infra-k8s-cicd
+              git pull origin feat/infra-k8s-cicd
+            else
+              git clone https://github.com/ricardo-okuyama/15SOAT.git /root/15SOAT
+              cd /root/15SOAT && git checkout feat/infra-k8s-cicd
+            fi
+
+            cd /root/15SOAT
+
+            # Aplicar namespace
+            kubectl apply -f k8s/namespace.yaml
+
+            # Terraform apply
+            cd infra
+            terraform init -input=false
+            terraform apply -auto-approve \
+              -var="image_tag=$IMAGE_TAG" \
+              -var="github_user=ricardo-okuyama" \
+              -var="db_password=$DB_PASSWORD" \
+              -var="jwt_secret=$JWT_SECRET" \
+              -var="webhook_token=$WEBHOOK_TOKEN" \
+              -var="mecanico_password=$MECANICO_PASSWORD"
+
+            # Aguardar deployments
+            kubectl rollout status deployment/postgres -n siase --timeout=180s
+            kubectl rollout status deployment/siase-app -n siase --timeout=300s
+
+            # Status final
+            kubectl get pods -n siase
+            kubectl get hpa -n siase
+
+            # Smoke test
+            sleep 15
+            curl -f http://localhost:8080/api/actuator/health
+            echo "=== Deploy OK ==="
         env:
-          TF_VAR_image_tag: ${{ env.IMAGE_TAG }}
-          TF_VAR_github_user: ricardo-okuyama
-          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
-          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
-          TF_VAR_webhook_token: ${{ secrets.WEBHOOK_TOKEN }}
-          TF_VAR_mecanico_password: ${{ secrets.MECANICO_PASSWORD }}
-        run: |
-          terraform init
-          terraform apply -auto-approve
-
-      - name: Aguardar Postgres ficar Ready
-        run: kubectl rollout status deployment/postgres -n siase --timeout=180s
-
-      - name: Aguardar App ficar Ready
-        run: kubectl rollout status deployment/siase-app -n siase --timeout=300s
-
-      - name: Verificar pods e HPA
-        run: |
-          kubectl get pods -n siase
-          kubectl get hpa -n siase
-
-      - name: Smoke test — health check
-        run: |
-          sleep 10
-          curl -f http://localhost:8080/api/actuator/health
-          echo "Deploy OK"
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
+          MECANICO_PASSWORD: ${{ secrets.MECANICO_PASSWORD }}
