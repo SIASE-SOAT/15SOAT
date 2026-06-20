@@ -86,12 +86,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Conectar ao Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
       - name: Instalar sshpass
         run: sudo apt-get install -y sshpass
 
       - name: Deploy na VPS via SSH
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_HOST: ${{ secrets.VPS_TAILSCALE_IP }}
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
           MY_PAT: ${{ secrets.MY_PAT }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
