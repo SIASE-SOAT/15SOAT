@@ -86,6 +86,7 @@ resource "kubernetes_deployment" "postgres" {
     name      = "postgres"
     namespace = local.namespace
   }
+  wait_for_rollout = false
   spec {
     replicas = 1
     selector {
@@ -182,6 +183,7 @@ resource "kubernetes_deployment" "siase_app" {
     name      = "siase-app"
     namespace = local.namespace
   }
+  wait_for_rollout = false
   spec {
     replicas = var.app_replicas
     selector {
