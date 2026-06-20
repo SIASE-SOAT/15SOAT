@@ -53,6 +53,7 @@ resource "kubernetes_persistent_volume_claim" "postgres_pvc" {
     name      = "postgres-pvc"
     namespace = local.namespace
   }
+  wait_until_bound = false
   spec {
     access_modes = ["ReadWriteOnce"]
     resources {
