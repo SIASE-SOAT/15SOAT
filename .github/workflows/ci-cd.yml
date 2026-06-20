@@ -93,6 +93,7 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          MY_PAT: ${{ secrets.MY_PAT }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
@@ -114,16 +115,17 @@ jobs:
             echo "=== Cluster ja existe ==="
           fi
 
-          # Atualizar codigo na VPS
-          git config --global credential.helper ''
+          # Atualizar codigo na VPS (repo privado, usa PAT)
+          REPO_URL="https://ediwaldoneto:$MY_PAT@github.com/ricardo-okuyama/15SOAT.git"
           if [ -d "/root/15SOAT/.git" ]; then
             cd /root/15SOAT
-            git -c credential.helper= fetch origin
+            git remote set-url origin "$REPO_URL"
+            git fetch origin
             git checkout feat/infra-k8s-cicd
-            git -c credential.helper= pull origin feat/infra-k8s-cicd
+            git pull origin feat/infra-k8s-cicd
           else
             rm -rf /root/15SOAT
-            git -c credential.helper= clone https://github.com/ricardo-okuyama/15SOAT.git /root/15SOAT
+            git clone "$REPO_URL" /root/15SOAT
             cd /root/15SOAT && git checkout feat/infra-k8s-cicd
           fi
 
