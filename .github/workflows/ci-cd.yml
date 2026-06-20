@@ -86,74 +86,66 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Instalar sshpass
+        run: sudo apt-get install -y sshpass
+
       - name: Deploy na VPS via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: root
-          password: ${{ secrets.VPS_PASSWORD }}
-          command_timeout: 600s
-          script: |
-            set -e
-
-            # Garantir cluster Kind existe
-            if ! kind get clusters 2>/dev/null | grep -q siase; then
-              echo "=== Criando cluster Kind ==="
-              kind create cluster --name siase --config /root/15SOAT/k8s/kind-cluster.yaml
-              kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-              kubectl patch deployment metrics-server -n kube-system \
-                --type='json' \
-                -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
-              kubectl rollout status deployment/metrics-server -n kube-system --timeout=120s
-            else
-              echo "=== Cluster ja existe ==="
-            fi
-
-            # Atualizar codigo na VPS (repo publico, sem credencial)
-            git config --global credential.helper ''
-            git config --global url."https://github.com/".insteadOf "git@github.com:"
-            if [ -d "/root/15SOAT/.git" ]; then
-              cd /root/15SOAT
-              git -c credential.helper= fetch origin
-              git checkout feat/infra-k8s-cicd
-              git -c credential.helper= pull origin feat/infra-k8s-cicd
-            else
-              rm -rf /root/15SOAT
-              git -c credential.helper= clone https://github.com/ricardo-okuyama/15SOAT.git /root/15SOAT
-              cd /root/15SOAT && git checkout feat/infra-k8s-cicd
-            fi
-
-            cd /root/15SOAT
-
-            # Aplicar namespace
-            kubectl apply -f k8s/namespace.yaml
-
-            # Terraform apply
-            cd infra
-            terraform init -input=false
-            terraform apply -auto-approve \
-              -var="image_tag=$IMAGE_TAG" \
-              -var="github_user=ricardo-okuyama" \
-              -var="db_password=$DB_PASSWORD" \
-              -var="jwt_secret=$JWT_SECRET" \
-              -var="webhook_token=$WEBHOOK_TOKEN" \
-              -var="mecanico_password=$MECANICO_PASSWORD"
-
-            # Aguardar deployments
-            kubectl rollout status deployment/postgres -n siase --timeout=180s
-            kubectl rollout status deployment/siase-app -n siase --timeout=300s
-
-            # Status final
-            kubectl get pods -n siase
-            kubectl get hpa -n siase
-
-            # Smoke test
-            sleep 15
-            curl -f http://localhost:8080/api/actuator/health
-            echo "=== Deploy OK ==="
         env:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
           MECANICO_PASSWORD: ${{ secrets.MECANICO_PASSWORD }}
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 root@$VPS_HOST bash -s << ENDSSH
+          set -e
+
+          # Garantir cluster Kind existe
+          if ! kind get clusters 2>/dev/null | grep -q siase; then
+            echo "=== Criando cluster Kind ==="
+            kind create cluster --name siase --config /root/15SOAT/k8s/kind-cluster.yaml
+            kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+            kubectl patch deployment metrics-server -n kube-system \
+              --type='json' \
+              -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+            kubectl rollout status deployment/metrics-server -n kube-system --timeout=120s
+          else
+            echo "=== Cluster ja existe ==="
+          fi
+
+          # Atualizar codigo na VPS
+          git config --global credential.helper ''
+          if [ -d "/root/15SOAT/.git" ]; then
+            cd /root/15SOAT
+            git -c credential.helper= fetch origin
+            git checkout feat/infra-k8s-cicd
+            git -c credential.helper= pull origin feat/infra-k8s-cicd
+          else
+            rm -rf /root/15SOAT
+            git -c credential.helper= clone https://github.com/ricardo-okuyama/15SOAT.git /root/15SOAT
+            cd /root/15SOAT && git checkout feat/infra-k8s-cicd
+          fi
+
+          cd /root/15SOAT
+          kubectl apply -f k8s/namespace.yaml
+
+          cd infra
+          terraform init -input=false
+          terraform apply -auto-approve \
+            -var="image_tag=${{ env.IMAGE_TAG }}" \
+            -var="github_user=ricardo-okuyama" \
+            -var="db_password=$DB_PASSWORD" \
+            -var="jwt_secret=$JWT_SECRET" \
+            -var="webhook_token=$WEBHOOK_TOKEN" \
+            -var="mecanico_password=$MECANICO_PASSWORD"
+
+          kubectl rollout status deployment/postgres -n siase --timeout=180s
+          kubectl rollout status deployment/siase-app -n siase --timeout=300s
+          kubectl get pods -n siase
+          kubectl get hpa -n siase
+
+          sleep 15
+          curl -f http://localhost:8080/api/actuator/health
+          echo "=== Deploy OK ==="
+          ENDSSH
