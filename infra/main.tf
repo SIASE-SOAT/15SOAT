@@ -264,9 +264,19 @@ resource "kubernetes_horizontal_pod_autoscaler_v2" "siase_app_hpa" {
     behavior {
       scale_up {
         stabilization_window_seconds = 60
+        policy {
+          type           = "Pods"
+          value          = 1
+          period_seconds = 60
+        }
       }
       scale_down {
         stabilization_window_seconds = 300
+        policy {
+          type           = "Pods"
+          value          = 1
+          period_seconds = 60
+        }
       }
     }
   }
