@@ -1,0 +1,8 @@
+# Copie para terraform.tfvars e preencha com valores reais.
+# NUNCA commite terraform.tfvars — está no .gitignore.
+image_tag         = "abc1234"
+github_user       = "ricardo-okuyama"
+db_password       = "senha-segura-aqui"
+jwt_secret        = "segredo-jwt-em-base64"
+webhook_token     = "token-webhook-aqui"
+mecanico_password = "senha-mecanico"

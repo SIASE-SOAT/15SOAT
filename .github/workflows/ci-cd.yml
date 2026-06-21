@@ -1,0 +1,158 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ricardo-okuyama/siase-app
+
+jobs:
+  # ── 1. BUILD & TEST ────────────────────────────────────────────────────────
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build and run tests
+        run: mvn clean verify -B -pl siase-infrastructure -am
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: '**/target/surefire-reports/'
+
+  # ── 2. DOCKER BUILD & PUSH ─────────────────────────────────────────────────
+  docker-build-push:
+    name: Docker Build & Push
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image tag (git SHA curto)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # ── 3. DEPLOY ──────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to K8s (VPS)
+    needs: docker-build-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    env:
+      IMAGE_TAG: ${{ needs.docker-build-push.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Conectar ao Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Instalar sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: Deploy na VPS via SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_TAILSCALE_IP }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          MY_PAT: ${{ secrets.MY_PAT }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
+          MECANICO_PASSWORD: ${{ secrets.MECANICO_PASSWORD }}
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 root@$VPS_HOST bash -s << ENDSSH
+          set -e
+
+          # Garantir cluster Kind existe
+          if ! kind get clusters 2>/dev/null | grep -q siase; then
+            echo "=== Criando cluster Kind ==="
+            kind create cluster --name siase --config /root/15SOAT/k8s/kind-cluster.yaml
+            kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+            kubectl patch deployment metrics-server -n kube-system \
+              --type='json' \
+              -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+            kubectl rollout status deployment/metrics-server -n kube-system --timeout=120s
+          else
+            echo "=== Cluster ja existe ==="
+          fi
+
+          # Atualizar codigo na VPS (repo privado, usa PAT)
+          if [ -d "/root/15SOAT/.git" ]; then
+            cd /root/15SOAT
+            git remote set-url origin "https://ediwaldoneto:$MY_PAT@github.com/ricardo-okuyama/15SOAT.git"
+            git fetch origin
+            git checkout feat/infra-k8s-cicd
+            git pull origin feat/infra-k8s-cicd
+          else
+            rm -rf /root/15SOAT
+            git clone "https://ediwaldoneto:$MY_PAT@github.com/ricardo-okuyama/15SOAT.git" /root/15SOAT
+            cd /root/15SOAT && git checkout feat/infra-k8s-cicd
+          fi
+
+          cd /root/15SOAT
+          kubectl apply -f k8s/namespace.yaml
+
+          cd infra
+          terraform init -input=false -upgrade
+          terraform apply -auto-approve \
+            -var="image_tag=${{ env.IMAGE_TAG }}" \
+            -var="github_user=ricardo-okuyama" \
+            -var="ghcr_token=$MY_PAT" \
+            -var="db_password=$DB_PASSWORD" \
+            -var="jwt_secret=$JWT_SECRET" \
+            -var="webhook_token=$WEBHOOK_TOKEN" \
+            -var="mecanico_password=$MECANICO_PASSWORD"
+
+          kubectl rollout status deployment/postgres -n siase --timeout=180s
+          kubectl rollout status deployment/siase-app -n siase --timeout=300s
+          kubectl get pods -n siase
+          kubectl get hpa -n siase
+
+          sleep 15
+          curl -f http://localhost:8080/api/actuator/health
+          echo "=== Deploy OK ==="
+          ENDSSH

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: siase-app
+  namespace: siase
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: siase-app
+  template:
+    metadata:
+      labels:
+        app: siase-app
+    spec:
+      containers:
+        - name: siase-app
+          image: ghcr.io/GITHUB_USER/siase-app:IMAGE_TAG
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: siase-config
+            - secretRef:
+                name: siase-secret
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "768Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30

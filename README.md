@@ -23,6 +23,9 @@ O SIASE e um sistema de gestao de oficina mecanica que gerencia clientes, veicul
 | Docker / Compose   | —       | Ambiente reproduzivel e isolado para dev e producao                           |
 | MapStruct          | 1.5.x   | Mapeamento entre entidades JPA e POJOs de dominio em tempo de compilacao      |
 | JaCoCo             | 0.8.11  | Cobertura de testes com regra obrigatoria no build (minimo 80%)               |
+| Kubernetes (Kind)  | v1.30   | Orquestracao de containers em cluster local na VPS                            |
+| Terraform          | 1.7+    | Infraestrutura como codigo — gerencia recursos K8s de forma declarativa       |
+| GitHub Actions     | —       | Pipeline CI/CD com build, testes, push de imagem e deploy automatizado        |
 
 ### Por que PostgreSQL?
 
@@ -70,19 +73,37 @@ PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, 
 
 ```
 15SOAT/
-├── pom.xml                        # POM pai (agregador)
-├── siase-domain/                   # Entidades POJO, enums, ports, validacoes
-├── siase-application/              # Use cases, DTOs, port interfaces
-├── siase-infrastructure/           # JPA entities, mappers MapStruct, controllers, security
-├── frontend/                       # Frontend Angular
-├── k8s/                            # (proxima fase)
-├── infra/                          # (proxima fase)
-├── .github/                        # (proxima fase)
-├── Dockerfile                      # Multi-stage multi-modulo + healthcheck
-├── docker-compose.yml              # Dev local (backend + DB)
-├── docker-compose.full.yml         # Stack completa (+ frontend Angular)
-├── docker-compose.sonarqube.yml    # SonarQube para analise estatica
-└── postman/                        # Collection e guia de testes
+├── pom.xml                          # POM pai (agregador)
+├── siase-domain/                    # Entidades POJO, enums, ports, validacoes
+├── siase-application/               # Use cases, DTOs, port interfaces
+├── siase-infrastructure/            # JPA entities, mappers MapStruct, controllers, security
+├── frontend/                        # Frontend Angular
+├── k8s/                             # Manifestos Kubernetes
+│   ├── kind-cluster.yaml            # Configuracao do cluster Kind (2 workers + port mapping)
+│   ├── namespace.yaml               # Namespace siase
+│   ├── configmap.yaml               # Variaveis nao-sensiveis
+│   ├── secret.yaml                  # Template de secrets (valores injetados pelo CI)
+│   ├── postgres-pvc.yaml            # PersistentVolumeClaim do banco (2 Gi)
+│   ├── postgres-deployment.yaml     # Deployment do PostgreSQL 16
+│   ├── postgres-service.yaml        # ClusterIP service do banco
+│   ├── app-deployment.yaml          # Deployment da aplicacao (2 replicas)
+│   ├── app-service.yaml             # NodePort service da aplicacao (porta 30080)
+│   └── hpa.yaml                     # HPA: 2-4 replicas, CPU target 70%
+├── infra/                           # Infraestrutura como Codigo (Terraform)
+│   ├── main.tf                      # Provider kubernetes + todos os recursos K8s
+│   ├── variables.tf                 # Variaveis (image_tag, secrets, replicas)
+│   ├── outputs.tf                   # Outputs (app_image, nodeport, namespace)
+│   └── terraform.tfvars.example     # Exemplo de valores (sem secrets reais)
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml                # Pipeline CI/CD completo (build → test → docker → deploy)
+├── scripts/
+│   └── vps-setup.sh                 # Referencia de setup inicial da VPS
+├── Dockerfile                       # Multi-stage multi-modulo + JVM container flags
+├── docker-compose.yml               # Dev local (backend + DB)
+├── docker-compose.full.yml          # Stack completa (+ frontend Angular)
+├── docker-compose.sonarqube.yml     # SonarQube para analise estatica
+└── postman/                         # Collection e guia de testes
 ```
 
 **Regra de dependencia:** `infrastructure → application → domain` (seta sempre aponta para dentro). O compilador impede violacoes de arquitetura.
@@ -295,15 +316,179 @@ O PDF sera criado automaticamente em `scripts/target/sonar/` (o diretorio e cria
 >
 > Cobertura minima de 80% de linhas configurada como regra obrigatoria do build via JaCoCo. Evidencias de TDD documentadas nos fluxos criticos de OS.
 
+---
+
+## Infraestrutura (Fase 2)
+
+### Arquitetura de Deploy
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                       GitHub Actions                          │
+│                                                              │
+│  push → main   ┌─────────────────┐                           │
+│  ───────────►  │ build-and-test  │  ubuntu-latest             │
+│                │ mvn clean verify│                            │
+│                └────────┬────────┘                            │
+│                         │ ok                                  │
+│                ┌────────▼────────┐                            │
+│                │docker-build-push│  ubuntu-latest             │
+│                │ push → ghcr.io  │                            │
+│                └────────┬────────┘                            │
+│                         │ image_tag (git SHA)                 │
+│                ┌────────▼──────────────────┐                  │
+│                │        deploy             │  ubuntu-latest   │
+│                │ 1. Conecta Tailscale VPN  │                  │
+│                │ 2. SSH via IP privado VPN │                  │
+│                │ 3. terraform apply        │                  │
+│                │ 4. kubectl rollout status │                  │
+│                │ 5. curl /health           │                  │
+│                └───────────────┬───────────┘                  │
+└───────────────────────────────────────────────────────────────┘
+                                 │ Tailscale VPN (tunel privado)
+┌────────────────────────────────▼──────────────────────────────┐
+│              VPS Hostinger — Ubuntu 24.04 · 8 GB · 2 vCPU     │
+│                                                               │
+│   ┌───────────────────────────────────────────────────────┐   │
+│   │              Kind Cluster (K8s v1.30)                  │   │
+│   │   1 control-plane + 2 workers · namespace: siase       │   │
+│   │                                                        │   │
+│   │   ┌──────────────┐    ┌─────────────────────────────┐ │   │
+│   │   │   postgres   │    │         siase-app           │ │   │
+│   │   │  1 replica   │◄───│   2-4 replicas (HPA CPU 70%)│ │   │
+│   │   │  PVC 2Gi     │    │   imagePullSecret: ghcr.io  │ │   │
+│   │   └──────────────┘    └─────────────────────────────┘ │   │
+│   │                                                        │   │
+│   │   metrics-server · NodePort 30080 → VPS:8080          │   │
+│   └───────────────────────────────────────────────────────┘   │
+└───────────────────────────────────────────────────────────────┘
+```
+
+### Deploy em Kubernetes
+
+**Pre-requisitos na VPS:** cluster Kind rodando (ver `scripts/vps-setup.sh`) e Tailscale instalado e conectado.
+
+O deploy e feito automaticamente pelo CI/CD a cada push na `main`. Para aplicar manualmente:
+
+```bash
+# 1. Criar o cluster (primeira vez)
+kind create cluster --name siase --config k8s/kind-cluster.yaml
+
+# 2. Aplicar o namespace
+kubectl apply -f k8s/namespace.yaml
+
+# 3. Provisionar via Terraform
+cd infra
+cp terraform.tfvars.example terraform.tfvars
+# Editar terraform.tfvars com os valores reais
+
+terraform init
+terraform apply
+```
+
+Verificar o deploy:
+
+```bash
+kubectl get pods -n siase
+kubectl get hpa -n siase
+curl http://<IP_DA_VPS>:8080/api/actuator/health
+```
+
+### Provisionamento com Terraform
+
+O Terraform gerencia todos os recursos K8s declarativamente: ConfigMap, Secret, PVC, Deployments (postgres e app), Services e HPA.
+
+```bash
+cd infra
+
+# Inicializar providers
+terraform init
+
+# Ver o plano sem aplicar
+terraform plan \
+  -var="image_tag=abc1234" \
+  -var="db_password=senha" \
+  -var="jwt_secret=segredo" \
+  -var="webhook_token=token" \
+  -var="mecanico_password=senha"
+
+# Aplicar
+terraform apply -auto-approve
+```
+
+**Recursos criados pelo Terraform:**
+
+| Recurso | Tipo | Descricao |
+|---------|------|-----------|
+| `siase-config` | ConfigMap | Variaveis nao-sensiveis do app |
+| `siase-secret` | Secret | Credenciais do banco e tokens |
+| `postgres-pvc` | PVC | Volume persistente do banco (2 Gi) |
+| `postgres` | Deployment | PostgreSQL 16-alpine |
+| `postgres-service` | Service | ClusterIP interno para o banco |
+| `siase-app` | Deployment | Aplicacao Spring Boot (2 replicas) |
+| `app-service` | Service | NodePort 30080 → porta 8080 |
+| `siase-app-hpa` | HPA | Escala de 2 a 4 replicas por CPU |
+
+### Pipeline CI/CD
+
+O arquivo `.github/workflows/ci-cd.yml` executa 3 jobs em sequencia a cada push na `main`:
+
+| Job | Runner | O que faz |
+|-----|--------|-----------|
+| `build-and-test` | ubuntu-latest | `mvn clean verify` — compila e roda todos os testes |
+| `docker-build-push` | ubuntu-latest | Build da imagem e push para `ghcr.io` com tag = git SHA usando `GITHUB_TOKEN` nativo |
+| `deploy` | ubuntu-latest | Conecta via Tailscale VPN, SSH na VPS, `terraform apply`, `kubectl rollout status`, smoke test |
+
+**GitHub Secrets necessarios:**
+
+| Secret | Descricao |
+|--------|-----------|
+| `MY_PAT` | Personal Access Token com `repo` + `read:packages` + `write:packages` — usado para git pull e imagePullSecret |
+| `TAILSCALE_AUTHKEY` | Auth key reutilizavel do Tailscale para o runner entrar na VPN |
+| `VPS_TAILSCALE_IP` | IP privado da VPS na rede Tailscale |
+| `VPS_PASSWORD` | Senha root da VPS para o SSH |
+| `DB_PASSWORD` | Senha do PostgreSQL |
+| `JWT_SECRET` | Chave HMAC para tokens JWT |
+| `WEBHOOK_TOKEN` | Token de autenticacao de webhooks |
+| `MECANICO_PASSWORD` | Senha do usuario padrao seed |
+
+### Escalabilidade Automatica (HPA)
+
+O HPA monitora o consumo de CPU dos pods da aplicacao e escala automaticamente:
+
+- **Minimo:** 2 replicas
+- **Maximo:** 4 replicas
+- **Gatilho:** CPU media acima de 70%
+- **Scale up:** aguarda 60s de estabilizacao
+- **Scale down:** aguarda 300s de estabilizacao
+
+Para simular carga e observar o escalonamento:
+
+```bash
+# Gerar carga
+kubectl run load-generator --image=busybox:1.35 --restart=Never -- \
+  /bin/sh -c "while true; do wget -q -O- http://app-service.siase.svc.cluster.local:8080/api/actuator/health; done"
+
+# Acompanhar replicas em tempo real
+kubectl get hpa -n siase -w
+
+# Parar a carga
+kubectl delete pod load-generator
+```
+
+---
+
 ## Docker
 
 - **Multi-stage build:** estagio de build com Maven + estagio runtime com JRE
 - **Non-root user:** container executa como `appuser`
 - **Healthcheck:** `curl` no endpoint `/api/actuator/health` com Spring Boot Actuator
+- **JVM container-aware:** flags `-XX:+UseContainerSupport` e `-XX:MaxRAMPercentage=75.0` respeitam os limites de memoria do pod K8s
 - **docker-compose:** healthcheck no PostgreSQL com `depends_on` aguardando `service_healthy`
 
 ## Links
 
-- **Swagger UI:** `http://localhost:8080/api/swagger-ui.html`
+- **Swagger UI (local):** `http://localhost:8080/api/swagger-ui.html`
+- **Swagger UI (producao):** `http://<IP_DA_VPS>:8080/api/swagger-ui.html`
 - **Postman Collection:** `postman/SIASE.postman_collection.json`
-- **Link para video demonstrativo:** [YouTube / Vimeo]
+- **Link para video demonstrativo:** [A ser adicionado apos gravacao]
