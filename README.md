@@ -464,17 +464,39 @@ O HPA monitora o consumo de CPU dos pods da aplicacao e escala automaticamente:
 
 Para simular carga e observar o escalonamento:
 
+**Terminal 1 — iniciar carga (Apache Benchmark com 100 conexoes paralelas):**
+
 ```bash
-# Gerar carga
-kubectl run load-generator --image=busybox:1.35 --restart=Never -- \
-  /bin/sh -c "while true; do wget -q -O- http://app-service.siase.svc.cluster.local:8080/api/actuator/health; done"
-
-# Acompanhar replicas em tempo real
-kubectl get hpa -n siase -w
-
-# Parar a carga
-kubectl delete pod load-generator
+kubectl run load-ab \
+  --image=alpine \
+  --restart=Never \
+  -n siase \
+  -- /bin/sh -c "apk add apache2-utils -q && ab -n 500000 -c 100 http://app-service.siase.svc.cluster.local:8080/api/actuator/health"
 ```
+
+**Terminal 2 — monitorar HPA e pods em tempo real:**
+
+```bash
+watch -n 5 "kubectl get hpa -n siase && echo '' && kubectl get pods -n siase"
+```
+
+**O que observar:**
+
+| Momento | CPU | Replicas |
+|---------|-----|----------|
+| Inicio | ~0% | 2 |
+| Apos ~1 min de carga | >70% | 2 (aguardando 60s) |
+| Apos estabilizacao | >70% | 3 ou 4 |
+| Apos parar a carga | caindo | mantém por 300s |
+| Apos 5 min sem carga | ~0% | 2 (scale down) |
+
+**Parar a carga:**
+
+```bash
+kubectl delete pod load-ab -n siase
+```
+
+> **Nota:** use `ab -c 100` (100 conexoes paralelas) para garantir CPU acima de 70%. Geradores simples com `wget` sequencial nao sao suficientes para disparar o HPA.
 
 ---
 
