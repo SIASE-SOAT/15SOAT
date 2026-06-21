@@ -323,49 +323,50 @@ O PDF sera criado automaticamente em `scripts/target/sonar/` (o diretorio e cria
 ### Arquitetura de Deploy
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    GitHub Actions                        │
-│                                                         │
-│  push → main   ┌─────────────────┐                      │
-│  ───────────►  │ build-and-test  │  ubuntu-latest        │
-│                │ mvn clean verify│                       │
-│                └────────┬────────┘                       │
-│                         │ ok                             │
-│                ┌────────▼────────┐                       │
-│                │docker-build-push│  ubuntu-latest        │
-│                │ghcr.io/*/siase  │                       │
-│                └────────┬────────┘                       │
-│                         │ image_tag (git SHA)            │
-│                ┌────────▼────────┐                       │
-│                │     deploy      │  self-hosted          │
-│                │terraform apply  │  siase-vps            │
-│                │kubectl apply    │      │                 │
-│                └─────────────────┘      │                 │
-└─────────────────────────────────────────┼───────────────┘
-                                          │ SSH (runner local)
-┌─────────────────────────────────────────▼───────────────┐
-│              VPS Hostinger (Ubuntu 24.04, 8 GB)         │
-│                                                         │
-│   ┌─────────────────────────────────────────────────┐   │
-│   │           Kind Cluster (K8s v1.30)              │   │
-│   │  namespace: siase                               │   │
-│   │                                                 │   │
-│   │  ┌──────────────┐    ┌──────────────────────┐  │   │
-│   │  │   postgres   │    │      siase-app        │  │   │
-│   │  │  (1 replica) │    │   (2-4 replicas HPA)  │  │   │
-│   │  │  PVC 2Gi     │    │   512Mi-768Mi RAM     │  │   │
-│   │  └──────────────┘    └──────────────────────┘  │   │
-│   │                                                 │   │
-│   │  NodePort 30080 ──► VPS:8080                   │   │
-│   └─────────────────────────────────────────────────┘   │
-│                                                         │
-│   GitHub Actions Self-hosted Runner (label: siase-vps)  │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                       GitHub Actions                          │
+│                                                              │
+│  push → main   ┌─────────────────┐                           │
+│  ───────────►  │ build-and-test  │  ubuntu-latest             │
+│                │ mvn clean verify│                            │
+│                └────────┬────────┘                            │
+│                         │ ok                                  │
+│                ┌────────▼────────┐                            │
+│                │docker-build-push│  ubuntu-latest             │
+│                │ push → ghcr.io  │                            │
+│                └────────┬────────┘                            │
+│                         │ image_tag (git SHA)                 │
+│                ┌────────▼──────────────────┐                  │
+│                │        deploy             │  ubuntu-latest   │
+│                │ 1. Conecta Tailscale VPN  │                  │
+│                │ 2. SSH via IP privado VPN │                  │
+│                │ 3. terraform apply        │                  │
+│                │ 4. kubectl rollout status │                  │
+│                │ 5. curl /health           │                  │
+│                └───────────────┬───────────┘                  │
+└───────────────────────────────────────────────────────────────┘
+                                 │ Tailscale VPN (tunel privado)
+┌────────────────────────────────▼──────────────────────────────┐
+│              VPS Hostinger — Ubuntu 24.04 · 8 GB · 2 vCPU     │
+│                                                               │
+│   ┌───────────────────────────────────────────────────────┐   │
+│   │              Kind Cluster (K8s v1.30)                  │   │
+│   │   1 control-plane + 2 workers · namespace: siase       │   │
+│   │                                                        │   │
+│   │   ┌──────────────┐    ┌─────────────────────────────┐ │   │
+│   │   │   postgres   │    │         siase-app           │ │   │
+│   │   │  1 replica   │◄───│   2-4 replicas (HPA CPU 70%)│ │   │
+│   │   │  PVC 2Gi     │    │   imagePullSecret: ghcr.io  │ │   │
+│   │   └──────────────┘    └─────────────────────────────┘ │   │
+│   │                                                        │   │
+│   │   metrics-server · NodePort 30080 → VPS:8080          │   │
+│   └───────────────────────────────────────────────────────┘   │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ### Deploy em Kubernetes
 
-**Pre-requisitos na VPS:** cluster Kind rodando e runner registrado (ver `scripts/vps-setup.sh`).
+**Pre-requisitos na VPS:** cluster Kind rodando (ver `scripts/vps-setup.sh`) e Tailscale instalado e conectado.
 
 O deploy e feito automaticamente pelo CI/CD a cada push na `main`. Para aplicar manualmente:
 
@@ -435,14 +436,17 @@ O arquivo `.github/workflows/ci-cd.yml` executa 3 jobs em sequencia a cada push 
 | Job | Runner | O que faz |
 |-----|--------|-----------|
 | `build-and-test` | ubuntu-latest | `mvn clean verify` — compila e roda todos os testes |
-| `docker-build-push` | ubuntu-latest | Build da imagem e push para `ghcr.io` com tag = git SHA |
-| `deploy` | self-hosted (siase-vps) | `terraform apply` + aguarda pods ficarem Ready + smoke test |
+| `docker-build-push` | ubuntu-latest | Build da imagem e push para `ghcr.io` com tag = git SHA usando `GITHUB_TOKEN` nativo |
+| `deploy` | ubuntu-latest | Conecta via Tailscale VPN, SSH na VPS, `terraform apply`, `kubectl rollout status`, smoke test |
 
 **GitHub Secrets necessarios:**
 
 | Secret | Descricao |
 |--------|-----------|
-| `GHCR_TOKEN` | Personal Access Token com `write:packages` |
+| `MY_PAT` | Personal Access Token com `repo` + `read:packages` + `write:packages` — usado para git pull e imagePullSecret |
+| `TAILSCALE_AUTHKEY` | Auth key reutilizavel do Tailscale para o runner entrar na VPN |
+| `VPS_TAILSCALE_IP` | IP privado da VPS na rede Tailscale |
+| `VPS_PASSWORD` | Senha root da VPS para o SSH |
 | `DB_PASSWORD` | Senha do PostgreSQL |
 | `JWT_SECRET` | Chave HMAC para tokens JWT |
 | `WEBHOOK_TOKEN` | Token de autenticacao de webhooks |
@@ -484,6 +488,7 @@ kubectl delete pod load-generator
 
 ## Links
 
-- **Swagger UI:** `http://localhost:8080/api/swagger-ui.html`
+- **Swagger UI (local):** `http://localhost:8080/api/swagger-ui.html`
+- **Swagger UI (producao):** `http://<IP_DA_VPS>:8080/api/swagger-ui.html`
 - **Postman Collection:** `postman/SIASE.postman_collection.json`
-- **Link para video demonstrativo:** [YouTube / Vimeo]
+- **Link para video demonstrativo:** [A ser adicionado apos gravacao]
