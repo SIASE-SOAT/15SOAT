@@ -29,8 +29,8 @@ resource "kubernetes_config_map" "siase_config" {
     DB_NAME              = "siase_db"
     SERVER_PORT          = "8080"
     JWT_EXPIRATION_MS    = "3600000"
-    CORS_ALLOWED_ORIGINS = "http://localhost:4200"
-    CLIENTE_PORTAL_URL   = "http://localhost:4200"
+    CORS_ALLOWED_ORIGINS = "http://localhost:4200,https://siase-frontend.vercel.app"
+    CLIENTE_PORTAL_URL   = "https://siase-frontend.vercel.app"
   }
 }
 
