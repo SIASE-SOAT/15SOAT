@@ -31,6 +31,9 @@ resource "kubernetes_config_map" "siase_config" {
     JWT_EXPIRATION_MS    = "3600000"
     CORS_ALLOWED_ORIGINS = "http://localhost:4200,https://siase-frontend.vercel.app"
     CLIENTE_PORTAL_URL   = "https://siase-frontend.vercel.app"
+    MAIL_HOST            = var.mail_host
+    MAIL_PORT            = var.mail_port
+    MAIL_FROM            = var.mail_from
   }
 }
 
@@ -64,6 +67,8 @@ resource "kubernetes_secret" "siase_secret" {
     JWT_SECRET        = var.jwt_secret
     WEBHOOK_TOKEN     = var.webhook_token
     MECANICO_PASSWORD = var.mecanico_password
+    MAIL_USERNAME     = var.mail_username
+    MAIL_PASSWORD     = var.mail_password
   }
 }
 

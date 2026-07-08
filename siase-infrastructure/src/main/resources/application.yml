@@ -26,6 +26,20 @@ spring:
     user: ${DB_USER:siase_user}
     password: ${DB_PASSWORD:siase_pass}
 
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    test-connection: false
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
 server:
   port: ${SERVER_PORT:8080}
   servlet:
@@ -55,6 +69,9 @@ cors:
 
 cliente:
   portal-url: ${CLIENTE_PORTAL_URL:http://localhost:4200}
+
+email:
+  from: ${MAIL_FROM:${MAIL_USERNAME:noreply@siase.com}}
 
 seed:
   mecanico:

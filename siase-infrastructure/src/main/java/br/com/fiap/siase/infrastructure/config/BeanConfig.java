@@ -60,8 +60,8 @@ public class BeanConfig {
     }
 
     @Bean
-    public AvancarStatusUC avancarStatusUC(OrdemServicoRepositoryPort ordemServicoRepository) {
-        return new AvancarStatusUC(ordemServicoRepository);
+    public AvancarStatusUC avancarStatusUC(OrdemServicoRepositoryPort ordemServicoRepository, EmailPort emailPort) {
+        return new AvancarStatusUC(ordemServicoRepository, emailPort);
     }
 
     @Bean

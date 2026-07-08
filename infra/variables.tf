@@ -33,6 +33,38 @@ variable "mecanico_password" {
   sensitive   = true
 }
 
+variable "mail_host" {
+  description = "Host SMTP para envio de emails"
+  type        = string
+  default     = ""
+}
+
+variable "mail_port" {
+  description = "Porta SMTP"
+  type        = string
+  default     = "587"
+}
+
+variable "mail_from" {
+  description = "Remetente exibido nos emails (Nome <email>)"
+  type        = string
+  default     = ""
+}
+
+variable "mail_username" {
+  description = "Usuario/email da conta SMTP"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "mail_password" {
+  description = "Senha de app da conta SMTP"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "app_replicas" {
   description = "Número inicial de réplicas do app"
   type        = number

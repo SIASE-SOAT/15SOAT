@@ -451,6 +451,11 @@ O arquivo `.github/workflows/ci-cd.yml` executa 3 jobs em sequencia a cada push 
 | `JWT_SECRET` | Chave HMAC para tokens JWT |
 | `WEBHOOK_TOKEN` | Token de autenticacao de webhooks |
 | `MECANICO_PASSWORD` | Senha do usuario padrao seed |
+| `MAIL_HOST` | Host SMTP (ex: `smtp.gmail.com`) |
+| `MAIL_PORT` | Porta SMTP (ex: `587`) |
+| `MAIL_FROM` | Remetente exibido (ex: `SIASE - Atendimento <email@gmail.com>`) |
+| `MAIL_USERNAME` | Usuario/email da conta SMTP |
+| `MAIL_PASSWORD` | Senha de app da conta SMTP |
 
 ### Escalabilidade Automatica (HPA)
 

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @Tag(name = "Pagamentos", description = "Registro e ciclo de vida de pagamentos vinculados a ordens de serviço")
 public class PagamentoController {
@@ -129,6 +131,7 @@ public class PagamentoController {
         String emailCliente = os.getCliente().getEmail() != null
                 ? os.getCliente().getEmail() : "sem-email@siase.com";
 
+        log.info("[PagamentoController] Disparando email de confirmação de pagamento | OS: {} | Para: {}", os.getNumero(), emailCliente);
         emailPort.enviarConfirmacaoPagamento(
                 emailCliente,
                 os.getCliente().getNome(),

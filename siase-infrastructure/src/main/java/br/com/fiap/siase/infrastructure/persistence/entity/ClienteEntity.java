@@ -38,6 +38,6 @@ public class ClienteEntity extends BaseJpaEntity {
     @Column(nullable = false)
     private Boolean ativo = true;
 
-    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "cliente")
     private List<VeiculoEntity> veiculos = new ArrayList<>();
 }

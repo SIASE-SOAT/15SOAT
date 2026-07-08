@@ -42,6 +42,11 @@ services:
       CLIENTE_PORTAL_URL: ${CLIENTE_PORTAL_URL:-http://localhost:4200}
       WEBHOOK_TOKEN: ${WEBHOOK_TOKEN:-siase-webhook-token-padrao}
       MECANICO_PASSWORD: ${MECANICO_PASSWORD:-mecanico123}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
     ports:
       - "8080:8080"
     networks:

@@ -7,7 +7,9 @@ import br.com.fiap.siase.domain.exception.BusinessException;
 import br.com.fiap.siase.domain.exception.ResourceNotFoundException;
 import br.com.fiap.siase.domain.port.EmailPort;
 import br.com.fiap.siase.domain.port.OrdemServicoRepositoryPort;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AprovarOrcamentoUC implements AprovarOrcamentoUCPort {
 
     private final OrdemServicoRepositoryPort ordemServicoRepository;
@@ -31,6 +33,7 @@ public class AprovarOrcamentoUC implements AprovarOrcamentoUCPort {
 
         String email = os.getCliente().getEmail() != null
                 ? os.getCliente().getEmail() : "sem-email@siase.com";
+        log.info("[AprovarOrcamentoUC] Disparando email de orçamento aprovado | OS: {} | Para: {}", numero, email);
         emailPort.enviarOrcamentoAprovado(email, os.getCliente().getNome(), os.getNumero());
 
         return OrdemDeServicoResponse.from(salvo);
@@ -49,6 +52,7 @@ public class AprovarOrcamentoUC implements AprovarOrcamentoUCPort {
 
         String email = os.getCliente().getEmail() != null
                 ? os.getCliente().getEmail() : "sem-email@siase.com";
+        log.info("[AprovarOrcamentoUC] Disparando email de orçamento cancelado | OS: {} | Para: {}", numero, email);
         emailPort.enviarOrcamentoCancelado(email, os.getCliente().getNome(), os.getNumero());
 
         return OrdemDeServicoResponse.from(salvo);

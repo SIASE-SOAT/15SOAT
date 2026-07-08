@@ -6,6 +6,7 @@ import br.com.fiap.siase.domain.exception.ResourceNotFoundException;
 import br.com.fiap.siase.domain.model.Cliente;
 import br.com.fiap.siase.domain.model.OrdemDeServico;
 import br.com.fiap.siase.domain.model.Veiculo;
+import br.com.fiap.siase.domain.port.EmailPort;
 import br.com.fiap.siase.domain.port.OrdemServicoRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +30,7 @@ import static org.mockito.Mockito.when;
 class AvancarStatusUCTest {
 
     @Mock private OrdemServicoRepositoryPort ordemServicoRepository;
+    @Mock private EmailPort emailPort;
 
     private AvancarStatusUC useCase;
     private UUID osId;
@@ -35,7 +38,7 @@ class AvancarStatusUCTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new AvancarStatusUC(ordemServicoRepository);
+        useCase = new AvancarStatusUC(ordemServicoRepository, emailPort);
         osId = UUID.randomUUID();
 
         Cliente cliente = new Cliente();
@@ -67,6 +70,21 @@ class AvancarStatusUCTest {
 
         assertThat(response.status()).isEqualTo(StatusOS.EM_DIAGNOSTICO.name());
         verify(ordemServicoRepository).save(os);
+        verify(emailPort, never()).enviarOrcamentoParaAprovacao(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve disparar email de orcamento para aprovacao ao avancar para AGUARDANDO_APROVACAO")
+    void deveDispararEmailAoAvancarParaAguardandoAprovacao() {
+        os.setStatus(StatusOS.EM_DIAGNOSTICO);
+        when(ordemServicoRepository.findById(osId)).thenReturn(Optional.of(os));
+        when(ordemServicoRepository.save(any())).thenReturn(os);
+
+        useCase.executar(osId);
+
+        assertThat(os.getStatus()).isEqualTo(StatusOS.AGUARDANDO_APROVACAO);
+        verify(emailPort).enviarOrcamentoParaAprovacao(
+                "carlos@email.com", "Carlos Andrade", "OS-20260601-DEF456", os.getTotal().toPlainString());
     }
 
     @Test

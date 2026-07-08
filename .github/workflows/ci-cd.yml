@@ -103,6 +103,11 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
           MECANICO_PASSWORD: ${{ secrets.MECANICO_PASSWORD }}
+          MAIL_HOST: ${{ secrets.MAIL_HOST }}
+          MAIL_PORT: ${{ secrets.MAIL_PORT }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
         run: |
           sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=30 root@$VPS_HOST bash -s << ENDSSH
           set -e
@@ -145,7 +150,12 @@ jobs:
             -var="db_password=$DB_PASSWORD" \
             -var="jwt_secret=$JWT_SECRET" \
             -var="webhook_token=$WEBHOOK_TOKEN" \
-            -var="mecanico_password=$MECANICO_PASSWORD"
+            -var="mecanico_password=$MECANICO_PASSWORD" \
+            -var="mail_host=$MAIL_HOST" \
+            -var="mail_port=$MAIL_PORT" \
+            -var="mail_from=$MAIL_FROM" \
+            -var="mail_username=$MAIL_USERNAME" \
+            -var="mail_password=$MAIL_PASSWORD"
 
           kubectl rollout status deployment/postgres -n siase --timeout=180s
           kubectl rollout status deployment/siase-app -n siase --timeout=300s

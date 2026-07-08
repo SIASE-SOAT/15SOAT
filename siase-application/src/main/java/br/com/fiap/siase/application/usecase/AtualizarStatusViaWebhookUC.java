@@ -8,7 +8,9 @@ import br.com.fiap.siase.domain.exception.ResourceNotFoundException;
 import br.com.fiap.siase.domain.model.OrdemDeServico;
 import br.com.fiap.siase.domain.port.EmailPort;
 import br.com.fiap.siase.domain.port.OrdemServicoRepositoryPort;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class AtualizarStatusViaWebhookUC implements AtualizarStatusViaWebhookUCPort {
 
     private final OrdemServicoRepositoryPort ordemServicoRepository;
@@ -56,10 +58,11 @@ public class AtualizarStatusViaWebhookUC implements AtualizarStatusViaWebhookUCP
         String nome = os.getCliente().getNome();
         String numero = os.getNumero();
 
+        log.info("[AtualizarStatusViaWebhookUC] Status atualizado para {} | OS: {} | Notificando: {}", os.getStatus(), numero, email);
         switch (os.getStatus()) {
             case APROVADO -> emailPort.enviarOrcamentoAprovado(email, nome, numero);
             case CANCELADA -> emailPort.enviarOrcamentoCancelado(email, nome, numero);
-            default -> { /* sem notificação para outros status */ }
+            default -> log.info("[AtualizarStatusViaWebhookUC] Status {} não dispara notificação por email", os.getStatus());
         }
     }
 }
