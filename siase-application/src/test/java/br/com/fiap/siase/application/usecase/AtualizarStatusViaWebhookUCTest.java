@@ -1,5 +1,6 @@
 package br.com.fiap.siase.application.usecase;
 
+import br.com.fiap.siase.application.port.ObservabilityPort;
 import br.com.fiap.siase.domain.enums.StatusOS;
 import br.com.fiap.siase.domain.exception.BusinessException;
 import br.com.fiap.siase.domain.exception.ResourceNotFoundException;
@@ -34,6 +35,7 @@ class AtualizarStatusViaWebhookUCTest {
 
     @Mock private OrdemServicoRepositoryPort ordemServicoRepository;
     @Mock private EmailPort emailPort;
+    @Mock private ObservabilityPort observabilityPort;
 
     private AtualizarStatusViaWebhookUC useCase;
     private OrdemDeServico os;
@@ -41,7 +43,7 @@ class AtualizarStatusViaWebhookUCTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new AtualizarStatusViaWebhookUC(ordemServicoRepository, emailPort, TOKEN_VALIDO);
+        useCase = new AtualizarStatusViaWebhookUC(ordemServicoRepository, emailPort, TOKEN_VALIDO, observabilityPort);
 
         cliente = new Cliente();
         cliente.setNome("Joao Silva");
