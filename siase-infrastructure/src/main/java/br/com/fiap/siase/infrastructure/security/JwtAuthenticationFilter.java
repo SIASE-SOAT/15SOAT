@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.slf4j.MDC;
 
 import java.io.IOException;
 
@@ -34,18 +36,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String username = jwtService.extractUsername(token);
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            if (jwtService.isTokenValid(token, userDetails)) {
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
+        if (jwtService.isTokenValid(token)
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
+            String username = jwtService.extractUsername(token);
+            try {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                if (jwtService.isTokenValid(token, userDetails)) {
+                    setAuthentication(userDetails, userDetails.getAuthorities(), request);
+                }
+            } catch (org.springframework.security.core.userdetails.UsernameNotFoundException ignored) {
+                if (!jwtService.isExternalClientToken(token)) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+                var authorities = jwtService.extractRoles(token).stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .toList();
+                UserDetails externalUser = org.springframework.security.core.userdetails.User
+                        .withUsername(username).password("").authorities(authorities).build();
+                setAuthentication(externalUser, authorities, request);
+            }
+            if (SecurityContextHolder.getContext().getAuthentication() != null) {
+                MDC.put("subject", username);
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void setAuthentication(UserDetails userDetails,
+                                   java.util.Collection<? extends org.springframework.security.core.GrantedAuthority> authorities,
+                                   HttpServletRequest request) {
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                userDetails, null, authorities);
+        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 }
