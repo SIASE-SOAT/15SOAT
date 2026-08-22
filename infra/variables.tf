@@ -1,52 +1,76 @@
 variable "image_tag" {
-  description = "Tag da imagem Docker do app (git SHA)"
-  type        = string
+  type = string
 }
 
-variable "github_user" {
-  description = "Username ou org do GitHub (para ghcr.io)"
-  type        = string
-  default     = "ricardo-okuyama"
+variable "ecr_repository" {
+  type = string
+}
+
+variable "ecr_dockerconfigjson" {
+  type      = string
+  sensitive = true
+}
+
+variable "db_host" {
+  type = string
+}
+
+variable "db_port" {
+  type    = string
+  default = "5432"
+}
+
+variable "db_name" {
+  type    = string
+  default = "siase_db"
+}
+
+variable "db_user" {
+  type    = string
+  default = "siase_user"
 }
 
 variable "db_password" {
-  description = "Senha do banco de dados PostgreSQL"
-  type        = string
-  sensitive   = true
+  type      = string
+  sensitive = true
 }
 
 variable "jwt_secret" {
-  description = "Segredo JWT em base64"
-  type        = string
-  sensitive   = true
+  type      = string
+  sensitive = true
+}
+
+variable "jwt_issuer" {
+  type    = string
+  default = "siase-auth"
 }
 
 variable "webhook_token" {
-  description = "Token para autenticação de webhooks"
-  type        = string
-  sensitive   = true
+  type      = string
+  sensitive = true
 }
 
 variable "mecanico_password" {
-  description = "Senha seed do mecanico"
-  type        = string
-  sensitive   = true
+  type      = string
+  sensitive = true
 }
 
 variable "app_replicas" {
-  description = "Número inicial de réplicas do app"
-  type        = number
-  default     = 2
+  type    = number
+  default = 2
 }
 
 variable "kubeconfig_path" {
-  description = "Caminho do kubeconfig"
-  type        = string
-  default     = "~/.kube/config"
+  type    = string
+  default = "~/.kube/config"
 }
 
-variable "ghcr_token" {
-  description = "PAT com read:packages para pull da imagem no ghcr.io"
-  type        = string
-  sensitive   = true
+variable "cors_allowed_origins" {
+  type    = string
+  default = "https://siase-frontend.vercel.app"
+}
+
+variable "cliente_portal_url" {
+  type    = string
+  default = "https://siase-frontend.vercel.app"
 }

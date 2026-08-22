@@ -1,0 +1,126 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  EKS_CLUSTER: ${{ vars.EKS_CLUSTER }}
+  JWT_SECRET_NAME: ${{ vars.JWT_SECRET_NAME }}
+  APP_SECRET_NAME: ${{ vars.APP_SECRET_NAME }}
+
+jobs:
+  build-test:
+    uses: ./.github/workflows/build-test.yml
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+      - run: mvn -B -q verify
+        # Credenciais temporárias do Learner Lab: expiram ao fim da sessão de 4h
+        # e precisam ser atualizadas nos secrets do GitHub a cada nova sessão.
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+      - name: Build and push image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" .
+          docker push "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: Configure EKS and apply manifests
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          set -euo pipefail
+          set +x
+          trap 'unset db_secret_arn db_secret_json db_host db_name db_user db_password jwt_secret_json jwt_secret app_secret_json webhook_token mecanico_password' EXIT
+          aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER"
+          db_secret_arn="$(aws ssm get-parameter \
+            --name "/siase/production/db-secret-arn" \
+            --query 'Parameter.Value' \
+            --output text)"
+          db_host="$(aws ssm get-parameter \
+            --name "/siase/production/db-endpoint" \
+            --query 'Parameter.Value' \
+            --output text)"
+          db_name="$(aws ssm get-parameter \
+            --name "/siase/production/db-name" \
+            --query 'Parameter.Value' \
+            --output text)"
+          db_secret_json="$(aws secretsmanager get-secret-value \
+            --secret-id "$db_secret_arn" \
+            --query 'SecretString' \
+            --output text)"
+          db_user="$(jq -er '.username' <<<"$db_secret_json")"
+          db_password="$(jq -er '.password' <<<"$db_secret_json")"
+          jwt_secret_json="$(aws secretsmanager get-secret-value \
+            --secret-id "$JWT_SECRET_NAME" \
+            --query 'SecretString' \
+            --output text)"
+          jwt_secret="$(jq -er '.secret' <<<"$jwt_secret_json")"
+          app_secret_json="$(aws secretsmanager get-secret-value \
+            --secret-id "$APP_SECRET_NAME" \
+            --query 'SecretString' \
+            --output text)"
+          webhook_token="$(jq -er '.webhookToken' <<<"$app_secret_json")"
+          mecanico_password="$(jq -er '.mecanicoPassword' <<<"$app_secret_json")"
+          sed -i "s#IMAGE_TAG#$IMAGE_TAG#g; s#ECR_REGISTRY#$REGISTRY#g; s#ECR_REPOSITORY#$ECR_REPOSITORY#g" k8s/app-deployment.yaml
+          kubectl apply -f k8s/namespace.yaml
+          kubectl create configmap siase-config \
+            --namespace siase \
+            --from-literal="DB_HOST=$db_host" \
+            --from-literal="DB_PORT=5432" \
+            --from-literal="DB_NAME=$db_name" \
+            --from-literal="SERVER_PORT=8080" \
+            --from-literal="MANAGEMENT_SERVER_PORT=8081" \
+            --from-literal="JWT_EXPIRATION_MS=3600000" \
+            --from-literal="JWT_ISSUER=siase-auth" \
+            --from-literal="CORS_ALLOWED_ORIGINS=http://localhost:4200" \
+            --from-literal="CLIENTE_PORTAL_URL=http://localhost:4200" \
+            --dry-run=client -o yaml \
+            | kubectl apply --server-side --force-conflicts --field-manager=siase-app-deploy -f -
+          kubectl create secret generic siase-secret \
+            --namespace siase \
+            --from-literal="DB_USER=$db_user" \
+            --from-literal="DB_PASSWORD=$db_password" \
+            --from-literal="JWT_SECRET=$jwt_secret" \
+            --from-literal="WEBHOOK_TOKEN=$webhook_token" \
+            --from-literal="MECANICO_PASSWORD=$mecanico_password" \
+            --dry-run=client -o yaml \
+            | kubectl apply --server-side --force-conflicts --field-manager=siase-app-deploy -f -
+          kubectl apply \
+            -f k8s/app-deployment.yaml \
+            -f k8s/app-service.yaml \
+            -f k8s/app-metrics-service.yaml \
+            -f k8s/hpa.yaml \
+            -f k8s/servicemonitor.yaml
+          for attempt in $(seq 1 30); do
+            lb_dns="$(kubectl get svc -n siase app-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)"
+            if [ -n "$lb_dns" ]; then
+              aws ssm put-parameter --name "/siase/production/lb-dns" --type String --value "$lb_dns" --overwrite
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Load Balancer DNS ainda não foi publicado pelo cloud controller do EKS" >&2
+          exit 1

@@ -1,14 +1,18 @@
 output "app_image" {
-  description = "Imagem Docker deployada"
-  value       = "ghcr.io/${var.github_user}/siase-app:${var.image_tag}"
+  description = "Imagem ECR deployada"
+  value       = "${var.ecr_repository}:${var.image_tag}"
 }
 
-output "app_nodeport" {
-  description = "Porta NodePort do app (mapeada para 8080 na VPS)"
-  value       = 30080
+output "service_name" {
+  description = "Service LoadBalancer da aplicacao"
+  value       = kubernetes_service.app_service.metadata[0].name
+}
+
+output "service_hostname" {
+  description = "Hostname do Load Balancer atribuido ao Service, quando provisionado"
+  value       = try(kubernetes_service.app_service.status[0].load_balancer[0].ingress[0].hostname, null)
 }
 
 output "namespace" {
-  description = "Namespace Kubernetes"
-  value       = "siase"
+  value = "siase"
 }

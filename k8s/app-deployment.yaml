@@ -15,9 +15,11 @@ spec:
     spec:
       containers:
         - name: siase-app
-          image: ghcr.io/GITHUB_USER/siase-app:IMAGE_TAG
+          image: ECR_REGISTRY/ECR_REPOSITORY:IMAGE_TAG
           ports:
             - containerPort: 8080
+            - containerPort: 8081
+              name: management
           envFrom:
             - configMapRef:
                 name: siase-config
@@ -32,14 +34,14 @@ spec:
               cpu: "500m"
           readinessProbe:
             httpGet:
-              path: /api/actuator/health
-              port: 8080
+              path: /actuator/health/readiness
+              port: 8081
             initialDelaySeconds: 60
             periodSeconds: 15
             failureThreshold: 5
           livenessProbe:
             httpGet:
-              path: /api/actuator/health
-              port: 8080
+              path: /actuator/health/liveness
+              port: 8081
             initialDelaySeconds: 90
             periodSeconds: 30

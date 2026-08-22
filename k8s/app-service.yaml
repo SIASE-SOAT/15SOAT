@@ -3,11 +3,13 @@ kind: Service
 metadata:
   name: app-service
   namespace: siase
+  labels:
+    app: siase-app
 spec:
   selector:
     app: siase-app
   ports:
-    - port: 8080
+    - name: http
+      port: 80
       targetPort: 8080
-      nodePort: 30080
-  type: NodePort
+  type: LoadBalancer

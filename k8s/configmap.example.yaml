@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: siase-config
+  namespace: siase
+data: {}
+# O workflow de produção cria este ConfigMap com DB_HOST e DB_NAME vindos do
+# SSM Parameter Store antes de aplicar o Deployment.

@@ -19,6 +19,7 @@ import br.com.fiap.siase.domain.port.OrdemServicoRepositoryPort;
 import br.com.fiap.siase.domain.port.PecaRepositoryPort;
 import br.com.fiap.siase.domain.port.ServicoRepositoryPort;
 import br.com.fiap.siase.domain.port.VeiculoRepositoryPort;
+import br.com.fiap.siase.application.port.ObservabilityPort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,8 +33,8 @@ public class BeanConfig {
             ClienteRepositoryPort clienteRepository,
             VeiculoRepositoryPort veiculoRepository,
             ServicoRepositoryPort servicoRepository,
-            PecaRepositoryPort pecaRepository) {
-        return new CriarOrdemServicoUC(ordemServicoRepository, clienteRepository, veiculoRepository, servicoRepository, pecaRepository);
+            PecaRepositoryPort pecaRepository, ObservabilityPort observability) {
+        return new CriarOrdemServicoUC(ordemServicoRepository, clienteRepository, veiculoRepository, servicoRepository, pecaRepository, observability);
     }
 
     @Bean
@@ -55,13 +56,13 @@ public class BeanConfig {
     public AtualizarStatusViaWebhookUC atualizarStatusViaWebhookUC(
             OrdemServicoRepositoryPort ordemServicoRepository,
             EmailPort emailPort,
-            @Value("${webhook.token}") String webhookToken) {
-        return new AtualizarStatusViaWebhookUC(ordemServicoRepository, emailPort, webhookToken);
+            @Value("${webhook.token}") String webhookToken, ObservabilityPort observability) {
+        return new AtualizarStatusViaWebhookUC(ordemServicoRepository, emailPort, webhookToken, observability);
     }
 
     @Bean
-    public AvancarStatusUC avancarStatusUC(OrdemServicoRepositoryPort ordemServicoRepository) {
-        return new AvancarStatusUC(ordemServicoRepository);
+    public AvancarStatusUC avancarStatusUC(OrdemServicoRepositoryPort ordemServicoRepository, ObservabilityPort observability) {
+        return new AvancarStatusUC(ordemServicoRepository, observability);
     }
 
     @Bean
@@ -90,12 +91,12 @@ public class BeanConfig {
     }
 
     @Bean
-    public IniciarExecucaoItemUC iniciarExecucaoItemUC(OrdemServicoRepositoryPort ordemServicoRepository) {
-        return new IniciarExecucaoItemUC(ordemServicoRepository);
+    public IniciarExecucaoItemUC iniciarExecucaoItemUC(OrdemServicoRepositoryPort ordemServicoRepository, ObservabilityPort observability) {
+        return new IniciarExecucaoItemUC(ordemServicoRepository, observability);
     }
 
     @Bean
-    public FinalizarExecucaoItemUC finalizarExecucaoItemUC(OrdemServicoRepositoryPort ordemServicoRepository) {
-        return new FinalizarExecucaoItemUC(ordemServicoRepository);
+    public FinalizarExecucaoItemUC finalizarExecucaoItemUC(OrdemServicoRepositoryPort ordemServicoRepository, ObservabilityPort observability) {
+        return new FinalizarExecucaoItemUC(ordemServicoRepository, observability);
     }
 }
