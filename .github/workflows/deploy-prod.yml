@@ -124,3 +124,54 @@ jobs:
           done
           echo "Load Balancer DNS ainda não foi publicado pelo cloud controller do EKS" >&2
           exit 1
+      - name: Read frontend API endpoint
+        id: frontend-endpoint
+        run: |
+          set -euo pipefail
+          set +x
+          endpoint="$(aws ssm get-parameter \
+            --name "/siase/production/api-endpoint" \
+            --query 'Parameter.Value' \
+            --output text 2>/dev/null || true)"
+          if [ -z "$endpoint" ] || [ "$endpoint" = "None" ]; then
+            echo "Parâmetro /siase/production/api-endpoint não encontrado; deploy do frontend será ignorado."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          host="${endpoint#https://}"
+          host="${host#http://}"
+          host="${host%%/*}"
+          if [ -z "$host" ]; then
+            echo "O parâmetro /siase/production/api-endpoint não contém um host válido." >&2
+            exit 1
+          fi
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "host=$host" >> "$GITHUB_OUTPUT"
+      - name: Build and push frontend image
+        if: steps.frontend-endpoint.outputs.available == 'true'
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: frontend-${{ github.sha }}
+        run: |
+          set -euo pipefail
+          set +x
+          docker build -f frontend/Dockerfile.eks -t "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" frontend
+          docker push "$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+      - name: Deploy frontend
+        if: steps.frontend-endpoint.outputs.available == 'true'
+        env:
+          AUTH_API_HOST: ${{ steps.frontend-endpoint.outputs.host }}
+          IMAGE_TAG: frontend-${{ github.sha }}
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          set -euo pipefail
+          set +x
+          kubectl create configmap siase-frontend-config \
+            --namespace siase \
+            --from-literal="AUTH_API_HOST=$AUTH_API_HOST" \
+            --dry-run=client -o yaml \
+            | kubectl apply --server-side --force-conflicts --field-manager=siase-app-deploy -f -
+          sed -e "s#FRONTEND_IMAGE#$IMAGE_TAG#g; s#ECR_REGISTRY#$REGISTRY#g; s#ECR_REPOSITORY#$ECR_REPOSITORY#g" \
+            k8s/frontend-deployment.yaml \
+            | kubectl apply -f -
+          kubectl apply -f k8s/frontend-service.yaml

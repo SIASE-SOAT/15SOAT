@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -32,10 +33,15 @@ export class LoginComponent {
   protected readonly loading = signal(false);
   protected readonly error = signal('');
   protected readonly showPassword = signal(false);
+  protected readonly loginMethod = signal<'usuario' | 'cpf'>('usuario');
 
   protected readonly form = this.fb.nonNullable.group({
     username: ['', Validators.required],
     password: ['', Validators.required],
+  });
+
+  protected readonly cpfForm = this.fb.nonNullable.group({
+    cpf: ['', Validators.required],
   });
 
   protected submit() {
@@ -54,5 +60,41 @@ export class LoginComponent {
         this.loading.set(false);
       },
     });
+  }
+
+  protected submitCpf() {
+    if (this.cpfForm.invalid) {
+      this.cpfForm.markAllAsTouched();
+      return;
+    }
+
+    this.loading.set(true);
+    this.error.set('');
+
+    this.auth.loginComCpf(this.cpfForm.getRawValue()).subscribe({
+      next: () => this.router.navigate(['/dashboard']),
+      error: (error: HttpErrorResponse) => {
+        this.error.set(this.cpfErrorMessage(error.status));
+        this.loading.set(false);
+      },
+    });
+  }
+
+  protected selectLoginMethod(method: 'usuario' | 'cpf') {
+    this.loginMethod.set(method);
+    this.error.set('');
+  }
+
+  private cpfErrorMessage(status: number) {
+    switch (status) {
+      case 400:
+        return 'CPF inválido.';
+      case 404:
+        return 'Cliente não encontrado.';
+      case 403:
+        return 'Cliente inativo.';
+      default:
+        return 'Não foi possível realizar o login.';
+    }
   }
 }
