@@ -17,6 +17,7 @@ import br.com.fiap.siase.domain.port.VeiculoRepositoryPort;
 import br.com.fiap.siase.domain.enums.StatusOS;
 
 import br.com.fiap.siase.application.usecase.port.CriarOrdemServicoUCPort;
+import br.com.fiap.siase.application.port.ObservabilityPort;
 
 import java.util.List;
 
@@ -27,18 +28,21 @@ public class CriarOrdemServicoUC implements CriarOrdemServicoUCPort {
     private final VeiculoRepositoryPort veiculoRepository;
     private final ServicoRepositoryPort servicoRepository;
     private final PecaRepositoryPort pecaRepository;
+    private final ObservabilityPort observability;
 
     public CriarOrdemServicoUC(
             OrdemServicoRepositoryPort ordemServicoRepository,
             ClienteRepositoryPort clienteRepository,
             VeiculoRepositoryPort veiculoRepository,
             ServicoRepositoryPort servicoRepository,
-            PecaRepositoryPort pecaRepository) {
+            PecaRepositoryPort pecaRepository,
+            ObservabilityPort observability) {
         this.ordemServicoRepository = ordemServicoRepository;
         this.clienteRepository = clienteRepository;
         this.veiculoRepository = veiculoRepository;
         this.servicoRepository = servicoRepository;
         this.pecaRepository = pecaRepository;
+        this.observability = observability;
     }
 
     public OrdemDeServicoResponse executar(OrdemDeServicoRequest request) {
@@ -96,7 +100,9 @@ public class CriarOrdemServicoUC implements CriarOrdemServicoUCPort {
         }
 
         os.recalcularTotais();
-        return OrdemDeServicoResponse.from(ordemServicoRepository.save(os));
+        var salvo = ordemServicoRepository.save(os);
+        observability.ordemServicoCriada();
+        return OrdemDeServicoResponse.from(salvo);
     }
 
 }

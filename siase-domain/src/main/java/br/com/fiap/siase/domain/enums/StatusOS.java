@@ -20,4 +20,9 @@ public enum StatusOS {
     public String getDescricao() {
         return descricao;
     }
+    public boolean medeTempoDeNegocio() {
+        return this == EM_DIAGNOSTICO
+                || this == EM_EXECUCAO
+                || this == FINALIZADA;
+    }
 }

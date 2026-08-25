@@ -1,5 +1,6 @@
 package br.com.fiap.siase.application.usecase;
 
+import br.com.fiap.siase.application.port.ObservabilityPort;
 import br.com.fiap.siase.domain.enums.StatusOS;
 import br.com.fiap.siase.domain.exception.BusinessException;
 import br.com.fiap.siase.domain.exception.ResourceNotFoundException;
@@ -31,6 +32,7 @@ import static org.mockito.Mockito.when;
 class IniciarFinalizarExecucaoItemUCTest {
 
     @Mock private OrdemServicoRepositoryPort ordemServicoRepository;
+    @Mock private ObservabilityPort observabilityPort;
 
     private IniciarExecucaoItemUC iniciarUC;
     private FinalizarExecucaoItemUC finalizarUC;
@@ -41,8 +43,8 @@ class IniciarFinalizarExecucaoItemUCTest {
 
     @BeforeEach
     void setUp() {
-        iniciarUC = new IniciarExecucaoItemUC(ordemServicoRepository);
-        finalizarUC = new FinalizarExecucaoItemUC(ordemServicoRepository);
+        iniciarUC = new IniciarExecucaoItemUC(ordemServicoRepository,observabilityPort);
+        finalizarUC = new FinalizarExecucaoItemUC(ordemServicoRepository,observabilityPort);
         osId = UUID.randomUUID();
         itemId = UUID.randomUUID();
 

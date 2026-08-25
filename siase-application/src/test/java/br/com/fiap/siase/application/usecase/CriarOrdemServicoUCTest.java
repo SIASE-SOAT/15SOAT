@@ -3,6 +3,7 @@ package br.com.fiap.siase.application.usecase;
 import br.com.fiap.siase.application.dto.input.ItemServicoRequest;
 import br.com.fiap.siase.application.dto.input.OrdemDeServicoRequest;
 import br.com.fiap.siase.application.dto.output.OrdemDeServicoResponse;
+import br.com.fiap.siase.application.port.ObservabilityPort;
 import br.com.fiap.siase.domain.enums.StatusOS;
 import br.com.fiap.siase.domain.exception.BusinessException;
 import br.com.fiap.siase.domain.exception.ResourceNotFoundException;
@@ -40,6 +41,7 @@ class CriarOrdemServicoUCTest {
     @Mock private VeiculoRepositoryPort veiculoRepository;
     @Mock private ServicoRepositoryPort servicoRepository;
     @Mock private PecaRepositoryPort pecaRepository;
+    @Mock private ObservabilityPort observability;
 
     private CriarOrdemServicoUC useCase;
     private UUID clienteId;
@@ -52,7 +54,7 @@ class CriarOrdemServicoUCTest {
     @BeforeEach
     void setUp() {
         useCase = new CriarOrdemServicoUC(ordemServicoRepository, clienteRepository,
-                veiculoRepository, servicoRepository, pecaRepository);
+                veiculoRepository, servicoRepository, pecaRepository, observability);
 
         clienteId = UUID.randomUUID();
         veiculoId = UUID.randomUUID();
