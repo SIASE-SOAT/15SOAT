@@ -18,7 +18,31 @@
         <p class="brand-sub">Sistema de Gestão da Oficina Mecânica</p>
       </div>
 
+      <div class="login-methods" role="tablist" aria-label="Método de login">
+        <button
+          type="button"
+          class="method-btn"
+          [class.active]="loginMethod() === 'usuario'"
+          (click)="selectLoginMethod('usuario')"
+          role="tab"
+          [attr.aria-selected]="loginMethod() === 'usuario'"
+        >
+          Usuário e senha
+        </button>
+        <button
+          type="button"
+          class="method-btn"
+          [class.active]="loginMethod() === 'cpf'"
+          (click)="selectLoginMethod('cpf')"
+          role="tab"
+          [attr.aria-selected]="loginMethod() === 'cpf'"
+        >
+          Entrar com CPF
+        </button>
+      </div>
+
       <!-- Form -->
+      @if (loginMethod() === 'usuario') {
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="form">
 
         <div class="input-wrap" [class.input-error]="form.controls.username.invalid && form.controls.username.touched">
@@ -49,20 +73,52 @@
         </div>
 
         @if (error()) {
-          <div class="error-msg" role="alert">
-            <mat-icon>error_outline</mat-icon>
-            {{ error() }}
-          </div>
+        <div class="error-msg" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          {{ error() }}
+        </div>
         }
 
         <button type="submit" class="login-btn" [disabled]="loading()">
           @if (loading()) {
-            <mat-spinner diameter="20" />
+          <mat-spinner diameter="20" />
           }
           LOGIN
         </button>
 
       </form>
+      } @else {
+      <form [formGroup]="cpfForm" (ngSubmit)="submitCpf()" novalidate class="form">
+
+        <div class="input-wrap" [class.input-error]="cpfForm.controls.cpf.invalid && cpfForm.controls.cpf.touched">
+          <span class="input-icon"><mat-icon>badge</mat-icon></span>
+          <span class="input-sep"></span>
+          <input
+            class="input-field"
+            type="text"
+            placeholder="CPF"
+            formControlName="cpf"
+            inputmode="numeric"
+            autocomplete="username"
+          />
+        </div>
+
+        @if (error()) {
+        <div class="error-msg" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          {{ error() }}
+        </div>
+        }
+
+        <button type="submit" class="login-btn" [disabled]="loading()">
+          @if (loading()) {
+          <mat-spinner diameter="20" />
+          }
+          ENTRAR COM CPF
+        </button>
+
+      </form>
+      }
 
       <p class="login-footer">SIASE &copy; 2026</p>
 
