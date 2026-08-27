@@ -112,6 +112,34 @@
   letter-spacing: 0.02em;
 }
 
+/* ── Login method ─────────────────────────────────── */
+.login-methods {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.method-btn {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(148, 163, 184, 0.8);
+  padding: 0.625rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 200ms, border-color 200ms, color 200ms;
+
+  &:hover,
+  &.active {
+    background: rgba(6, 182, 212, 0.15);
+    border-color: rgba(6, 182, 212, 0.5);
+    color: #f1f5f9;
+  }
+}
+
 /* ── Form ──────────────────────────────────────────── */
 .form {
   width: 100%;
