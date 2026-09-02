@@ -72,37 +72,37 @@ PostgreSQL foi escolhido por ser um banco relacional maduro com suporte a ACID, 
 ### Clean Architecture / Hexagonal — 3 Modulos Maven
 
 ```
-┌──────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────┐
 │                   INFRASTRUCTURE (adapters)                   │
-│  ┌──────────┐ ┌──────────────┐ ┌──────────┐ ┌────────────┐  │
-│  │ web/     │ │ persistence/ │ │ security/│ │observability│  │
-│  │ REST API │ │ JPA Repos    │ │ JWT      │ │ Micrometer  │  │
-│  └────┬─────┘ └──────┬───────┘ └────┬─────┘ └─────┬──────┘  │
-├───────┼───────────────┼──────────────┼───────────────┼────────┤
-│       ▼               ▼              │               ▼        │
-│  ┌────────────────────────────────┐   │  ┌────────────────┐   │
-│  │    APPLICATION (use cases)     │   │  │ Ports (interf) │   │
-│  │  CriarOrdemServicoUC           │   │  │ EmailPort      │◄──┤
-│  │  ListarOrdensServicoUC         │   │  │ ObservabilityPort   │
-│  │  ConsultarStatusOSUC           │   │  └────────────────┘   │
-│  │  AprovarOrcamentoUC            │   │                       │
-│  │  AtualizarStatusViaWebhookUC   │   │                       │
-│  │  AvancarStatusUC               │   │                       │
-│  │  CancelarOrdemUC               │   │                       │
-│  │  AdicionarPecaUC               │   │                       │
-│  │  AdicionarServicoUC            │   │                       │
-│  │  ConsultarTempoMedioUC         │   │                       │
-│  │  IniciarExecucaoItemUC         │   │                       │
-│  │  FinalizarExecucaoItemUC       │   │                       │
-│  │  PrepararAberturaOSUC          │   │                       │
-│  └───────────────┬────────────────┘   │                       │
-├──────────────────┼────────────────────┼───────────────────────┤
-│                  ▼                    ▼                       │
+│  ┌──────────┐ ┌──────────────┐ ┌──────────┐ ┌─────────────┐   │
+│  │ web/     │ │ persistence/ │ │ security/│ │observability│   │
+│  │ REST API │ │ JPA Repos    │ │ JWT      │ │ Micrometer  │   │
+│  └────┬─────┘ └──────┬───────┘ └────┬─────┘ └─────┬───────┘   │
+├───────┼──────────────┼──────────────┼─────────────┼───────────┤
+│       ▼              ▼              │             ▼           │
+│  ┌────────────────────────────────┐ │    ┌────────────────┐   │
+│  │    APPLICATION (use cases)     │ │    │ Ports (interf) │   │
+│  │  CriarOrdemServicoUC           │ │    │ EmailPort      │◄──┤
+│  │  ListarOrdensServicoUC         │ │    │ ObservabilityPort  │
+│  │  ConsultarStatusOSUC           │ │    └────────────────┘   │
+│  │  AprovarOrcamentoUC            │ │                         │
+│  │  AtualizarStatusViaWebhookUC   │ │                         │
+│  │  AvancarStatusUC               │ │                         │
+│  │  CancelarOrdemUC               │ │                         │
+│  │  AdicionarPecaUC               │ │                         │
+│  │  AdicionarServicoUC            │ │                         │
+│  │  ConsultarTempoMedioUC         │ │                         │
+│  │  IniciarExecucaoItemUC         │ │                         │
+│  │  FinalizarExecucaoItemUC       │ │                         │
+│  │  PrepararAberturaOSUC          │ │                         │
+│  └───────────────┬────────────────┘ │                         │
+├──────────────────┼──────────────────┼─────────────────────────┤
+│                  ▼                  ▼                         │
 │  ┌───────────────────────────────────────────────────────┐    │
-│  │              DOMAIN (core, zero deps)                  │    │
-│  │  Entities, Enums, Port interfaces, Domain services     │    │
+│  │              DOMAIN (core, zero deps)                 │    │
+│  │  Entities, Enums, Port interfaces, Domain services    │    │
 │  └───────────────────────────────────────────────────────┘    │
-└──────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────┘
 ```
 
 **Regra de dependencia:** `infrastructure → application → domain`. O compilador impede violacoes de arquitetura.
@@ -308,7 +308,7 @@ cp .env.example .env
 | `DB_PASSWORD`       | `siase_pass`         | Senha do banco                   |
 | `SERVER_PORT`       | `8080`               | Porta da aplicacao               |
 | `JWT_SECRET`        | *(ver .env.example)* | Chave HMAC para assinar tokens   |
-| `JWT_EXPIRATION_MS` | `3600000`            | Expiracao do token (ms) — 1h    |
+| `JWT_EXPIRATION_MS` | `3600000`            | Expiracao do token (ms) — 1h     |
 | `MECANICO_PASSWORD` | `mecanico123`        | Senha do usuario padrao          |
 | `WEBHOOK_TOKEN`     | *(ver .env.example)* | Token para webhook externo       |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:4200` | Origens permitidas pelo CORS |
@@ -375,10 +375,10 @@ A aplicacao expoe metricas customizadas via Micrometer, coletadas pelo Prometheu
 ### Arquitetura de Deploy — Fase 3 (AWS EKS)
 
 ```
-┌──────────────────────────────────────────────────────────────┐
+┌───────────────────────────────────────────────────────────────┐
 │                       GitHub Actions                          │
-│                                                              │
-│  push → main   ┌─────────────────┐                           │
+│                                                               │
+│  push → main   ┌─────────────────┐                            │
 │  ───────────►  │  build-and-test │  ubuntu-latest             │
 │                │  mvn clean verify                            │
 │                └────────┬────────┘                            │
@@ -398,19 +398,19 @@ A aplicacao expoe metricas customizadas via Micrometer, coletadas pelo Prometheu
 └───────────────────────────────────────────────────────────────┘
                                  │
 ┌────────────────────────────────▼──────────────────────────────┐
-│                    AWS — us-east-1                             │
+│                    AWS — us-east-1                            │
 │                                                               │
 │   ┌───────────────────────────────────────────────────────┐   │
-│   │              Amazon EKS (K8s 1.30)                     │   │
-│   │   Managed node group · 2 AZs · namespace: siase        │   │
-│   │                                                        │   │
+│   │              Amazon EKS (K8s 1.30)                    │   │
+│   │   Managed node group · 2 AZs · namespace: siase       │   │
+│   │                                                       │   │
 │   │   ┌──────────────────────────────────────────────┐    │   │
-│   │   │  siase-app: 2-4 replicas (HPA CPU 70%)        │    │   │
-│   │   │  siase-frontend: Angular + Nginx              │    │   │
+│   │   │  siase-app: 2-4 replicas (HPA CPU 70%)       │    │   │
+│   │   │  siase-frontend: Angular + Nginx             │    │   │
 │   │   └──────────────────────────────────────────────┘    │   │
-│   │                                                        │   │
-│   │   monitoring namespace:                                │   │
-│   │   Prometheus · Grafana · Alertmanager · Loki · Alloy   │   │
+│   │                                                       │   │
+│   │   monitoring namespace:                               │   │
+│   │   Prometheus · Grafana · Alertmanager · Loki · Alloy  │   │
 │   └───────────────────────────────────────────────────────┘   │
 │                                                               │
 │   RDS PostgreSQL 16 (subnet privada, KMS, Secrets Manager)    │
