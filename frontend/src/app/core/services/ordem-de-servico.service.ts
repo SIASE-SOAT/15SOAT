@@ -29,6 +29,10 @@ export class OrdemDeServicoService {
     return this.http.get<OrdemDeServicoResponse>(`${this.base}/acompanhar/${numero}`);
   }
 
+  minhasOrdens() {
+    return this.http.get<OrdemDeServicoResponse[]>(`${this.base}/minhas`);
+  }
+
   aprovarOrcamentoPorNumero(numero: string) {
     return this.http.patch<OrdemDeServicoResponse>(`${this.base}/acompanhar/${numero}/aprovar-orcamento`, null);
   }

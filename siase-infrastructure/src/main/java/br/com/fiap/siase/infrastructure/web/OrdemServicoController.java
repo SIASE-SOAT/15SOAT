@@ -16,6 +16,7 @@ import br.com.fiap.siase.application.usecase.port.CriarOrdemServicoUCPort;
 import br.com.fiap.siase.application.usecase.port.FinalizarExecucaoItemUCPort;
 import br.com.fiap.siase.application.usecase.port.IniciarExecucaoItemUCPort;
 import br.com.fiap.siase.application.usecase.port.ListarOrdensServicoUCPort;
+import br.com.fiap.siase.application.usecase.port.ListarOrdensDoClienteUCPort;
 import br.com.fiap.siase.application.usecase.port.PrepararAberturaOSUCPort;
 import br.com.fiap.siase.domain.enums.StatusOS;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -25,6 +26,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,6 +49,7 @@ public class OrdemServicoController {
 
     private final CriarOrdemServicoUCPort criarOrdemServicoUC;
     private final ListarOrdensServicoUCPort listarOrdensServicoUC;
+    private final ListarOrdensDoClienteUCPort listarOrdensDoClienteUC;
     private final ConsultarStatusOSUCPort consultarStatusOSUC;
     private final AprovarOrcamentoUCPort aprovarOrcamentoUC;
     private final AvancarStatusUCPort avancarStatusUC;
@@ -61,6 +64,7 @@ public class OrdemServicoController {
     public OrdemServicoController(
             CriarOrdemServicoUCPort criarOrdemServicoUC,
             ListarOrdensServicoUCPort listarOrdensServicoUC,
+            ListarOrdensDoClienteUCPort listarOrdensDoClienteUC,
             ConsultarStatusOSUCPort consultarStatusOSUC,
             AprovarOrcamentoUCPort aprovarOrcamentoUC,
             AvancarStatusUCPort avancarStatusUC,
@@ -73,6 +77,7 @@ public class OrdemServicoController {
             FinalizarExecucaoItemUCPort finalizarExecucaoItemUC) {
         this.criarOrdemServicoUC = criarOrdemServicoUC;
         this.listarOrdensServicoUC = listarOrdensServicoUC;
+        this.listarOrdensDoClienteUC = listarOrdensDoClienteUC;
         this.consultarStatusOSUC = consultarStatusOSUC;
         this.aprovarOrcamentoUC = aprovarOrcamentoUC;
         this.avancarStatusUC = avancarStatusUC;
@@ -88,11 +93,11 @@ public class OrdemServicoController {
     @PostMapping
     @Operation(summary = "Criar ordem de serviço")
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "OS criada com sucesso"),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "Cliente, veículo, serviço ou peça não encontrados"),
-        @ApiResponse(responseCode = "422", description = "Veículo já possui OS em andamento ou estoque insuficiente")
+            @ApiResponse(responseCode = "201", description = "OS criada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "Cliente, veículo, serviço ou peça não encontrados"),
+            @ApiResponse(responseCode = "422", description = "Veículo já possui OS em andamento ou estoque insuficiente")
     })
     public ResponseEntity<OrdemDeServicoResponse> criar(@Valid @RequestBody OrdemDeServicoRequest request) {
         OrdemDeServicoResponse response = criarOrdemServicoUC.executar(request);
@@ -106,8 +111,8 @@ public class OrdemServicoController {
     @GetMapping
     @Operation(summary = "Listar ordens de serviço")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado")
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado")
     })
     public ResponseEntity<List<OrdemDeServicoResponse>> listar(
             @Parameter(description = "Filtro opcional por status (RECEBIDA, EM_DIAGNOSTICO, AGUARDANDO_APROVACAO, APROVADO, EM_EXECUCAO, FINALIZADA, ENTREGUE, CANCELADA)")
@@ -115,12 +120,23 @@ public class OrdemServicoController {
         return ResponseEntity.ok(listarOrdensServicoUC.executar(status));
     }
 
+    @GetMapping("/minhas")
+    @Operation(summary = "Listar as ordens de serviço do cliente autenticado (token por CPF)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista retornada com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "Cliente não encontrado")
+    })
+    public ResponseEntity<List<OrdemDeServicoResponse>> minhas(Authentication authentication) {
+        return ResponseEntity.ok(listarOrdensDoClienteUC.executarPorDocumento(authentication.getName()));
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "Buscar OS por ID")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "OS encontrada"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "OS não encontrada")
+            @ApiResponse(responseCode = "200", description = "OS encontrada"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "OS não encontrada")
     })
     public ResponseEntity<OrdemDeServicoResponse> buscarPorId(@PathVariable UUID id) {
         return ResponseEntity.ok(consultarStatusOSUC.executar(id));
@@ -129,8 +145,8 @@ public class OrdemServicoController {
     @GetMapping("/acompanhar/{numero}")
     @Operation(summary = "Acompanhar OS por número (público)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "OS encontrada"),
-        @ApiResponse(responseCode = "404", description = "OS não encontrada")
+            @ApiResponse(responseCode = "200", description = "OS encontrada"),
+            @ApiResponse(responseCode = "404", description = "OS não encontrada")
     })
     public ResponseEntity<OrdemDeServicoResponse> acompanhar(@PathVariable String numero) {
         return ResponseEntity.ok(consultarStatusOSUC.executarPorNumero(numero));
@@ -139,9 +155,9 @@ public class OrdemServicoController {
     @PatchMapping("/acompanhar/{numero}/aprovar-orcamento")
     @Operation(summary = "Aprovar orçamento (público)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Orçamento aprovado"),
-        @ApiResponse(responseCode = "404", description = "OS não encontrada"),
-        @ApiResponse(responseCode = "422", description = "OS não está aguardando aprovação")
+            @ApiResponse(responseCode = "200", description = "Orçamento aprovado"),
+            @ApiResponse(responseCode = "404", description = "OS não encontrada"),
+            @ApiResponse(responseCode = "422", description = "OS não está aguardando aprovação")
     })
     public ResponseEntity<OrdemDeServicoResponse> aprovarOrcamentoPublico(@PathVariable String numero) {
         return ResponseEntity.ok(aprovarOrcamentoUC.aprovar(numero));
@@ -150,9 +166,9 @@ public class OrdemServicoController {
     @PatchMapping("/acompanhar/{numero}/recusar-orcamento")
     @Operation(summary = "Recusar orçamento (público)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Orçamento recusado e OS cancelada"),
-        @ApiResponse(responseCode = "404", description = "OS não encontrada"),
-        @ApiResponse(responseCode = "422", description = "OS não está aguardando aprovação")
+            @ApiResponse(responseCode = "200", description = "Orçamento recusado e OS cancelada"),
+            @ApiResponse(responseCode = "404", description = "OS não encontrada"),
+            @ApiResponse(responseCode = "422", description = "OS não está aguardando aprovação")
     })
     public ResponseEntity<OrdemDeServicoResponse> recusarOrcamentoPublico(@PathVariable String numero) {
         return ResponseEntity.ok(aprovarOrcamentoUC.recusar(numero));
@@ -161,10 +177,10 @@ public class OrdemServicoController {
     @PatchMapping("/{id}/avancar")
     @Operation(summary = "Avançar status da OS")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Status avançado com sucesso"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "OS não encontrada"),
-        @ApiResponse(responseCode = "422", description = "OS já entregue ou cancelada")
+            @ApiResponse(responseCode = "200", description = "Status avançado com sucesso"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "OS não encontrada"),
+            @ApiResponse(responseCode = "422", description = "OS já entregue ou cancelada")
     })
     public ResponseEntity<OrdemDeServicoResponse> avancar(@PathVariable UUID id) {
         return ResponseEntity.ok(avancarStatusUC.executar(id));
@@ -173,10 +189,10 @@ public class OrdemServicoController {
     @PatchMapping("/{id}/cancelar")
     @Operation(summary = "Cancelar OS")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "OS cancelada"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "OS não encontrada"),
-        @ApiResponse(responseCode = "422", description = "OS em status que não permite cancelamento")
+            @ApiResponse(responseCode = "200", description = "OS cancelada"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "OS não encontrada"),
+            @ApiResponse(responseCode = "422", description = "OS em status que não permite cancelamento")
     })
     public ResponseEntity<OrdemDeServicoResponse> cancelar(@PathVariable UUID id) {
         return ResponseEntity.ok(cancelarOrdemUC.executar(id));
@@ -197,10 +213,10 @@ public class OrdemServicoController {
     @PostMapping("/{id}/items-peca")
     @Operation(summary = "Adicionar peça à OS")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Peça adicionada e totais recalculados"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "OS ou peça não encontradas"),
-        @ApiResponse(responseCode = "422", description = "Status inválido, peça desativada, estoque insuficiente ou peça duplicada")
+            @ApiResponse(responseCode = "200", description = "Peça adicionada e totais recalculados"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "OS ou peça não encontradas"),
+            @ApiResponse(responseCode = "422", description = "Status inválido, peça desativada, estoque insuficiente ou peça duplicada")
     })
     public ResponseEntity<OrdemDeServicoResponse> adicionarPeca(
             @PathVariable UUID id,
@@ -211,10 +227,10 @@ public class OrdemServicoController {
     @PostMapping("/{id}/items-servico")
     @Operation(summary = "Adicionar serviço à OS")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Serviço adicionado e totais recalculados"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "OS ou serviço não encontrados"),
-        @ApiResponse(responseCode = "422", description = "Status inválido, serviço desativado ou duplicado")
+            @ApiResponse(responseCode = "200", description = "Serviço adicionado e totais recalculados"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "OS ou serviço não encontrados"),
+            @ApiResponse(responseCode = "422", description = "Status inválido, serviço desativado ou duplicado")
     })
     public ResponseEntity<OrdemDeServicoResponse> adicionarServico(
             @PathVariable UUID id,
@@ -225,10 +241,10 @@ public class OrdemServicoController {
     @GetMapping("/preparar-abertura")
     @Operation(summary = "Preparar abertura de OS")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Dados retornados"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "Cliente não encontrado"),
-        @ApiResponse(responseCode = "422", description = "Veículo pertence a outro cliente")
+            @ApiResponse(responseCode = "200", description = "Dados retornados"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "Cliente não encontrado"),
+            @ApiResponse(responseCode = "422", description = "Veículo pertence a outro cliente")
     })
     public ResponseEntity<PreparacaoAberturaOrdemResponse> prepararAbertura(
             @RequestParam String documento,
@@ -239,10 +255,10 @@ public class OrdemServicoController {
     @PatchMapping("/{id}/itens-servico/{itemId}/iniciar")
     @Operation(summary = "Iniciar execução de item de serviço")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Execução iniciada"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "OS ou item não encontrados"),
-        @ApiResponse(responseCode = "422", description = "OS não está em execução")
+            @ApiResponse(responseCode = "200", description = "Execução iniciada"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "OS ou item não encontrados"),
+            @ApiResponse(responseCode = "422", description = "OS não está em execução")
     })
     public ResponseEntity<OrdemDeServicoResponse> iniciarExecucao(
             @PathVariable UUID id,
@@ -253,10 +269,10 @@ public class OrdemServicoController {
     @PatchMapping("/{id}/itens-servico/{itemId}/finalizar")
     @Operation(summary = "Finalizar execução de item de serviço")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Execução finalizada"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "OS ou item não encontrados"),
-        @ApiResponse(responseCode = "422", description = "OS não está em execução")
+            @ApiResponse(responseCode = "200", description = "Execução finalizada"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "OS ou item não encontrados"),
+            @ApiResponse(responseCode = "422", description = "OS não está em execução")
     })
     public ResponseEntity<OrdemDeServicoResponse> finalizarExecucao(
             @PathVariable UUID id,

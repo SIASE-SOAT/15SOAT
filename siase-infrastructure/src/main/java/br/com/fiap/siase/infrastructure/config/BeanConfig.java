@@ -12,6 +12,7 @@ import br.com.fiap.siase.application.usecase.CriarOrdemServicoUC;
 import br.com.fiap.siase.application.usecase.FinalizarExecucaoItemUC;
 import br.com.fiap.siase.application.usecase.IniciarExecucaoItemUC;
 import br.com.fiap.siase.application.usecase.ListarOrdensServicoUC;
+import br.com.fiap.siase.application.usecase.ListarOrdensDoClienteUC;
 import br.com.fiap.siase.application.usecase.PrepararAberturaOSUC;
 import br.com.fiap.siase.domain.port.ClienteRepositoryPort;
 import br.com.fiap.siase.domain.port.EmailPort;
@@ -40,6 +41,13 @@ public class BeanConfig {
     @Bean
     public ListarOrdensServicoUC listarOrdensServicoUC(OrdemServicoRepositoryPort ordemServicoRepository) {
         return new ListarOrdensServicoUC(ordemServicoRepository);
+    }
+
+    @Bean
+    public ListarOrdensDoClienteUC listarOrdensDoClienteUC(
+            OrdemServicoRepositoryPort ordemServicoRepository,
+            ClienteRepositoryPort clienteRepository) {
+        return new ListarOrdensDoClienteUC(ordemServicoRepository, clienteRepository);
     }
 
     @Bean
