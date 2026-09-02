@@ -22,124 +22,203 @@
 
   <section class="conteudo">
     @if (loading()) {
-      <div class="loading-box">
-        <mat-spinner aria-label="Buscando OS..." diameter="34" />
-        <span>Consultando sua OS...</span>
-      </div>
+    <div class="loading-box">
+      <mat-spinner aria-label="Buscando OS..." diameter="34" />
+      <span>Consultando sua OS...</span>
+    </div>
     }
 
     @if (error()) {
-      <mat-card class="alerta alerta-erro">
+    <mat-card class="alerta alerta-erro">
+      <mat-card-content>
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error() }}</span>
+      </mat-card-content>
+    </mat-card>
+    }
+
+    @if (auth.token()) {
+    <section class="minhas-ordens">
+      <div class="minhas-ordens__cabecalho">
+        <div>
+          <p class="secao-eyebrow">Área do cliente</p>
+          <h2>Minhas ordens de serviço</h2>
+        </div>
+      </div>
+
+      @if (loadingMinhas()) {
+      <div class="loading-box">
+        <mat-spinner aria-label="Carregando suas ordens..." diameter="34" />
+        <span>Carregando suas ordens de serviço...</span>
+      </div>
+      } @else if (minhasOrdens().length === 0) {
+      <mat-card class="alerta alerta-info" appearance="outlined">
         <mat-card-content>
-          <mat-icon>error_outline</mat-icon>
-          <span>{{ error() }}</span>
+          <mat-icon>info</mat-icon>
+          <span>Não encontramos ordens de serviço vinculadas ao seu cadastro.</span>
         </mat-card-content>
       </mat-card>
+      } @else {
+      @if (ordensEmAndamento().length > 0) {
+      <section class="ordens-grupo">
+        <h3>Em andamento</h3>
+        <div class="minhas-ordens__lista">
+          @for (ordem of ordensEmAndamento(); track ordem.id) {
+          <mat-card class="minha-os-card" appearance="outlined">
+            <mat-card-header>
+              <mat-card-title>{{ ordem.numero }}</mat-card-title>
+              <mat-card-subtitle>{{ ordem.veiculoModelo }} ({{ ordem.veiculoPlaca }})</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="minha-os-card__dados">
+                <span [class]="'status-chip status-' + ordem.status">{{ ordem.statusDescricao }}</span>
+                <span>Aberta em {{ ordem.dataAbertura | date:'dd/MM/yyyy HH:mm' }}</span>
+                <strong>R$ {{ ordem.total | number:'1.2-2' }}</strong>
+              </div>
+              <button mat-stroked-button type="button" (click)="selecionar(ordem)">
+                <mat-icon>visibility</mat-icon>
+                Ver detalhes
+              </button>
+            </mat-card-content>
+          </mat-card>
+          }
+        </div>
+      </section>
+      }
+
+      @if (ordensFinalizadas().length > 0) {
+      <section class="ordens-grupo">
+        <h3>Finalizadas</h3>
+        <div class="minhas-ordens__lista">
+          @for (ordem of ordensFinalizadas(); track ordem.id) {
+          <mat-card class="minha-os-card" appearance="outlined">
+            <mat-card-header>
+              <mat-card-title>{{ ordem.numero }}</mat-card-title>
+              <mat-card-subtitle>{{ ordem.veiculoModelo }} ({{ ordem.veiculoPlaca }})</mat-card-subtitle>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="minha-os-card__dados">
+                <span [class]="'status-chip status-' + ordem.status">{{ ordem.statusDescricao }}</span>
+                <span>Aberta em {{ ordem.dataAbertura | date:'dd/MM/yyyy HH:mm' }}</span>
+                <strong>R$ {{ ordem.total | number:'1.2-2' }}</strong>
+              </div>
+              <button mat-stroked-button type="button" (click)="selecionar(ordem)">
+                <mat-icon>visibility</mat-icon>
+                Ver detalhes
+              </button>
+            </mat-card-content>
+          </mat-card>
+          }
+        </div>
+      </section>
+      }
+      }
+    </section>
     }
 
     @if (os(); as ordem) {
-      <mat-card class="os-card">
-        <mat-card-header>
-          <mat-card-title>{{ ordem.numero }}</mat-card-title>
-          <mat-card-subtitle>{{ ordem.clienteNome }} • {{ ordem.veiculoModelo }} ({{ ordem.veiculoPlaca }})</mat-card-subtitle>
-        </mat-card-header>
+    <mat-card class="os-card">
+      <mat-card-header>
+        <mat-card-title>{{ ordem.numero }}</mat-card-title>
+        <mat-card-subtitle>{{ ordem.clienteNome }} • {{ ordem.veiculoModelo }} ({{ ordem.veiculoPlaca }})</mat-card-subtitle>
+      </mat-card-header>
 
-        <mat-card-content>
-          <div class="status-atual">
-            <span class="status-label">Status atual</span>
-            <span [class]="'status-chip status-' + ordem.status">{{ ordem.statusDescricao }}</span>
+      <mat-card-content>
+        <div class="status-atual">
+          <span class="status-label">Status atual</span>
+          <span [class]="'status-chip status-' + ordem.status">{{ ordem.statusDescricao }}</span>
+        </div>
+
+        <div class="etapas" aria-label="Etapas da OS">
+          @for (step of STATUS_STEPS; track step) {
+          <div [class]="'etapa ' + (isCompleted(step) ? 'done' : '') + (ordem.status === step ? ' atual' : '')">
+            <span class="dot"></span>
+            <span>{{ labelFor(step) }}</span>
           </div>
+          }
+        </div>
 
-          <div class="etapas" aria-label="Etapas da OS">
-            @for (step of STATUS_STEPS; track step) {
-              <div [class]="'etapa ' + (isCompleted(step) ? 'done' : '') + (ordem.status === step ? ' atual' : '')">
-                <span class="dot"></span>
-                <span>{{ labelFor(step) }}</span>
-              </div>
-            }
+        @if (podeAprovarOuRecusar()) {
+        <section class="orcamento-box">
+          <h2>Seu orçamento está pronto</h2>
+          <p>
+            Confira os valores abaixo. Ao aprovar, sua OS entra em execução. Ao recusar, a OS será cancelada.
+          </p>
+          <div class="orcamento-acoes">
+            <button mat-flat-button class="btn-aprovar" (click)="aprovarOrcamento()" [disabled]="actionLoading()">
+              <mat-icon>check_circle</mat-icon>
+              Aprovar orçamento
+            </button>
+            <button mat-stroked-button class="btn-recusar" (click)="recusarOrcamento()" [disabled]="actionLoading()">
+              <mat-icon>cancel</mat-icon>
+              Recusar orçamento
+            </button>
           </div>
+        </section>
+        } @else {
+        <mat-card class="alerta alerta-info" appearance="outlined">
+          <mat-card-content>
+            <mat-icon>info</mat-icon>
+            <span>Esta OS não está mais na etapa de aprovação de orçamento.</span>
+          </mat-card-content>
+        </mat-card>
+        }
 
-          @if (podeAprovarOuRecusar()) {
-            <section class="orcamento-box">
-              <h2>Seu orçamento está pronto</h2>
-              <p>
-                Confira os valores abaixo. Ao aprovar, sua OS entra em execução. Ao recusar, a OS será cancelada.
-              </p>
-              <div class="orcamento-acoes">
-                <button mat-flat-button class="btn-aprovar" (click)="aprovarOrcamento()" [disabled]="actionLoading()">
-                  <mat-icon>check_circle</mat-icon>
-                  Aprovar orçamento
-                </button>
-                <button mat-stroked-button class="btn-recusar" (click)="recusarOrcamento()" [disabled]="actionLoading()">
-                  <mat-icon>cancel</mat-icon>
-                  Recusar orçamento
-                </button>
-              </div>
-            </section>
-          } @else {
-            <mat-card class="alerta alerta-info" appearance="outlined">
-              <mat-card-content>
-                <mat-icon>info</mat-icon>
-                <span>Esta OS não está mais na etapa de aprovação de orçamento.</span>
-              </mat-card-content>
-            </mat-card>
-          }
+        <section class="totais-grid">
+          <div>
+            <p>Serviços</p>
+            <strong>R$ {{ ordem.totalServicos | number:'1.2-2' }}</strong>
+          </div>
+          <div>
+            <p>Peças</p>
+            <strong>R$ {{ ordem.totalPecas | number:'1.2-2' }}</strong>
+          </div>
+          <div>
+            <p>Total</p>
+            <strong class="total-geral">R$ {{ ordem.total | number:'1.2-2' }}</strong>
+          </div>
+        </section>
 
-          <section class="totais-grid">
+        @if (ordem.itensServico.length > 0) {
+        <section class="itens-box">
+          <h3>Serviços previstos</h3>
+          @for (item of ordem.itensServico; track item.id) {
+          <div class="item-row">
             <div>
-              <p>Serviços</p>
-              <strong>R$ {{ ordem.totalServicos | number:'1.2-2' }}</strong>
-            </div>
-            <div>
-              <p>Peças</p>
-              <strong>R$ {{ ordem.totalPecas | number:'1.2-2' }}</strong>
-            </div>
-            <div>
-              <p>Total</p>
-              <strong class="total-geral">R$ {{ ordem.total | number:'1.2-2' }}</strong>
-            </div>
-          </section>
-
-          @if (ordem.itensServico.length > 0) {
-            <section class="itens-box">
-              <h3>Serviços previstos</h3>
-              @for (item of ordem.itensServico; track item.id) {
-                <div class="item-row">
-                  <div>
-                    <p class="item-nome">{{ item.servicoNome }}</p>
-                    @if (item.observacoes) {
-                      <p class="item-meta">{{ item.observacoes }}</p>
-                    }
-                  </div>
-                  <strong>R$ {{ item.precoUnitario | number:'1.2-2' }}</strong>
-                </div>
+              <p class="item-nome">{{ item.servicoNome }}</p>
+              @if (item.observacoes) {
+              <p class="item-meta">{{ item.observacoes }}</p>
               }
-            </section>
+            </div>
+            <strong>R$ {{ item.precoUnitario | number:'1.2-2' }}</strong>
+          </div>
           }
+        </section>
+        }
 
-          @if (ordem.itensPeca.length > 0) {
-            <section class="itens-box">
-              <h3>Peças e Insumos</h3>
-              @for (item of ordem.itensPeca; track item.pecaId) {
-                <div class="item-row">
-                  <div>
-                    <p class="item-nome">{{ item.pecaNome }}</p>
-                    <p class="item-meta">{{ item.pecaCodigo }} &times; {{ item.quantidade }}</p>
-                  </div>
-                  <strong>R$ {{ item.precoUnitario * item.quantidade | number:'1.2-2' }}</strong>
-                </div>
-              }
-            </section>
+        @if (ordem.itensPeca.length > 0) {
+        <section class="itens-box">
+          <h3>Peças e Insumos</h3>
+          @for (item of ordem.itensPeca; track item.pecaId) {
+          <div class="item-row">
+            <div>
+              <p class="item-nome">{{ item.pecaNome }}</p>
+              <p class="item-meta">{{ item.pecaCodigo }} &times; {{ item.quantidade }}</p>
+            </div>
+            <strong>R$ {{ item.precoUnitario * item.quantidade | number:'1.2-2' }}</strong>
+          </div>
           }
+        </section>
+        }
 
-          @if (ordem.observacoes) {
-            <section class="obs-box">
-              <h3>Observações da oficina</h3>
-              <p>{{ ordem.observacoes }}</p>
-            </section>
-          }
-        </mat-card-content>
-      </mat-card>
+        @if (ordem.observacoes) {
+        <section class="obs-box">
+          <h3>Observações da oficina</h3>
+          <p>{{ ordem.observacoes }}</p>
+        </section>
+        }
+      </mat-card-content>
+    </mat-card>
     }
 
     <mat-card class="separacao-card" appearance="outlined">
@@ -147,7 +226,7 @@
         <div class="separacao-conteudo">
           <div>
             <p class="separacao-titulo">Acesso da oficina</p>
-      
+
           </div>
           <a mat-stroked-button routerLink="/login" class="btn-login-oficina">
             <mat-icon>login</mat-icon>
