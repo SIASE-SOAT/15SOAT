@@ -72,7 +72,7 @@ export class LoginComponent {
     this.error.set('');
 
     this.auth.loginComCpf(this.cpfForm.getRawValue()).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+      next: () => this.router.navigate(['/acompanhar']),
       error: (error: HttpErrorResponse) => {
         this.error.set(this.cpfErrorMessage(error.status));
         this.loading.set(false);
