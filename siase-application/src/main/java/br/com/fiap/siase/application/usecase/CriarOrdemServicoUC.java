@@ -90,6 +90,7 @@ public class CriarOrdemServicoUC implements CriarOrdemServicoUCPort {
                 } catch (IllegalStateException e) {
                     throw new BusinessException(e.getMessage());
                 }
+                pecaRepository.save(peca);
                 var item = new ItemPeca();
                 item.setOrdemDeServico(os);
                 item.setPeca(peca);

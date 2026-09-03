@@ -64,9 +64,9 @@ public class ServicoController {
     @GetMapping("/{id}")
     @Operation(summary = "Buscar serviço por ID")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Serviço encontrado"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "Serviço não encontrado")
+            @ApiResponse(responseCode = "200", description = "Serviço encontrado"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "Serviço não encontrado")
     })
     @Transactional(readOnly = true)
     public ResponseEntity<ServicoResponse> buscar(@Parameter(description = "ID do serviço") @PathVariable UUID id) {
@@ -76,9 +76,9 @@ public class ServicoController {
     @PostMapping
     @Operation(summary = "Cadastrar novo serviço", description = "Cria um novo serviço no catálogo com preço e tempo estimado de execução.")
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Serviço criado com sucesso"),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado")
+            @ApiResponse(responseCode = "201", description = "Serviço criado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado")
     })
     @Transactional
     public ResponseEntity<ServicoResponse> criar(@Valid @RequestBody ServicoRequest request) {
@@ -86,6 +86,7 @@ public class ServicoController {
         servico.setNome(request.nome());
         servico.setDescricao(request.descricao());
         servico.setPreco(request.preco());
+        servico.setTempoEstimadoMinutos(request.tempoEstimadoMinutos());
         var criado = ServicoResponse.from(servicoRepository.save(servico));
         var location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(criado.id()).toUri();
@@ -95,10 +96,10 @@ public class ServicoController {
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar serviço")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Serviço atualizado"),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "Serviço não encontrado")
+            @ApiResponse(responseCode = "200", description = "Serviço atualizado"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "Serviço não encontrado")
     })
     @Transactional
     public ResponseEntity<ServicoResponse> atualizar(
@@ -108,15 +109,16 @@ public class ServicoController {
         servico.setNome(request.nome());
         servico.setDescricao(request.descricao());
         servico.setPreco(request.preco());
+        servico.setTempoEstimadoMinutos(request.tempoEstimadoMinutos());
         return ResponseEntity.ok(ServicoResponse.from(servicoRepository.save(servico)));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Desativar serviço (soft delete)", description = "Marca o serviço como inativo. Serviços desativados não podem ser adicionados a novas OS.")
     @ApiResponses({
-        @ApiResponse(responseCode = "204", description = "Serviço desativado"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "Serviço não encontrado")
+            @ApiResponse(responseCode = "204", description = "Serviço desativado"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "Serviço não encontrado")
     })
     @Transactional
     public ResponseEntity<Void> desativar(@Parameter(description = "ID do serviço") @PathVariable UUID id) {
@@ -128,15 +130,15 @@ public class ServicoController {
 
     @PostMapping("/{id}/insumos")
     @Operation(
-        summary = "Vincular insumo ao serviço",
-        description = "Associa uma peça/insumo ao serviço com a quantidade necessária para execução."
+            summary = "Vincular insumo ao serviço",
+            description = "Associa uma peça/insumo ao serviço com a quantidade necessária para execução."
     )
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Insumo vinculado com sucesso"),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "Serviço ou peça não encontrados"),
-        @ApiResponse(responseCode = "409", description = "Peça já vinculada a este serviço")
+            @ApiResponse(responseCode = "200", description = "Insumo vinculado com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "Serviço ou peça não encontrados"),
+            @ApiResponse(responseCode = "409", description = "Peça já vinculada a este serviço")
     })
     @Transactional
     public ResponseEntity<ServicoResponse> adicionarInsumo(
@@ -160,10 +162,10 @@ public class ServicoController {
     @PutMapping("/{id}/insumos/{pecaId}")
     @Operation(summary = "Atualizar quantidade de insumo", description = "Altera a quantidade necessária de uma peça já vinculada ao serviço.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Quantidade atualizada"),
-        @ApiResponse(responseCode = "400", description = "Dados inválidos"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "Serviço, peça ou vínculo não encontrado")
+            @ApiResponse(responseCode = "200", description = "Quantidade atualizada"),
+            @ApiResponse(responseCode = "400", description = "Dados inválidos"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "Serviço, peça ou vínculo não encontrado")
     })
     @Transactional
     public ResponseEntity<ServicoResponse> atualizarInsumo(
@@ -184,9 +186,9 @@ public class ServicoController {
     @DeleteMapping("/{id}/insumos/{pecaId}")
     @Operation(summary = "Remover insumo do serviço", description = "Desvincula a peça do serviço.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Insumo removido"),
-        @ApiResponse(responseCode = "401", description = "Não autenticado"),
-        @ApiResponse(responseCode = "404", description = "Serviço, peça ou vínculo não encontrado")
+            @ApiResponse(responseCode = "200", description = "Insumo removido"),
+            @ApiResponse(responseCode = "401", description = "Não autenticado"),
+            @ApiResponse(responseCode = "404", description = "Serviço, peça ou vínculo não encontrado")
     })
     @Transactional
     public ResponseEntity<ServicoResponse> removerInsumo(
