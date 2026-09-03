@@ -46,6 +46,7 @@ public class AdicionarPecaUC implements AdicionarPecaUCPort {
         } catch (IllegalStateException e) {
             throw new BusinessException(e.getMessage());
         }
+        pecaRepository.save(peca);
 
         ItemPeca item = new ItemPeca();
         item.setOrdemDeServico(os);
